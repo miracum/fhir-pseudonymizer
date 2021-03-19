@@ -1,0 +1,13 @@
+version: "3.7"
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.22
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+
+  gpas:
+    image: harbor.miracum.org/gpas/gpas:1.10.0-20201221
+    ports:
+      - "18081:8080"

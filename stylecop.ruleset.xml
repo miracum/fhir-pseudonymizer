@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Rules for Query" Description="Code analysis rules for Query.csproj." ToolsVersion="14.0">
+    <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+        <Rule Id="SA1101" Action="None" />
+        <Rule Id="SA1633" Action="None" />
+        <Rule Id="SA0001" Action="None" />
+        <Rule Id="CA2007" Action="None" />
+        <Rule Id="CA1031" Action="None" />
+        <Rule Id="CA1034" Action="None" />
+        <Rule Id="SA1402" Action="None" />
+    </Rules>
+</RuleSet>

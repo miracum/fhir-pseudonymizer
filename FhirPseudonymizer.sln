@@ -1,0 +1,36 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FhirPseudonymizer", "src\FhirPseudonymizer\FhirPseudonymizer.csproj", "{08F6AB62-C339-448C-ACE3-76083CFD3F66}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2937086D-E4B3-495E-8492-C2051E70FD81}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FhirPseudonymizer.Tests", "src\FhirPseudonymizer.Tests\FhirPseudonymizer.Tests.csproj", "{9DF386AC-C0E5-4832-BA12-C507E0288C1C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{08F6AB62-C339-448C-ACE3-76083CFD3F66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08F6AB62-C339-448C-ACE3-76083CFD3F66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08F6AB62-C339-448C-ACE3-76083CFD3F66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08F6AB62-C339-448C-ACE3-76083CFD3F66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DF386AC-C0E5-4832-BA12-C507E0288C1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DF386AC-C0E5-4832-BA12-C507E0288C1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DF386AC-C0E5-4832-BA12-C507E0288C1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DF386AC-C0E5-4832-BA12-C507E0288C1C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A3F8CFB2-63E2-4AF3-92A6-E9D486172A18}
+	EndGlobalSection
+EndGlobal
