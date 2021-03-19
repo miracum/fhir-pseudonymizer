@@ -24,16 +24,3 @@ WORKDIR /opt/fhir-pseudonymizer
 COPY --from=build /build/publish/anonymization.yaml /etc
 COPY --from=build /build/publish .
 ENTRYPOINT ["dotnet", "/opt/fhir-pseudonymizer/FhirPseudonymizer.dll"]
-
-ARG GIT_REF=""
-ARG BUILD_TIME=""
-ARG VERSION=""
-LABEL maintainer="miracum.org" \
-    org.opencontainers.image.created=${BUILD_TIME} \
-    org.opencontainers.image.authors="miracum.org" \
-    org.opencontainers.image.source="https://gitlab.miracum.org/miracum/etl/fhir-pseudonymizer" \
-    org.opencontainers.image.version=${VERSION} \
-    org.opencontainers.image.revision=${GIT_REF} \
-    org.opencontainers.image.vendor="miracum.org" \
-    org.opencontainers.image.title="fhir-pseudonymizer" \
-    org.opencontainers.image.description="FHIR Pseudonymizer"
