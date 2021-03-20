@@ -4,15 +4,12 @@
 
 Based on the brilliant [FHIR-Tools-for-Anonymization](https://github.com/microsoft/FHIR-Tools-for-Anonymization/).
 
+## Usage
+
 ```sh
-# see the releases for the latest image tag
-docker run --rm -i -p 8080:8080 harbor.miracum.org/miracum-etl/fhir-pseudonymizer:v2.3
+docker run --rm -i -p 8080:8080 ghcr.io/miracum/fhir-pseudonymizer:latest
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
 ```
-
-Note that the immutable container image tags correspond the the git repository tags.
-
-## Usage
 
 ### API Endpoints
 
