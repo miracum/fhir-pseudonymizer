@@ -19,7 +19,7 @@
     <PackageReference Include="NetEscapades.Configuration.Yaml" Version="2.1.0" />
     <PackageReference Include="Ensure.That" Version="10.0.0" />
     <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="OpenTelemetry" Version="1.0.1" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.0.1" />
     <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.0.1" />
