@@ -17,6 +17,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Polly;
@@ -143,7 +144,9 @@ namespace FhirPseudonymizer
             {
                 services.AddOpenTelemetryTracing(builder =>
                 {
-                    var serviceName = Environment.GetEnvironmentVariable("JAEGER_SERVICE_NAME") ?? Configuration.GetValue<string>("Tracing:ServiceName");
+                    var serviceName = Environment.GetEnvironmentVariable("JAEGER_SERVICE_NAME") ??
+                        Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ??
+                        Configuration.GetValue<string>("Tracing:ServiceName");
 
                     builder
                         .AddAspNetCoreInstrumentation(o =>
@@ -164,21 +167,11 @@ namespace FhirPseudonymizer
                         })
                         .AddSource(Program.ActivitySource.Name)
                         .AddHttpClientInstrumentation()
-                        .AddJaegerExporter(o =>
-                        {
-                            if (!int.TryParse(Environment.GetEnvironmentVariable("JAEGER_AGENT_PORT"), out int agentPort))
-                            {
-                                agentPort = Configuration.GetValue<int>("Tracing:Port");
-                            }
-
-                            o.AgentHost = Environment.GetEnvironmentVariable("JAEGER_AGENT_HOST") ?? Configuration.GetValue<string>("Tracing:Host");
-                            o.AgentPort = agentPort;
-
-                            // workaround for https://github.com/open-telemetry/opentelemetry-dotnet/issues/1372
-                            o.MaxPayloadSizeInBytes = 65000;
-                        })
+                        .AddJaegerExporter()
                         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName));
                 });
+
+                services.Configure<JaegerExporterOptions>(Configuration.GetSection("Tracing:Jaeger"));
             }
         }
 
