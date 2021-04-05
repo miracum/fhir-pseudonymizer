@@ -38,7 +38,7 @@ jobs:
         with:
           images: |
             ghcr.io/miracum/fhir-pseudonymizer
-            harbor.miracum.org/miracum-etl/fhir-pseudonymizer
+            quay.io/miracum/fhir-pseudonymizer
           tags: |
             type=sha
       # - name: Set up QEMU
@@ -52,13 +52,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Login to MIRACUM Container Registry
+      - name: Login to Quay.io Container Registry
         uses: docker/login-action@v1
         if: github.event_name != 'pull_request'
         with:
-          registry: harbor.miracum.org
-          username: ${{ secrets.MIRACUM_REGISTRY_USERNAME }}
-          password: ${{ secrets.MIRACUM_REGISTRY_TOKEN }}
+          registry: quay.io
+          username: ${{ secrets.QUAY_IO_USERNAME }}
+          password: ${{ secrets.QUAY_IO_TOKEN }}
       - name: Cache Docker layers
         uses: actions/cache@v2
         with:
