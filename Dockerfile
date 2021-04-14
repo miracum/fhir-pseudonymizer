@@ -21,6 +21,6 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
 USER 65532
 WORKDIR /opt/fhir-pseudonymizer
 
-COPY --from=build /build/publish/anonymization.yaml /etc
+COPY --from=build /build/publish/*anonymization.yaml /etc
 COPY --from=build /build/publish .
 ENTRYPOINT ["dotnet", "/opt/fhir-pseudonymizer/FhirPseudonymizer.dll"]
