@@ -27,6 +27,8 @@ An OpenAPI definition for the FHIR operation endpoints is available at `/swagger
 
 The server provides a `/fhir/$de-identify` operation to de-identfiy received FHIR resources according to the configuration in the [anonymization.yaml](src/FhirPseudonymizer/anonymization.yaml) rules. See <https://github.com/microsoft/FHIR-Tools-for-Anonymization/> for more details on the anonymization rule configuration.
 
+The service comes with a sample configuration file to help meet the requirements of HIPAA Safe Harbor Method (2)(i): [hipaa-anonymization.yaml](src/FhirPseudonymizer/hipaa-anonymization.yaml).This configuration can be used by setting `ANONYMIZATIONENGINECONFIGPATH=/etc/hipaa-anonymization.yaml`.
+
 A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/) to create pseudonyms and replace the values in the resource with them.
 For example, the following rule replaces all identifiers of type `http://terminology.hl7.org/CodeSystem/v2-0203|MR` with a pseudonym generated in the `PATIENT` domain.
 
@@ -142,4 +144,4 @@ Statistics        Avg      Stdev        Max
 
 ## Attribution
 
-<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+Icons made by [Freepik](https://www.freepik.com) from [Flaticon](https://www.flaticon.com/).
