@@ -1,8 +1,10 @@
-# FHIR Pseudonymizer
+# FHIR® Pseudonymizer
 
-> Send a FHIR resource to `/fhir/$de-identify` get it back anonymized and/or pseudonymized.
+<p align="center"><img width="100" src="docs/img/logo.png" alt="FHIR® Pseudonymizer logo"></p>
 
-Based on the brilliant [FHIR-Tools-for-Anonymization](https://github.com/microsoft/FHIR-Tools-for-Anonymization/).
+> Send a FHIR® resource to `/fhir/$de-identify` get it back anonymized and/or pseudonymized.
+
+Based on the brilliant [FHIR Tools for Anonymization](https://github.com/microsoft/FHIR-Tools-for-Anonymization/).
 
 ## Usage
 
@@ -12,6 +14,8 @@ curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir
 ```
 
 All container images are pushed to [ghcr.io/miracum/fhir-pseudonymizer](https://github.com/orgs/miracum/packages/container/package/fhir-pseudonymizer) and [quay.io/miracum/fhir-pseudonymizer](https://quay.io/repository/miracum/fhir-pseudonymizer?tag=latest&tab=tags).
+
+For deployment in Kubernetes see <https://github.com/miracum/charts/tree/master/charts/fhir-gateway> for a Helm Chart using the FHIR Pseudonymizer as one of its components.
 
 ### API Endpoints
 
