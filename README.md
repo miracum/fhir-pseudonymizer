@@ -139,3 +139,7 @@ Statistics        Avg      Stdev        Max
     others - 0
   Throughput:    12.97MB/s
 ```
+
+## Attribution
+
+<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
