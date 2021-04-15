@@ -1,6 +1,6 @@
 # FHIR® Pseudonymizer
 
-<p align="center"><img width="100" src="docs/img/logo.png" alt="FHIR® Pseudonymizer logo"></p>
+<p align="center"><img width="100" src="docs/img/mask.png" alt="FHIR® Pseudonymizer Logo"></p>
 
 > Send a FHIR® resource to `/fhir/$de-identify` get it back anonymized and/or pseudonymized.
 
