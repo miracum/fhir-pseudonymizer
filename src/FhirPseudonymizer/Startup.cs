@@ -167,8 +167,8 @@ namespace FhirPseudonymizer
                         })
                         .AddSource(Program.ActivitySource.Name)
                         .AddHttpClientInstrumentation()
-                        .AddJaegerExporter()
-                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName));
+                        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName))
+                        .AddJaegerExporter();
                 });
 
                 services.Configure<JaegerExporterOptions>(Configuration.GetSection("Tracing:Jaeger"));
