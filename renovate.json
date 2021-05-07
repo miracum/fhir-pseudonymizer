@@ -1,14 +1,19 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [":preserveSemverRanges", "group:all", "config:base"],
+  "extends": [
+    "github>whitesource/merge-confidence:beta",
+    ":preserveSemverRanges",
+    "group:all",
+    "config:base"
+  ],
   "groupName": "all dependencies",
   "separateMajorMinor": true,
   "groupSlug": "all",
   "packageRules": [
     {
-      "packagePatterns": ["*"],
       "groupName": "all dependencies",
-      "groupSlug": "all"
+      "groupSlug": "all",
+      "matchPackagePatterns": ["*"]
     }
   ]
 }
