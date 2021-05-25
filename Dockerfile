@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
 WORKDIR /build
 COPY src/FhirPseudonymizer/FhirPseudonymizer.csproj .
 RUN dotnet restore
@@ -15,7 +15,7 @@ FROM build AS test
 WORKDIR /build/src/FhirPseudonymizer.Tests
 RUN dotnet test -p:CollectCoverage=true
 
-FROM mcr.microsoft.com/dotnet/aspnet:5.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine
 ENV ASPNETCORE_ENVIRONMENT="Production" \
     ASPNETCORE_URLS="http://*:8080"
 USER 65532
