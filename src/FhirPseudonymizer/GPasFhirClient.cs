@@ -129,7 +129,7 @@ namespace FhirPseudonymizer
                 .Add("pseudonym", new FhirString(pseudonym));
 
             var parametersBody = FhirSerializer.SerializeToString(parameters);
-            var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
+            using var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
 
             try
             {
