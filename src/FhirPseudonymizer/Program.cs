@@ -8,7 +8,7 @@ namespace FhirPseudonymizer
     public static class Program
     {
         internal static ActivitySource ActivitySource { get; }
-            = new ActivitySource("FhirPseudonymizer");
+            = new ActivitySource("FhirPseudonymizer", typeof(Program).Assembly.GetName().Version.ToString());
 
         public static void Main(string[] args)
         {
