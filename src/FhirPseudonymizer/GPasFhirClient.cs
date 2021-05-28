@@ -43,6 +43,9 @@ namespace FhirPseudonymizer
                 SizeLimit = config.GetValue<long>("Cache:SizeLimit")
             });
 
+            SlidingExpiration = TimeSpan.FromMinutes(Config.GetValue<double>("Cache:SlidingExpirationMinutes", 5));
+            AbsoluteExpiration = TimeSpan.FromMinutes(Config.GetValue<double>("Cache:AbsoluteExpirationMinutes", 10));
+
             var configGPasVersion = config.GetValue<string>("gPAS:Version");
             var supportedGPasVersion = SemVersion.Parse(configGPasVersion);
             if (supportedGPasVersion >= SemVersion.Parse("1.10.2"))
@@ -59,17 +62,16 @@ namespace FhirPseudonymizer
         private HttpClient Client { get; }
         private FhirJsonParser FhirParser { get; } = new();
         private FhirJsonSerializer FhirSerializer { get; } = new();
+        private TimeSpan SlidingExpiration { get; }
+        private TimeSpan AbsoluteExpiration { get; }
 
         public async Task<string> GetOrCreatePseudonymFor(string value, string domain)
         {
             return await PseudonymCache.GetOrCreateAsync((value, domain), async entry =>
             {
-                var slidingExpiration = Config.GetValue<double>("Cache:SlidingExpirationMinutes", 5);
-                var absoluteExpiration = Config.GetValue<double>("Cache:AbsoluteExpirationMinutes", 10);
-
                 entry.SetSize(1)
-                    .SetSlidingExpiration(TimeSpan.FromMinutes(slidingExpiration))
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(absoluteExpiration));
+                    .SetSlidingExpiration(SlidingExpiration)
+                    .SetAbsoluteExpiration(AbsoluteExpiration);
 
                 logger.LogDebug("Getting or creating pseudonym for {value} in {domain}", value, domain);
 
@@ -86,12 +88,9 @@ namespace FhirPseudonymizer
         {
             return await OriginalValueCache.GetOrCreateAsync((pseudonym, domain), async entry =>
             {
-                var slidingExpiration = Config.GetValue<double>("Cache:SlidingExpirationMinutes", 5);
-                var absoluteExpiration = Config.GetValue<double>("Cache:AbsoluteExpirationMinutes", 10);
-
                 entry.SetSize(1)
-                    .SetSlidingExpiration(TimeSpan.FromMinutes(slidingExpiration))
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(absoluteExpiration));
+                    .SetSlidingExpiration(SlidingExpiration)
+                    .SetAbsoluteExpiration(AbsoluteExpiration);
 
                 logger.LogDebug("Getting original value for pseudonym {pseudonym} from {domain}", pseudonym, domain);
 
