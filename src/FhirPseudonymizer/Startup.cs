@@ -79,7 +79,7 @@ namespace FhirPseudonymizer
                         Convert.ToBase64String(byteArray));
                     }
                 }).SetHandlerLifetime(TimeSpan.FromMinutes(5))
-                  .AddPolicyHandler(GetRetryPolicy())
+                  .AddPolicyHandler(GetRetryPolicy(Configuration.GetValue<int>("gPAS:RequestRetryCount")))
                   .UseHttpClientMetrics();
 
             services.AddTransient<IGPasFhirClient, GPasFhirClient>();
@@ -175,12 +175,11 @@ namespace FhirPseudonymizer
             }
         }
 
-        private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+        private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(int retryCount = 3)
         {
             return HttpPolicyExtensions
                 .HandleTransientHttpError()
-                .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2,
-                                                                            retryAttempt)));
+                .WaitAndRetryAsync(retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
