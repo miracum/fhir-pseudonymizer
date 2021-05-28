@@ -48,5 +48,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Models
             Code = "GENERALIZED",
             Display = "exact value is replaced with a general value"
         };
+
+        public static readonly Coding PSEUDED = new Coding
+        {
+            System = "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+            Code = "PSEUDED",
+            Display = "pseudonymized"
+        };
     }
 }
