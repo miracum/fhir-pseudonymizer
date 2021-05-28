@@ -93,24 +93,60 @@ namespace FhirPseudonymizer
                     .SetSlidingExpiration(TimeSpan.FromMinutes(slidingExpiration))
                     .SetAbsoluteExpiration(TimeSpan.FromMinutes(absoluteExpiration));
 
-                var query = new Dictionary<string, string> { ["domain"] = domain, ["pseudonym"] = pseudonym };
-
                 logger.LogDebug("Getting original value for pseudonym {pseudonym} from {domain}", pseudonym, domain);
 
-                var response = await Client.GetAsync(QueryHelpers.AddQueryString("$de-pseudonymize", query));
-                response.EnsureSuccessStatusCode();
-                var content = await response.Content.ReadAsStringAsync();
-                var parameters = FhirParser.Parse<Parameters>(content);
-
-                var original = parameters.GetSingleValue<FhirString>(pseudonym);
-                if (original == null)
+                if (useGpasV2FhirApi)
                 {
-                    logger.LogWarning("Failed to de-pseudonymize {pseudonym}. Returning original value.", pseudonym);
-                    return pseudonym;
+                    return await GetOriginalValueForV2(pseudonym, domain);
                 }
 
-                return original.Value;
+                return await GetOriginalValueForV1(pseudonym, domain);
             });
+        }
+
+        public async Task<string> GetOriginalValueForV1(string pseudonym, string domain)
+        {
+            var query = new Dictionary<string, string> { ["domain"] = domain, ["pseudonym"] = pseudonym };
+
+            var response = await Client.GetAsync(QueryHelpers.AddQueryString("$de-pseudonymize", query));
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var parameters = FhirParser.Parse<Parameters>(content);
+
+            var original = parameters.GetSingleValue<FhirString>(pseudonym);
+            if (original == null)
+            {
+                logger.LogWarning("Failed to de-pseudonymize. Returning original value.", pseudonym);
+                return pseudonym;
+            }
+
+            return original.Value;
+        }
+
+        public async Task<string> GetOriginalValueForV2(string pseudonym, string domain)
+        {
+            var parameters = new Parameters()
+                .Add("target", new FhirString(domain))
+                .Add("pseudonym", new FhirString(pseudonym));
+
+            var parametersBody = FhirSerializer.SerializeToString(parameters);
+            var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
+
+            try
+            {
+                var response = await Client.PostAsync("$de-pseudonymize", content);
+                response.EnsureSuccessStatusCode();
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var responseParameters = FhirParser.Parse<Parameters>(responseContent);
+
+                return responseParameters.GetSingleValue<FhirString>(pseudonym).Value;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc, "Failed to de-pseudonymize. Returning original value.");
+                return pseudonym;
+            }
         }
 
         private async Task<string> GetOrCreatePseudonymForV1(string value, string domain)
@@ -118,8 +154,8 @@ namespace FhirPseudonymizer
             var query = new Dictionary<string, string> { ["domain"] = domain, ["original"] = value };
 
             // this currently uses a HttpClient instead of the FhirClient to leverage
-            // Polly's resilience support. Once FhirClient allows for overring the HttpClient,
-            // we can simplify this code a lot.
+            // Polly, tracing, and metrics support. Once FhirClient allows for overring the HttpClient,
+            // we can simplify this code a lot: https://github.com/FirelyTeam/firely-net-sdk/issues/1483
             var response = await Client.GetAsync(QueryHelpers.AddQueryString("$pseudonymize-allow-create", query));
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
