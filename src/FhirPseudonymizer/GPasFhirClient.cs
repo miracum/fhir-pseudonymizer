@@ -139,7 +139,10 @@ namespace FhirPseudonymizer
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var responseParameters = FhirParser.Parse<Parameters>(responseContent);
 
-                return responseParameters.GetSingleValue<FhirString>(pseudonym).Value;
+                var pseudonymResultSet = responseParameters.Get("pseudonym-result-set").First();
+                var originalPart = pseudonymResultSet.Part.Find(component => component.Name == "original");
+
+                return originalPart.Value.ToString();
             }
             catch (Exception exc)
             {
