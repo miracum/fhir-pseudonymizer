@@ -36,7 +36,7 @@ namespace FhirPseudonymizer
 
             var resource = context.Object as Resource;
             var httpContext = context.HttpContext;
-            var json = FhirSerializer.SerializeToString(resource);
+            var json = await FhirSerializer.SerializeToStringAsync(resource);
             await httpContext.Response.WriteAsync(json);
         }
     }
@@ -63,7 +63,7 @@ namespace FhirPseudonymizer
             var json = await reader.ReadToEndAsync();
             try
             {
-                var resource = FhirParser.Parse(json);
+                var resource = await FhirParser.ParseAsync(json);
                 return await InputFormatterResult.SuccessAsync(resource);
             }
             catch (Exception exc)

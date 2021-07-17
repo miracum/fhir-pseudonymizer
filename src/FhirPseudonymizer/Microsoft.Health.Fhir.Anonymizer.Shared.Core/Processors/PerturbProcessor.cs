@@ -5,6 +5,7 @@ using EnsureThat;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.Model;
 using MathNet.Numerics.Distributions;
+using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings;
 
@@ -43,7 +44,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             }
             else if (s_quantityTypeNames.Contains(node.InstanceType, StringComparer.InvariantCultureIgnoreCase))
             {
-                valueNode = node.Children(Constants.ValueNodeName).Cast<ElementNode>().FirstOrDefault();
+                valueNode = node.Children(Constants.ValueNodeName).CastElementNodes().FirstOrDefault();
             }
 
             // Perturb will not happen if value node is empty or visited.
@@ -55,7 +56,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             var perturbSetting = PerturbSetting.CreateFromRuleSettings(settings);
 
             AddNoise(valueNode, perturbSetting);
-            context.VisitedNodes.UnionWith(node.Descendants().Cast<ElementNode>());
+            context.VisitedNodes.UnionWith(node.Descendants().CastElementNodes());
             result.AddProcessRecord(AnonymizationOperations.Perturb, node);
             return result;
         }
