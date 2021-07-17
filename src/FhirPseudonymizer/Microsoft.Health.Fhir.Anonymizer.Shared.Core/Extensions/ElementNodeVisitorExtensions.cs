@@ -12,7 +12,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (shouldVisitChild)
             {
-                foreach (var child in node.Children().Cast<ElementNode>())
+                foreach (var child in node.Children().CastElementNodes())
                 {
                     child.Accept(visitor);
                 }

@@ -172,7 +172,7 @@ namespace FhirPseudonymizer
                 .Add("original", new FhirString(value));
 
             var parametersBody = FhirSerializer.SerializeToString(parameters);
-            var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
+            using var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
             var response = await Client.PostAsync("$pseudonymize-allow-create", content);
             response.EnsureSuccessStatusCode();
             var responseContent = await response.Content.ReadAsStringAsync();

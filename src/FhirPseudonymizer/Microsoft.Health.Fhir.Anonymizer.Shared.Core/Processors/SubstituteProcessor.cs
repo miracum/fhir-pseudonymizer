@@ -72,8 +72,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             var replaceChildrenNames = replacementNode.Children().Select(element => element.Name).ToHashSet();
             foreach (var name in replaceChildrenNames)
             {
-                var children = node.Children(name).Cast<ElementNode>().ToList();
-                var targetChildren = replacementNode.Children(name).Cast<ElementNode>().ToList();
+                var children = node.Children(name).CastElementNodes().ToList();
+                var targetChildren = replacementNode.Children(name).CastElementNodes().ToList();
 
                 var i = 0;
                 foreach (var child in children)
@@ -110,7 +110,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             // children nodes not presented in replacement value, we need either remove or keep a dummy copy
             var nonReplacementChildren = node.Children()
                 .Where(element => !replaceChildrenNames.Contains(element.Name))
-                .Cast<ElementNode>().ToList();
+                .CastElementNodes().ToList();
             foreach (var child in nonReplacementChildren)
             {
                 if (visitedNodes.Contains(child))
@@ -137,7 +137,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         {
             var shouldKeep = false;
             // If a child (no matter how deep) has been modified, this node should be kept
-            foreach (var child in node.Children().Cast<ElementNode>())
+            foreach (var child in node.Children().CastElementNodes())
             {
                 shouldKeep |= GenerateKeepNodeSetForSubstitution(child, visitedNodes, keepNodes);
             }
@@ -156,7 +156,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         private void MarkSubstitutedFragmentAsVisited(ElementNode node, HashSet<ElementNode> visitedNodes)
         {
             visitedNodes.Add(node);
-            foreach (var child in node.Children().Cast<ElementNode>())
+            foreach (var child in node.Children().CastElementNodes())
             {
                 MarkSubstitutedFragmentAsVisited(child, visitedNodes);
             }

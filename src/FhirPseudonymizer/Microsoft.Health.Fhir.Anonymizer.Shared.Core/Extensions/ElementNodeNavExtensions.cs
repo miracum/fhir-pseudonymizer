@@ -11,18 +11,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             return node?.Children(Constants.EntryNodeName)
                 .Select(entry => entry?.Children(Constants.EntryResourceNodeName).FirstOrDefault())
                 .Where(resource => resource != null)
-                .Cast<ElementNode>()
+                .CastElementNodes()
                 .ToList();
         }
 
         public static List<ElementNode> GetContainedChildren(this ElementNode node)
         {
-            return node?.Children(Constants.ContainedNodeName).Cast<ElementNode>().ToList();
+            return node?.Children(Constants.ContainedNodeName).CastElementNodes().ToList();
         }
 
         public static IEnumerable<ElementNode> ResourceDescendantsWithoutSubResource(this ElementNode node)
         {
-            foreach (var child in node.Children().Cast<ElementNode>())
+            foreach (var child in node.Children().CastElementNodes())
             {
                 // Skip sub resources in bundle entry and contained list
                 if (child.IsFhirResource())

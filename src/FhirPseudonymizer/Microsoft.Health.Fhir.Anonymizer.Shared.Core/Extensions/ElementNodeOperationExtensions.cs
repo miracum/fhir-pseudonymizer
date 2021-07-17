@@ -34,7 +34,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
                 return true;
             }
 
-            var children = node.Children().Cast<ElementNode>().ToList();
+            var children = node.Children().CastElementNodes().ToList();
             foreach (var child in children)
             {
                 // Remove child if it is null => return true
