@@ -89,7 +89,7 @@ jobs:
           if [ "$IS_PULL_REQUEST" == "true" ]; then
             echo "::set-output name=platforms::linux/amd64"
           else
-            echo "::set-output name=platforms::linux/amd64,linux/arm64,linux/arm32"
+            echo "::set-output name=platforms::linux/amd64,linux/arm64"
           fi
         env:
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
