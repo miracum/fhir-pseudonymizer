@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
+using Prometheus;
 
 namespace FhirPseudonymizer.Controllers
 {
@@ -27,6 +28,15 @@ namespace FhirPseudonymizer.Controllers
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public class FhirController : ControllerBase
     {
+        private static readonly Histogram BundleSizeHistogram = Metrics
+            .CreateHistogram("fhirpseudonymizer_received_bundle_size", "Histogram of received bundle sizes.",
+        new HistogramConfiguration
+        {
+            // we divide measurements in 10 buckets of 5 each, up to 50.
+            Buckets = Histogram.LinearBuckets(start: 1, width: 5, count: 20),
+            LabelNames = new[] { "operation" },
+        });
+
         private readonly IAnonymizerEngine anonymizer;
         private readonly IConfiguration config;
         private readonly IDePseudonymizerEngine dePseudonymizer;
@@ -39,7 +49,17 @@ namespace FhirPseudonymizer.Controllers
             this.logger = logger;
             this.anonymizer = anonymizer;
             this.dePseudonymizer = dePseudonymizer;
+
+            BadRequestOutcome = new();
+            BadRequestOutcome.Issue.Add(new OperationOutcome.IssueComponent
+            {
+                Severity = OperationOutcome.IssueSeverity.Error,
+                Code = OperationOutcome.IssueType.Processing,
+                Diagnostics = "Received malformed or missing resource"
+            });
         }
+
+        private OperationOutcome BadRequestOutcome { get; }
 
         /// <summary>
         ///     Apply de-identification rules to the given FHIR resource. The rules can be configured using the anonymization.yaml
@@ -59,7 +79,7 @@ namespace FhirPseudonymizer.Controllers
             {
                 logger.LogWarning("Bad Request: received request body is empty.");
                 Response.StatusCode = StatusCodes.Status400BadRequest;
-                return GetBadRequestOutcome();
+                return BadRequestOutcome;
             }
 
             logger.LogDebug("De-Identifying resource {resourceType}/{resourceId}",
@@ -78,9 +98,11 @@ namespace FhirPseudonymizer.Controllers
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
             activity?.AddTag("resource.type", resource.TypeName);
             activity?.AddTag("resource.id", resource.Id);
+
             if (resource is Bundle bundle)
             {
                 activity?.AddTag("bundle.size", bundle.Entry.Count);
+                BundleSizeHistogram.WithLabels(nameof(DeIdentify)).Observe(bundle.Entry.Count);
             }
 
             try
@@ -109,11 +131,16 @@ namespace FhirPseudonymizer.Controllers
             {
                 logger.LogWarning("Bad Request: received request body is empty.");
                 Response.StatusCode = StatusCodes.Status400BadRequest;
-                return GetBadRequestOutcome();
+                return BadRequestOutcome;
             }
 
             logger.LogDebug("De-Pseudonymizing resource {resourceType}/{resourceId}",
                 resource.TypeName, resource.Id);
+
+            if (resource is Bundle bundle)
+            {
+                BundleSizeHistogram.WithLabels(nameof(DePseudonymize)).Observe(bundle.Entry.Count);
+            }
 
             try
             {
@@ -152,18 +179,6 @@ namespace FhirPseudonymizer.Controllers
                     new () {Mode = CapabilityStatement.RestfulCapabilityMode.Server}
                 }
             };
-        }
-
-        private static OperationOutcome GetBadRequestOutcome()
-        {
-            var outcome = new OperationOutcome();
-            outcome.Issue.Add(new OperationOutcome.IssueComponent
-            {
-                Severity = OperationOutcome.IssueSeverity.Error,
-                Code = OperationOutcome.IssueType.Processing,
-                Diagnostics = "Received malformed or missing resource"
-            });
-            return outcome;
         }
 
         private static OperationOutcome GetInternalErrorOutcome(Exception exc)
