@@ -25,7 +25,6 @@ namespace FhirPseudonymizer
                         options.UseUtcTimestamp = true;
                         options.IncludeScopes = true;
                         options.TimestampFormat = "yyyy-MM-ddTHH:mm:ssZ ";
-                        options.SingleLine = true;
                     }));
         }
     }
