@@ -49,7 +49,17 @@ namespace FhirPseudonymizer.Controllers
             this.logger = logger;
             this.anonymizer = anonymizer;
             this.dePseudonymizer = dePseudonymizer;
+
+            BadRequestOutcome = new();
+            BadRequestOutcome.Issue.Add(new OperationOutcome.IssueComponent
+            {
+                Severity = OperationOutcome.IssueSeverity.Error,
+                Code = OperationOutcome.IssueType.Processing,
+                Diagnostics = "Received malformed or missing resource"
+            });
         }
+
+        private OperationOutcome BadRequestOutcome { get; }
 
         /// <summary>
         ///     Apply de-identification rules to the given FHIR resource. The rules can be configured using the anonymization.yaml
@@ -169,21 +179,6 @@ namespace FhirPseudonymizer.Controllers
                     new () {Mode = CapabilityStatement.RestfulCapabilityMode.Server}
                 }
             };
-        }
-
-        private static OperationOutcome BadRequestOutcome
-        {
-            get
-            {
-                var outcome = new OperationOutcome();
-                outcome.Issue.Add(new OperationOutcome.IssueComponent
-                {
-                    Severity = OperationOutcome.IssueSeverity.Error,
-                    Code = OperationOutcome.IssueType.Processing,
-                    Diagnostics = "Received malformed or missing resource"
-                });
-                return outcome;
-            }
         }
 
         private static OperationOutcome GetInternalErrorOutcome(Exception exc)
