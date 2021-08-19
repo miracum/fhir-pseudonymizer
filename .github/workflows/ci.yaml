@@ -105,6 +105,24 @@ jobs:
           platforms: ${{ steps.platforms.outputs.platforms }}
       - name: Print Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+      - name: Install Cosign
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: sigstore/cosign-installer@main
+      - name: Store signing key in tmp file
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          COSIGN_KEY: ${{ secrets.MIRACUM_COSIGN_PRIVATE_KEY }}
+        run: echo "$COSIGN_KEY" > /tmp/cosign.key
+      - name: Sign images
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          COSIGN_PASSWORD: ${{ secrets.MIRACUM_COSIGN_PASSWORD }}
+          IMAGES: ${{ steps.docker_meta.outputs.tags }}
+        run: |
+          while read -r image; do
+            echo "Signing $image"
+            cosign sign -key /tmp/cosign.key "$image"
+          done <<< "$IMAGES"
   release:
     needs: build
     name: Release
