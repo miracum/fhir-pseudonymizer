@@ -13,7 +13,7 @@ docker run --rm -i -p 8080:8080 ghcr.io/miracum/fhir-pseudonymizer:latest
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
 ```
 
-All container images are pushed to [ghcr.io/miracum/fhir-pseudonymizer](https://github.com/orgs/miracum/packages/container/package/fhir-pseudonymizer) and [quay.io/miracum/fhir-pseudonymizer](https://quay.io/repository/miracum/fhir-pseudonymizer?tag=latest&tab=tags).
+All container images are pushed to [ghcr.io/miracum/fhir-pseudonymizer](https://github.com/orgs/miracum/packages/container/package/fhir-pseudonymizer).
 
 For deployment in Kubernetes see <https://github.com/miracum/charts/tree/master/charts/fhir-gateway> for a Helm Chart using the FHIR Pseudonymizer as one of its components.
 
