@@ -11,6 +11,7 @@ using AspNetCore.Authentication.ApiKey;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -38,6 +39,14 @@ namespace FhirPseudonymizer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.Fastest);
+            services.AddResponseCompression(options =>
+            {
+                options.MimeTypes =
+                    ResponseCompressionDefaults.MimeTypes.Concat(
+                        new[] { "application/fhir+json" });
+            });
+
             var apiKey = Configuration.GetValue<string>("ApiKey");
             services.AddAuthentication(ApiKeyDefaults.AuthenticationScheme)
                 .AddApiKeyInHeaderOrQueryParams(options =>
@@ -188,6 +197,9 @@ namespace FhirPseudonymizer
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseMiddleware<RequestCompression>();
+            app.UseResponseCompression();
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v2/swagger.json", "FhirPseudonymizer v2"));
