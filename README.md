@@ -13,7 +13,11 @@ docker run --rm -i -p 8080:8080 ghcr.io/miracum/fhir-pseudonymizer:latest
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
 ```
 
-All container images are pushed to [ghcr.io/miracum/fhir-pseudonymizer](https://github.com/orgs/miracum/packages/container/package/fhir-pseudonymizer).
+Container images are pushed to the following registries:
+
+- `ghcr.io/miracum/fhir-pseudonymizer:latest`
+- `quay.io/miracum/fhir-pseudonymizer:latest`
+- `harbor.miracum.org/miracum-etl/fhir-pseudonymizer:latest`
 
 For deployment in Kubernetes see <https://github.com/miracum/charts/tree/master/charts/fhir-gateway> for a Helm Chart using the FHIR Pseudonymizer as one of its components.
 
@@ -140,6 +144,15 @@ Statistics        Avg      Stdev        Max
     1xx - 0, 2xx - 54033, 3xx - 0, 4xx - 0, 5xx - 0
     others - 0
   Throughput:    12.97MB/s
+```
+
+## Verify image integrity
+
+All released container images are signed using [cosign](https://github.com/sigstore/cosign).
+The public key hosted at <https://miracum.github.io/cosign.pub> (see [here](https://github.com/miracum/miracum.github.io) for the repository source) may be used to verify them:
+
+```sh
+cosign verify -key https://miracum.github.io/cosign.pub ghcr.io/miracum/fhir-pseudonymizer:latest
 ```
 
 ## Attribution
