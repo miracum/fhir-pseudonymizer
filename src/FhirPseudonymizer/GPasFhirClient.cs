@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 
 namespace FhirPseudonymizer
 {
@@ -22,6 +23,22 @@ namespace FhirPseudonymizer
 
     public class GPasFhirClient : IGPasFhirClient
     {
+        private static readonly Counter TotalGPasRequests = Metrics
+            .CreateCounter("fhirpseudonymizer_gpas_requests_total",
+                "Total number of requests against the gPas service.",
+                new CounterConfiguration()
+                {
+                    LabelNames = new[] { "operation" },
+                });
+
+        private static readonly Counter TotalGPasRequestCacheMisses = Metrics
+            .CreateCounter("fhirpseudonymizer_gpas_requests_cache_misses_total",
+                "Total number of requests against gPas that could not be resolved via the internal cache.",
+                new CounterConfiguration()
+                {
+                    LabelNames = new[] { "operation" },
+                });
+
         private readonly ILogger<GPasFhirClient> logger;
 
         private readonly bool useGpasV2FhirApi;
@@ -67,8 +84,12 @@ namespace FhirPseudonymizer
 
         public async Task<string> GetOrCreatePseudonymFor(string value, string domain)
         {
+            TotalGPasRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
+
             return await PseudonymCache.GetOrCreateAsync((value, domain), async entry =>
             {
+                TotalGPasRequestCacheMisses.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
+
                 entry.SetSize(1)
                     .SetSlidingExpiration(SlidingExpiration)
                     .SetAbsoluteExpiration(AbsoluteExpiration);
@@ -86,8 +107,12 @@ namespace FhirPseudonymizer
 
         public async Task<string> GetOriginalValueFor(string pseudonym, string domain)
         {
+            TotalGPasRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
+
             return await OriginalValueCache.GetOrCreateAsync((pseudonym, domain), async entry =>
             {
+                TotalGPasRequestCacheMisses.WithLabels(nameof(GetOriginalValueFor)).Inc();
+
                 entry.SetSize(1)
                     .SetSlidingExpiration(SlidingExpiration)
                     .SetAbsoluteExpiration(AbsoluteExpiration);
