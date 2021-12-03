@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 {
     public class AnonymizerSettings
@@ -7,5 +9,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
         public bool ValidateInput { get; set; }
 
         public bool ValidateOutput { get; set; }
+
+        public Dictionary<string, object> DynamicRuleSettings { get; set; }
     }
 }

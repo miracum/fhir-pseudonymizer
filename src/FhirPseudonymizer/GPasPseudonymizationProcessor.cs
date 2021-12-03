@@ -26,6 +26,9 @@ namespace FhirPseudonymizer
                 return processResult;
             }
 
+            // prefix the domain, if set
+            var domainPrefix = settings?.GetValueOrDefault("domain-prefix", string.Empty);
+
             var domain = settings?
                 .GetValueOrDefault("domain", null)?
                 .ToString();
@@ -44,11 +47,11 @@ namespace FhirPseudonymizer
 
                 node.Value = ReferenceUtility.TransformReferenceId(
                     input,
-                    x => GetOrCreatePseudonym(x, domain));
+                    x => GetOrCreatePseudonym(x, domainPrefix + domain));
             }
             else
             {
-                node.Value = GetOrCreatePseudonym(input, domain);
+                node.Value = GetOrCreatePseudonym(input, domainPrefix + domain);
             }
 
             processResult.AddProcessRecord(AnonymizationOperations.Pseudonymize, node);
