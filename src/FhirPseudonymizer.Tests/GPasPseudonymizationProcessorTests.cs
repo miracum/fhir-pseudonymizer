@@ -14,10 +14,10 @@ public class GPasPseudonymizationProcessorTests
 {
     public static IEnumerable<object[]> GetProcessData()
     {
-        yield return new object[] {"foo-", "bar", new FhirString("12345"), "foo-bar"};
-        yield return new object[] {null, "bar", new FhirString("12345"), "bar"};
-        yield return new object[] {"foo-", null, new ResourceReference("Patient/12345"), "foo-Patient"};
-        yield return new object[] {null, null, new ResourceReference("Patient/12345"), "Patient"};
+        yield return new object[] { "foo-", "bar", new FhirString("12345"), "foo-bar" };
+        yield return new object[] { null, "bar", new FhirString("12345"), "bar" };
+        yield return new object[] { "foo-", null, new ResourceReference("Patient/12345"), "foo-Patient" };
+        yield return new object[] { null, null, new ResourceReference("Patient/12345"), "Patient" };
     }
 
     [Theory]
@@ -35,7 +35,7 @@ public class GPasPseudonymizationProcessorTests
         }
 
         processor.Process(node, null,
-            new Dictionary<string, object> {{"domain", domainName}, {"domain-prefix", domainPrefix}});
+            new Dictionary<string, object> { { "domain", domainName }, { "domain-prefix", domainPrefix } });
 
 
         mock.Mock<IGPasFhirClient>()

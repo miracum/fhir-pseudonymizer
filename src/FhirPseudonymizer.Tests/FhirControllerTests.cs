@@ -29,7 +29,7 @@ public class FhirControllerTests
 
 
         var parameters = new Parameters()
-            .Add("settings", new[] {Tuple.Create<String, Base>(domainPrefix, domainPrefixValue)})
+            .Add("settings", new[] { Tuple.Create<String, Base>(domainPrefix, domainPrefixValue) })
             .Add("resource", new Patient());
 
         controller.DeIdentify(parameters);
