@@ -122,7 +122,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 
         private Dictionary<string, object> MergeSettings(Dictionary<string, object> ruleSettings)
         {
-            if (_settings?.DynamicRuleSettings.Any() != true)
+            if (_settings?.DynamicRuleSettings?.Any() != true)
             {
                 return ruleSettings;
             }
