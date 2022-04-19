@@ -95,7 +95,7 @@ Pseudonymization via gPAS supports a `domain-prefix` rule setting which can be u
 The following example shows how to use this feature to use a single service configuration in order to support multiple projects which have the same basic domain names, prefixed by a project name.
 
 ### Example
-gPAS domains for patient ids:
+gPAS domains for patient IDs:
 
 | project | domain |
 | ------- | ------:|
