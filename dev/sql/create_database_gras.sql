@@ -188,7 +188,7 @@ CREATE TABLE `validate` (
 SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 DELIMITER //
 CREATE TRIGGER `deleteDomain` BEFORE DELETE ON `domain` FOR EACH ROW BEGIN
-    INSERT INTO hist_domain(name,description,timestamp,action) 
+    INSERT INTO hist_domain(name,description,timestamp,action)
         VALUES(OLD.name,OLD.description, now(),'delete');
     DELETE FROM gras.permission WHERE domain_name = OLD.name;
 END//
@@ -228,7 +228,7 @@ SET SQL_MODE=@OLDTMP_SQL_MODE;
 SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 DELIMITER //
 CREATE TRIGGER `deleteProject` BEFORE DELETE ON `project` FOR EACH ROW BEGIN
-    INSERT INTO hist_project(name,description,timestamp,action) 
+    INSERT INTO hist_project(name,description,timestamp,action)
         VALUES(OLD.name,OLD.description, now(),'delete');
     DELETE FROM gras.group_ WHERE project_name = OLD.name;
     DELETE FROM gras.role WHERE project_name = OLD.name;
@@ -267,7 +267,7 @@ CREATE TRIGGER `insertGroupRoleMapping` BEFORE INSERT ON `group_role_mapping` FO
     IF NOT EXISTS (SELECT * FROM (SELECT r.id AS role_id , g.id AS group_id FROM role r, group_ g WHERE r.id = NEW.role_id AND g.id = NEW.group_id AND g.project_name = r.project_name) AS joined) THEN
         set msg = "Role and Group have to belong to the same Project";
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = msg;
-    END IF;        
+    END IF;
 END//
 DELIMITER ;
 SET SQL_MODE=@OLDTMP_SQL_MODE;
@@ -275,7 +275,7 @@ SET SQL_MODE=@OLDTMP_SQL_MODE;
 -- Exportiere Struktur von Trigger gras.updateDomain
 SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 DELIMITER //
-CREATE TRIGGER `updateDomain` BEFORE UPDATE ON `domain` FOR EACH ROW INSERT INTO hist_domain(name,description,timestamp,action) 
+CREATE TRIGGER `updateDomain` BEFORE UPDATE ON `domain` FOR EACH ROW INSERT INTO hist_domain(name,description,timestamp,action)
 		VALUES(OLD.name,OLD.description, now(),'update')//
 DELIMITER ;
 SET SQL_MODE=@OLDTMP_SQL_MODE;
@@ -308,7 +308,7 @@ SET SQL_MODE=@OLDTMP_SQL_MODE;
 -- Exportiere Struktur von Trigger gras.updateProject
 SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
 DELIMITER //
-CREATE TRIGGER `updateProject` BEFORE UPDATE ON `project` FOR EACH ROW INSERT INTO hist_project(name,description,timestamp,action) 
+CREATE TRIGGER `updateProject` BEFORE UPDATE ON `project` FOR EACH ROW INSERT INTO hist_project(name,description,timestamp,action)
         VALUES(OLD.name,OLD.description, now(),'update')//
 DELIMITER ;
 SET SQL_MODE=@OLDTMP_SQL_MODE;
@@ -338,15 +338,15 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 -- Exportiere Struktur von View gras.domainuser_role
 -- Entferne temporäre Tabelle und erstelle die eigentliche View
 DROP TABLE IF EXISTS `domainuser_role`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `domainuser_role` AS select 
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `domainuser_role` AS select
 
 distinct concat_ws('@',`p`.`user_name`,`p`.`domain_name`) AS `domainuser`,
-`r`.`name` AS `role` 
+`r`.`name` AS `role`
 from (((`permission` `p` join `group_role_mapping` `m`) join `role` `r`) join `user` `u`)
 
 where (
-(`p`.`group_id` = `m`.`group_id`) and 
-(`m`.`role_id` = `r`.`id`) and 
+(`p`.`group_id` = `m`.`group_id`) and
+(`m`.`role_id` = `r`.`id`) and
 (`u`.`name`=`p`.`user_name`) and
 (`u`.`active`= 1)
 );
@@ -418,13 +418,13 @@ END$$
 
 -- user and privileges
 DROP procedure IF EXISTS `createUser`$$
-CREATE PROCEDURE `createUser`(	
+CREATE PROCEDURE `createUser`(
 	IN userName VARCHAR(255),
     IN password VARCHAR(255),
     IN description VARCHAR(255)
 )
 BEGIN
-	INSERT IGNORE INTO `user` SET `name`=userName, `password`=SHA2(password, 256), `active`=1, `description`=description;    
+	INSERT IGNORE INTO `user` SET `name`=userName, `password`=SHA2(password, 256), `active`=1, `description`=description;
 END$$
 
 
@@ -443,7 +443,7 @@ DROP procedure IF EXISTS `createRole`$$
 CREATE PROCEDURE `createRole`(
 	IN projectName VARCHAR(255),
 	IN roleName VARCHAR(255),
-	IN description VARCHAR(255)   
+	IN description VARCHAR(255)
 )
 BEGIN
     INSERT INTO `role` SET `name`=roleName, `project_name`=projectName, `description`=description;
@@ -454,11 +454,11 @@ DROP procedure IF EXISTS `createGroupRoleMapping`$$
 CREATE PROCEDURE `createGroupRoleMapping`(
 	IN projectName VARCHAR(255),
 	IN groupName VARCHAR(255),
-	IN roleName VARCHAR(255)   
+	IN roleName VARCHAR(255)
 )
 BEGIN
 	INSERT INTO `group_role_mapping` (`group_id`, `role_id`) VALUES (
-		(SELECT id from `group_` WHERE `name`=groupName AND `project_name`=projectName), 
+		(SELECT id from `group_` WHERE `name`=groupName AND `project_name`=projectName),
 		(SELECT id FROM `role` WHERE `name`=roleName)
 	);
 END$$
@@ -468,7 +468,7 @@ DROP procedure IF EXISTS `grantAdminRights`$$
 CREATE PROCEDURE `grantAdminRights`(
 	IN domainName VARCHAR(255),
 	IN projectName VARCHAR(255),
-	IN userName VARCHAR(255)   
+	IN userName VARCHAR(255)
 )
 BEGIN
     INSERT INTO `permission` (`group_id`, `user_name`, `domain_name`)

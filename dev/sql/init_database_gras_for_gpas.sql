@@ -31,7 +31,7 @@ CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-users'), CONCAT
 CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-admins'), CONCAT('role.',@projectName,'.user'));
 CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-admins'), CONCAT('role.',@projectName,'.admin'));
 
--- default user 
+-- default user
 -- createUser(<userName>, <password>, <description>)
 call createUser('admin', 'ttp-tools', 'user for admin privileges');
 call createUser('user', 'ttp-tools', 'user for standard privileges');
