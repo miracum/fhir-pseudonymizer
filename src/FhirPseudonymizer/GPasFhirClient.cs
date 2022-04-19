@@ -156,24 +156,22 @@ namespace FhirPseudonymizer
             var parametersBody = FhirSerializer.SerializeToString(parameters);
             using var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
 
-            try
+            var response = await Client.PostAsync("$dePseudonymize", content);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var responseParameters = FhirParser.Parse<Parameters>(responseContent);
+
+            var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
+            var original = firstResponseParameter?.Part.Find(part => part.Name == "original");
+            var originalIdentifier = original?.Value as Identifier;
+            if (originalIdentifier == null)
             {
-                var response = await Client.PostAsync("$de-pseudonymize", content);
-                response.EnsureSuccessStatusCode();
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var responseParameters = FhirParser.Parse<Parameters>(responseContent);
-
-                var pseudonymResultSet = responseParameters.Get("pseudonym-result-set").First();
-                var originalPart = pseudonymResultSet.Part.Find(component => component.Name == "original");
-
-                return originalPart.Value.ToString();
-            }
-            catch (Exception exc)
-            {
-                logger.LogError(exc, "Failed to de-pseudonymize. Returning original value.");
+                logger.LogWarning("Failed to de-pseudonymize. Returning original value.", pseudonym);
                 return pseudonym;
             }
+
+            return originalIdentifier.Value.ToString();
         }
 
         private async Task<string> GetOrCreatePseudonymForV1(string value, string domain)
@@ -198,19 +196,21 @@ namespace FhirPseudonymizer
 
             var parametersBody = FhirSerializer.SerializeToString(parameters);
             using var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
-            var response = await Client.PostAsync("$pseudonymize-allow-create", content);
+            var response = await Client.PostAsync("$pseudonymizeAllowCreate", content);
+            logger.LogDebug("Request to $pseudonymizeAllowCreate responded with: " + response);
             response.EnsureSuccessStatusCode();
             var responseContent = await response.Content.ReadAsStringAsync();
             var responseParameters = FhirParser.Parse<Parameters>(responseContent);
 
             var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
             var pseudonym = firstResponseParameter?.Part.Find(part => part.Name == "pseudonym");
-            if (pseudonym?.Value == null)
+            var pseudonymIdentifier = pseudonym?.Value as Identifier;
+            if (pseudonymIdentifier == null)
             {
                 throw new InvalidOperationException("No pseudonym included in gPAS reponse.");
             }
 
-            return pseudonym.Value.ToString();
+            return pseudonymIdentifier.Value.ToString();
         }
     }
 }
