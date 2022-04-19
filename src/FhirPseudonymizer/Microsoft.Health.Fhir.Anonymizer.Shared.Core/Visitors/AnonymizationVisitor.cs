@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
 using Hl7.Fhir.ElementModel;
@@ -19,14 +20,17 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 
         private readonly ILogger _logger = AnonymizerLogging.CreateLogger<AnonymizationVisitor>();
         private readonly Dictionary<string, IAnonymizerProcessor> _processors;
+        private readonly AnonymizerSettings _settings;
         private readonly AnonymizationFhirPathRule[] _rules;
         private readonly HashSet<ElementNode> _visitedNodes = new HashSet<ElementNode>();
 
         public AnonymizationVisitor(AnonymizationFhirPathRule[] rules,
-            Dictionary<string, IAnonymizerProcessor> processors)
+            Dictionary<string, IAnonymizerProcessor> processors,
+            AnonymizerSettings settings = null)
         {
             _rules = rules;
             _processors = processors;
+            _settings = settings;
         }
 
         public bool AddSecurityTag { get; set; } = true;
@@ -105,7 +109,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                 foreach (var matchNode in matchNodes)
                 {
                     resultOnRule.Update(
-                        ProcessNodeRecursive(matchNode, _processors[method], context, rule.RuleSettings));
+                        ProcessNodeRecursive(matchNode, _processors[method], context, MergeSettings(rule.RuleSettings)));
                 }
 
                 LogProcessResult(node, rule, resultOnRule);
@@ -114,6 +118,19 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             }
 
             return result;
+        }
+
+        private Dictionary<string, object> MergeSettings(Dictionary<string, object> ruleSettings)
+        {
+            if (_settings?.DynamicRuleSettings?.Any() != true)
+            {
+                return ruleSettings;
+            }
+
+            // overwrites existing settings
+            return ImmutableArray.Create(ruleSettings, _settings.DynamicRuleSettings).SelectMany(dict => dict)
+                         .ToLookup(pair => pair.Key, pair => pair.Value)
+                         .ToDictionary(group => group.Key, group => group.Last());
         }
 
         private void LogProcessResult(ElementNode node, AnonymizationFhirPathRule rule, ProcessResult resultOnRule)

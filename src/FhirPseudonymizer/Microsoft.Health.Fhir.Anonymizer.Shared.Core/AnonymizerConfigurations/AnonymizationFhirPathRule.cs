@@ -68,5 +68,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
             return new AnonymizationFhirPathRule(path, expression, resourceType,
                 method, AnonymizerRuleType.FhirPathRule, path, config);
         }
+
+        public AnonymizationFhirPathRule ShallowCopy()
+        {
+            return (AnonymizationFhirPathRule)this.MemberwiseClone();
+        }
     }
 }

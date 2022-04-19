@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using EnsureThat;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.Model;
@@ -44,7 +46,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             EnsureArg.IsNotNull(resource, nameof(resource));
 
             ValidateInput(settings, resource);
-            var anonymizedResource = AnonymizeElement(resource.ToTypedElement()).ToPoco<Resource>();
+            var anonymizedResource = AnonymizeElement(resource.ToTypedElement(), settings).ToPoco<Resource>();
             ValidateOutput(settings, anonymizedResource);
 
             return anonymizedResource;
@@ -79,7 +81,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             EnsureArg.IsNotNull(element, nameof(element));
 
             var resourceNode = ElementNode.FromElement(element);
-            return resourceNode.Anonymize(_rules, _processors);
+            return resourceNode.Anonymize(_rules, _processors, settings);
         }
 
         public string AnonymizeJson(string json, AnonymizerSettings settings = null)

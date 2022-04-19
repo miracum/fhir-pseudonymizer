@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Hl7.Fhir.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
+using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Prometheus;
 
 namespace FhirPseudonymizer.Controllers
@@ -85,15 +87,24 @@ namespace FhirPseudonymizer.Controllers
             logger.LogDebug("De-Identifying resource {resourceType}/{resourceId}",
                 resource.TypeName, resource.Id);
 
+            var settings = new AnonymizerSettings();
             if (resource is Parameters param)
             {
-                return Anonymize(param.GetSingle("resource").Resource);
+
+                // parse dynamic rule settings
+                var dynamicSettings = param.GetSingle("settings")?.Part;
+                if (dynamicSettings?.Any() == true)
+                {
+                    settings.DynamicRuleSettings = dynamicSettings.ToDictionary(p => p.Name, p => p.Value as object);
+                }
+
+                return Anonymize(param.GetSingle("resource").Resource, settings);
             }
 
             return Anonymize(resource);
         }
 
-        private Resource Anonymize(Resource resource)
+        private Resource Anonymize(Resource resource, AnonymizerSettings anonymizerSettings = null)
         {
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
             activity?.AddTag("resource.type", resource.TypeName);
@@ -107,7 +118,7 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                return anonymizer.AnonymizeResource(resource);
+                return anonymizer.AnonymizeResource(resource, anonymizerSettings);
             }
             catch (Exception exc)
             {

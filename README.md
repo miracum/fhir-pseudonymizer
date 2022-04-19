@@ -43,7 +43,7 @@ fhirPathRules:
     domain: PATIENT
 ```
 
-Note that if the `domain` setting is omitted, and an id or reference is pseudonymized, then the resource name is used as the pseudonym domain. For example, pseudonymizing `"reference": "Patient/123"` will try to create a pseudonym for `123` in the `Patient` domain.
+Note that if the `domain` setting is omitted, and an ID or reference is pseudonymized, then the resource name is used as the pseudonym domain. For example, pseudonymizing `"reference": "Patient/123"` will try to create a pseudonym for `123` in the `Patient` domain.
 
 Note that all methods defined in [FHIR-Tools-for-Anonymization](https://github.com/microsoft/FHIR-Tools-for-Anonymization/) are supported. For example, to clamp a patient's birthdate if they were born before January 1st 1931 to 01/01/1930, use:
 
@@ -85,6 +85,106 @@ Additionally, there are some optional configuration values that can be set as en
 | `GPAS__VERSION`                 | Version of gPAS to support. There were breaking changes to the FHIR API starting in 1.10.2, so explicitely set this value to 1.10.2 if you are using it. | `"1.10.1"`                  |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
+
+## Dynamic rule settings
+
+Anonymization and pseudonymization rules in the `anonymization.yaml` config file can be overridden and/or extended on a per request basis.
+
+Pseudonymization via gPAS supports a `domain-prefix` rule setting which can be used to dynamically configure the target gPAS domain by providing its value as part of the request body.
+
+The following example shows how to use this feature to use a single service configuration in order to support multiple projects which have the same basic domain names, prefixed by a project name.
+
+### Example
+gPAS domains for patient IDs:
+
+| project | domain |
+| ------- | ------:|
+| miracum | miracum-patient |
+| test    | test-patient |
+
+`anonymization.yml`:
+```yml
+---
+fhirVersion: R4
+fhirPathRules:
+  - path: nodesByType('Identifier').where(type.coding.system='http://terminology.hl7.org/CodeSystem/v2-0203' and type.coding.code='MR').value
+    method: pseudonymize
+    domain: patient
+```
+Providing the prefix (i.e. miracum- or test-) via the request, pseudonymization can be done with the same rules for different projects.
+
+#### Request body
+
+Rule settings can be provided by using the `Parameters` resource with a `settings` parameter and parts consisting of the settings key and value.
+The `resource` parameter must contain the actual target resource.
+
+The following request body and the (fixed) configuration settings above will result in the target domain `miracum-patient`.
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "settings",
+      "part": [
+        {
+          "name": "domain-prefix",
+          "valueString": "miracum-"
+        }
+      ]
+    },
+    {
+      "name": "resource",
+      "resource": {
+        "resourceType": "Bundle",
+        "type": "transaction",
+        "entry": [
+          {
+            "fullUrl": "urn:uuid:3bc44de3-069d-442d-829b-f3ef68cae371",
+            "resource": {
+              "resourceType": "Patient",
+              "identifier": [
+                {
+                  "type": {
+                    "coding": [
+                      {
+                        "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                        "code": "MR"
+                      }
+                    ]
+                  },
+                  "system": "http://acme.org/mrns",
+                  "value": "12345"
+                }
+              ],
+              "name": [
+                {
+                  "family": "Jameson",
+                  "given": [
+                    "J",
+                    "Jonah"
+                  ]
+                }
+              ],
+              "gender": "male"
+            },
+            "request": {
+              "method": "POST",
+              "url": "Patient/12345"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Note: The domain name could also have been replaced completely by overriding the `domain` setting with the desired value. This works for all rule settings regardless of the `method` value.
+
+
+
+
 
 ## Development
 
