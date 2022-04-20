@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="5.1.0" />
+    <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="6.0.1" />
     <PackageReference Include="Hl7.Fhir.R4" Version="3.6.0" />
     <PackageReference Include="Hl7.FhirPath" Version="3.6.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.11.1" />
