@@ -41,8 +41,6 @@ namespace FhirPseudonymizer
 
         private readonly ILogger<GPasFhirClient> logger;
 
-        private readonly bool useGpasV2FhirApi;
-
         public GPasFhirClient(ILogger<GPasFhirClient> logger, IHttpClientFactory clientFactory, IConfiguration config)
         {
             this.logger = logger;
@@ -65,12 +63,23 @@ namespace FhirPseudonymizer
 
             var configGPasVersion = config.GetValue<string>("gPAS:Version");
             var supportedGPasVersion = SemVersion.Parse(configGPasVersion);
-            if (supportedGPasVersion >= SemVersion.Parse("1.10.2"))
+
+            if (supportedGPasVersion < SemVersion.Parse("1.10.2"))
             {
-                logger.LogInformation("Using gPAS >= 1.10.2 FHIR API. Configured gPAS version: {gpasVersion}",
-                    configGPasVersion);
-                useGpasV2FhirApi = true;
+                GetOrCreatePseudonymForResolver = GetOrCreatePseudonymForV1;
+                GetOriginalValueForResolver = GetOriginalValueForV1;
             }
+            else if (supportedGPasVersion == SemVersion.Parse("1.10.2"))
+            {
+                GetOrCreatePseudonymForResolver = GetOrCreatePseudonymForV2;
+                GetOriginalValueForResolver = GetOriginalValueForV2;
+            }
+            else
+            {
+                GetOrCreatePseudonymForResolver = GetOrCreatePseudonymForV2x;
+                GetOriginalValueForResolver = GetOriginalValueForV2x;
+            }
+
         }
 
         private IConfiguration Config { get; }
@@ -81,6 +90,8 @@ namespace FhirPseudonymizer
         private FhirJsonSerializer FhirSerializer { get; } = new();
         private TimeSpan SlidingExpiration { get; }
         private TimeSpan AbsoluteExpiration { get; }
+        private Func<string, string, Task<string>> GetOrCreatePseudonymForResolver { get; }
+        private Func<string, string, Task<string>> GetOriginalValueForResolver { get; }
 
         public async Task<string> GetOrCreatePseudonymFor(string value, string domain)
         {
@@ -96,12 +107,7 @@ namespace FhirPseudonymizer
 
                 logger.LogDebug("Getting or creating pseudonym for {value} in {domain}", value, domain);
 
-                if (useGpasV2FhirApi)
-                {
-                    return await GetOrCreatePseudonymForV2(value, domain);
-                }
-
-                return await GetOrCreatePseudonymForV1(value, domain);
+                return await GetOrCreatePseudonymForResolver(value, domain);
             });
         }
 
@@ -119,12 +125,7 @@ namespace FhirPseudonymizer
 
                 logger.LogDebug("Getting original value for pseudonym {pseudonym} from {domain}", pseudonym, domain);
 
-                if (useGpasV2FhirApi)
-                {
-                    return await GetOriginalValueForV2(pseudonym, domain);
-                }
-
-                return await GetOriginalValueForV1(pseudonym, domain);
+                return await GetOriginalValueForResolver(pseudonym, domain);
             });
         }
 
@@ -148,6 +149,35 @@ namespace FhirPseudonymizer
         }
 
         public async Task<string> GetOriginalValueForV2(string pseudonym, string domain)
+        {
+            var parameters = new Parameters()
+                .Add("target", new FhirString(domain))
+                .Add("pseudonym", new FhirString(pseudonym));
+
+            var parametersBody = FhirSerializer.SerializeToString(parameters);
+            using var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
+
+            try
+            {
+                var response = await Client.PostAsync("$de-pseudonymize", content);
+                response.EnsureSuccessStatusCode();
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var responseParameters = FhirParser.Parse<Parameters>(responseContent);
+
+                var pseudonymResultSet = responseParameters.Get("pseudonym-result-set").First();
+                var originalPart = pseudonymResultSet.Part.Find(component => component.Name == "original");
+
+                return originalPart.Value.ToString();
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc, "Failed to de-pseudonymize. Returning original value.");
+                return pseudonym;
+            }
+        }
+
+        public async Task<string> GetOriginalValueForV2x(string pseudonym, string domain)
         {
             var parameters = new Parameters()
                 .Add("target", new FhirString(domain))
@@ -189,6 +219,29 @@ namespace FhirPseudonymizer
         }
 
         private async Task<string> GetOrCreatePseudonymForV2(string value, string domain)
+        {
+            var parameters = new Parameters()
+                .Add("target", new FhirString(domain))
+                .Add("original", new FhirString(value));
+
+            var parametersBody = FhirSerializer.SerializeToString(parameters);
+            using var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
+            var response = await Client.PostAsync("$pseudonymize-allow-create", content);
+            response.EnsureSuccessStatusCode();
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var responseParameters = FhirParser.Parse<Parameters>(responseContent);
+
+            var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
+            var pseudonym = firstResponseParameter?.Part.Find(part => part.Name == "pseudonym");
+            if (pseudonym?.Value == null)
+            {
+                throw new InvalidOperationException("No pseudonym included in gPAS reponse.");
+            }
+
+            return pseudonym.Value.ToString();
+        }
+
+        private async Task<string> GetOrCreatePseudonymForV2x(string value, string domain)
         {
             var parameters = new Parameters()
                 .Add("target", new FhirString(domain))
