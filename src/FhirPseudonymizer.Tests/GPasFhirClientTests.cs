@@ -29,72 +29,82 @@ public class GPasFhirClientTests
         yield return new object[] { "1.10.3", HttpMethod.Post, "$dePseudonymize" };
     }
 
+    private static readonly Uri testBaseAddress = new Uri("http://gpas");
 
 
     private readonly string responseContent =
         "{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"pseudonym\",\"part\":[{\"name\":\"original\",\"valueIdentifier\":{\"system\":\"https://ths-greifswald.de/gpas\",\"value\":\"1\"}},{\"name\":\"target\",\"valueIdentifier\":{\"system\":\"https://ths-greifswald.de/gpas\",\"value\":\"PATIENT\"}},{\"name\":\"pseudonym\",\"valueIdentifier\":{\"system\":\"https://ths-greifswald.de/gpas\",\"value\":\"751770313\"}}]},{\"name\":\"42\",\"valueString\":\"24\"}]}";
+    private readonly Mock<HttpMessageHandler> messageHandlerMock;
+    private readonly Mock<IHttpClientFactory> clientFactoryMock;
+
+    public GPasFhirClientTests()
+    {
+        messageHandlerMock = CreateHttpMessageHandlerMock();
+        clientFactoryMock = CreateHttpClientFactoryMock(messageHandlerMock.Object);
+    }
 
     [Theory]
     [MemberData(nameof(GetOrCreatePseudonymFor_Data))]
     public async Task GetOrCreatePseudonymFor_ResolvesToApiVersionOperation(string gpasVersion, HttpMethod requestMethod, string requestUri)
     {
-        // arrange
-        var handlerMock = new Mock<HttpMessageHandler>();
-        handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>()
-            )
-            .ReturnsAsync(new HttpResponseMessage
-            {
-
-                StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(responseContent),
-            });
-
-        var baseAddress = new Uri("http://gpas");
-        var client = new HttpClient(handlerMock.Object)
-        {
-            BaseAddress = baseAddress
-        };
-
-        var mockFactory = new Mock<IHttpClientFactory>();
-        mockFactory.Setup(_ => _.CreateClient(It.IsAny<string>())).Returns(client);
-
-        // configuration
-        var inMemorySettings = new Dictionary<string, string> {
-            {"Cache:SizeLimit", "1"},
-            {"gPAS:Version", gpasVersion}
-        };
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(inMemorySettings)
-            .Build();
-
-        var gpasClient = new GPasFhirClient(new Mock<ILogger<GPasFhirClient>>().Object, mockFactory.Object,
-            config);
+        // create gpas client
+        var gpasClient = CreateGPasClient(gpasVersion);
 
         // act
         await gpasClient.GetOrCreatePseudonymFor("42", "domain");
 
 
         // verify
-        handlerMock.Protected().Verify(
+        VerifyRequest(requestMethod, requestUri);
+    }
+
+    private void VerifyRequest(HttpMethod requestMethod, string requestUri)
+    {
+        messageHandlerMock.Protected().Verify(
             "SendAsync",
             Times.Exactly(1),
             ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == requestMethod
-                    && req.RequestUri == new Uri(baseAddress.AbsoluteUri + requestUri)
-            ),
-            ItExpr.IsAny<CancellationToken>()
+                req.Method == requestMethod
+                && req.RequestUri == new Uri(testBaseAddress.AbsoluteUri + requestUri)
+            ), ItExpr.IsAny<CancellationToken>()
         );
+    }
+
+    private Mock<IHttpClientFactory> CreateHttpClientFactoryMock(HttpMessageHandler httpMessageHandler)
+    {
+        var client = new HttpClient(httpMessageHandler)
+        {
+            BaseAddress = testBaseAddress
+        };
+
+        var mock = new Mock<IHttpClientFactory>();
+        mock.Setup(_ => _.CreateClient(It.IsAny<string>())).Returns(client);
+        return mock;
     }
 
     [Theory]
     [MemberData(nameof(GetOriginalValueFor_Data))]
     public async Task GetOriginalValueFor_ResolvesToApiVersionOperation(string gpasVersion, HttpMethod requestMethod, string requestUri)
     {
-        // arrange
+        // create gpas client
+        var gpasClient = CreateGPasClient(gpasVersion);
+
+        // act
+        await gpasClient.GetOriginalValueFor("42", "domain");
+
+
+        // verify request uri and method
+        VerifyRequest(requestMethod, requestUri);
+    }
+
+    private GPasFhirClient CreateGPasClient(string gPasVersion)
+    {
+        return new GPasFhirClient(new Mock<ILogger<GPasFhirClient>>().Object, clientFactoryMock.Object,
+            CreateConfiguration(gPasVersion));
+    }
+
+    private Mock<HttpMessageHandler> CreateHttpMessageHandlerMock()
+    {
         var handlerMock = new Mock<HttpMessageHandler>();
         handlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>(
@@ -104,45 +114,20 @@ public class GPasFhirClientTests
             )
             .ReturnsAsync(new HttpResponseMessage
             {
-
                 StatusCode = HttpStatusCode.OK,
                 Content = new StringContent(responseContent),
             });
 
-        var baseAddress = new Uri("http://gpas");
-        var client = new HttpClient(handlerMock.Object)
-        {
-            BaseAddress = baseAddress
-        };
+        return handlerMock;
+    }
 
-        var mockFactory = new Mock<IHttpClientFactory>();
-        mockFactory.Setup(_ => _.CreateClient(It.IsAny<string>())).Returns(client);
-
-        // configuration
-        var inMemorySettings = new Dictionary<string, string> {
+    private IConfiguration CreateConfiguration(string gpasVersion)
+    {
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string> {
             {"Cache:SizeLimit", "1"},
             {"gPAS:Version", gpasVersion}
-        };
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(inMemorySettings)
+        })
             .Build();
-
-        var gpasClient = new GPasFhirClient(new Mock<ILogger<GPasFhirClient>>().Object, mockFactory.Object,
-            config);
-
-        // act
-        await gpasClient.GetOriginalValueFor("42", "domain");
-
-
-        // verify
-        handlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Exactly(1),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.Method == requestMethod
-                && req.RequestUri == new Uri(baseAddress.AbsoluteUri + requestUri)
-            ),
-            ItExpr.IsAny<CancellationToken>()
-        );
     }
 }
