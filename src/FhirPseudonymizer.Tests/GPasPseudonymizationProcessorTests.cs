@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
-using Autofac.Extras.Moq;
+using FakeItEasy;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
-using Moq;
 using Xunit;
 
 namespace FhirPseudonymizer.Tests;
@@ -25,8 +24,9 @@ public class GPasPseudonymizationProcessorTests
     public void Process_SupportsDomainPrefixSetting(string domainPrefix, string domainName, DataType element,
         string expectedDomain)
     {
-        using var mock = AutoMock.GetLoose();
-        var processor = mock.Create<GPasPseudonymizationProcessor>();
+        // using var mock = AutoMock.GetLoose();
+        var gpasClient = A.Fake<IGPasFhirClient>();
+        var processor = new GPasPseudonymizationProcessor(gpasClient);
 
         var node = ElementNode.FromElement(element.ToTypedElement());
         while (!node.HasValue())
@@ -38,7 +38,7 @@ public class GPasPseudonymizationProcessorTests
             new Dictionary<string, object> { { "domain", domainName }, { "domain-prefix", domainPrefix } });
 
 
-        mock.Mock<IGPasFhirClient>()
-            .Verify(_ => _.GetOrCreatePseudonymFor(It.IsAny<string>(), expectedDomain), Times.Once);
+        A.CallTo(() => gpasClient.GetOrCreatePseudonymFor(A<string>._, expectedDomain))
+            .MustHaveHappenedOnceExactly();
     }
 }

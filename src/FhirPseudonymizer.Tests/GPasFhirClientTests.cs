@@ -4,10 +4,9 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using FakeItEasy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Moq;
-using Moq.Protected;
 using Xunit;
 using Task = System.Threading.Tasks.Task;
 
@@ -55,18 +54,19 @@ public class GPasFhirClientTests
     }";
 
 
-    private readonly Mock<HttpMessageHandler> messageHandlerMock;
-    private readonly Mock<IHttpClientFactory> clientFactoryMock;
+    private readonly HttpMessageHandler messageHandler;
+    private readonly IHttpClientFactory clientFactory;
 
     public GPasFhirClientTests()
     {
-        messageHandlerMock = CreateHttpMessageHandlerMock();
-        clientFactoryMock = CreateHttpClientFactoryMock(messageHandlerMock.Object);
+        messageHandler = CreateHttpMessageHandler();
+        clientFactory = CreateHttpClientFactory(messageHandler);
     }
 
     [Theory]
     [MemberData(nameof(GetOrCreatePseudonymFor_Data))]
-    public async Task GetOrCreatePseudonymFor_ResolvesToApiVersionOperation(string gpasVersion, HttpMethod requestMethod, string requestUri)
+    public async Task GetOrCreatePseudonymFor_ResolvesToApiVersionOperation(string gpasVersion,
+        HttpMethod requestMethod, string requestUri)
     {
         // create gpas client
         var gpasClient = CreateGPasClient(gpasVersion);
@@ -81,31 +81,29 @@ public class GPasFhirClientTests
 
     private void VerifyRequest(HttpMethod requestMethod, string requestUri)
     {
-        messageHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Exactly(1),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.Method == requestMethod
-                && req.RequestUri == new Uri(testBaseAddress.AbsoluteUri + requestUri)
-            ), ItExpr.IsAny<CancellationToken>()
-        );
+        A.CallTo(messageHandler).Where(_ => _.Method.Name == "SendAsync")
+            .WhenArgumentsMatch(((HttpRequestMessage r, CancellationToken _) =>
+                r.Method == requestMethod &&
+                r.RequestUri == new Uri(testBaseAddress.AbsoluteUri + requestUri)))
+            .MustHaveHappenedOnceExactly();
     }
 
-    private Mock<IHttpClientFactory> CreateHttpClientFactoryMock(HttpMessageHandler httpMessageHandler)
+    private IHttpClientFactory CreateHttpClientFactory(HttpMessageHandler httpMessageHandler)
     {
         var client = new HttpClient(httpMessageHandler)
         {
             BaseAddress = testBaseAddress
         };
 
-        var mock = new Mock<IHttpClientFactory>();
-        mock.Setup(_ => _.CreateClient(It.IsAny<string>())).Returns(client);
-        return mock;
+        var factory = A.Fake<IHttpClientFactory>();
+        A.CallTo(() => factory.CreateClient(A<string>._)).Returns(client);
+        return factory;
     }
 
     [Theory]
     [MemberData(nameof(GetOriginalValueFor_Data))]
-    public async Task GetOriginalValueFor_ResolvesToApiVersionOperation(string gpasVersion, HttpMethod requestMethod, string requestUri)
+    public async Task GetOriginalValueFor_ResolvesToApiVersionOperation(string gpasVersion, HttpMethod requestMethod,
+        string requestUri)
     {
         // create gpas client
         var gpasClient = CreateGPasClient(gpasVersion);
@@ -120,26 +118,21 @@ public class GPasFhirClientTests
 
     private GPasFhirClient CreateGPasClient(string gPasVersion)
     {
-        return new GPasFhirClient(new Mock<ILogger<GPasFhirClient>>().Object, clientFactoryMock.Object,
+        return new GPasFhirClient(A.Fake<ILogger<GPasFhirClient>>(), clientFactory,
             CreateConfiguration(gPasVersion));
     }
 
-    private Mock<HttpMessageHandler> CreateHttpMessageHandlerMock()
+    private HttpMessageHandler CreateHttpMessageHandler()
     {
-        var handlerMock = new Mock<HttpMessageHandler>();
-        handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>()
-            )
-            .ReturnsAsync(new HttpResponseMessage
+        var handler = A.Fake<HttpMessageHandler>();
+        A.CallTo(handler).Where(_ => _.Method.Name == "SendAsync").WithReturnType<Task<HttpResponseMessage>>()
+            .Returns(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
                 Content = new StringContent(responseContent),
             });
 
-        return handlerMock;
+        return handler;
     }
 
     private IConfiguration CreateConfiguration(string gpasVersion)
