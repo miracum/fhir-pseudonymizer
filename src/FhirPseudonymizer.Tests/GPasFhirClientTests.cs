@@ -32,8 +32,29 @@ public class GPasFhirClientTests
     private static readonly Uri testBaseAddress = new Uri("http://gpas");
 
 
-    private readonly string responseContent =
-        "{\"resourceType\":\"Parameters\",\"parameter\":[{\"name\":\"pseudonym\",\"part\":[{\"name\":\"original\",\"valueIdentifier\":{\"system\":\"https://ths-greifswald.de/gpas\",\"value\":\"1\"}},{\"name\":\"target\",\"valueIdentifier\":{\"system\":\"https://ths-greifswald.de/gpas\",\"value\":\"PATIENT\"}},{\"name\":\"pseudonym\",\"valueIdentifier\":{\"system\":\"https://ths-greifswald.de/gpas\",\"value\":\"751770313\"}}]},{\"name\":\"42\",\"valueString\":\"24\"}]}";
+    private const string responseContent = @"{
+        ""resourceType"": ""Parameters"",
+        ""parameter"": [
+            {
+                ""name"": ""pseudonym"",
+                ""part"": [
+                    {
+                        ""name"": ""pseudonym"",
+                        ""valueIdentifier"": {
+                            ""system"": ""https://ths-greifswald.de/gpas"",
+                            ""value"": ""24""
+                        }
+                    }
+                ]
+            },
+            {
+                ""name"": ""42"",
+                ""valueString"": ""24""
+            }
+        ]
+    }";
+
+
     private readonly Mock<HttpMessageHandler> messageHandlerMock;
     private readonly Mock<IHttpClientFactory> clientFactoryMock;
 
