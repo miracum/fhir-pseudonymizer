@@ -175,7 +175,12 @@ namespace FhirPseudonymizer
                 var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
                 var original = firstResponseParameter?.Part.Find(part => part.Name == "original");
                 var originalIdentifier = original?.Value as Identifier;
-                return originalIdentifier.Value;
+                if (originalIdentifier != null)
+                {
+                    return originalIdentifier.Value;
+                }
+                logger.LogError("Failed to de-pseudonymize. Returning original value.");
+                return pseudonym;
             }
             catch (Exception exc)
             {
