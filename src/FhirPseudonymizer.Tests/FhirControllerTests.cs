@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
-using Autofac.Extras.Moq;
+using FakeItEasy;
 using FhirPseudonymizer.Controllers;
 using FluentAssertions;
 using Hl7.Fhir.Model;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
-using Moq;
 using Xunit;
 
 namespace FhirPseudonymizer.Tests;
@@ -20,13 +21,12 @@ public class FhirControllerTests
         var domainPrefixValue = new FhirString("test-");
         Dictionary<string, object> ruleSettings = null;
 
-        // setup mock and create controller fixture
-        using var mock = AutoMock.GetLoose();
-        var controller = mock.Create<FhirController>();
-        mock.Mock<IAnonymizerEngine>()
-            .Setup(_ => _.AnonymizeResource(It.IsAny<Resource>(), It.IsAny<AnonymizerSettings>()))
-            .Callback<Resource, AnonymizerSettings>((_, s) => ruleSettings = s?.DynamicRuleSettings);
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
+            .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings);
 
+        var controller = new FhirController(A.Fake<IConfiguration>(), A.Fake<ILogger<FhirController>>(),
+            anonymizer, A.Fake<IDePseudonymizerEngine>());
 
         var parameters = new Parameters()
             .Add("settings", new[] { Tuple.Create<String, Base>(domainPrefix, domainPrefixValue) })

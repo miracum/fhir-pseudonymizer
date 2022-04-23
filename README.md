@@ -82,7 +82,7 @@ Additionally, there are some optional configuration values that can be set as en
 | `GPAS__AUTH__BASIC__PASSWORD`   | The HTTP basic auth password to connect to gPAS                                                                                                          | `""`                        |
 | `ANONYMIZATIONENGINECONFIGPATH` | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                     | `"/etc/anonymization.yaml"` |
 | `APIKEY`                        | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                 | `""`                        |
-| `GPAS__VERSION`                 | Version of gPAS to support. There were breaking changes to the FHIR API starting in 1.10.2, so explicitely set this value to 1.10.2 if you are using it. | `"1.10.1"`                  |
+| `GPAS__VERSION`                 | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a later version than 1.10.1. | `"1.10.1"`                  |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
 
