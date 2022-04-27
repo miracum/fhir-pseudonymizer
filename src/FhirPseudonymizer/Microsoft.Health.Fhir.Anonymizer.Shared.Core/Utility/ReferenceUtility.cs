@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Hl7.Fhir.Model;
 
@@ -9,22 +10,30 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
     {
         private const string InternalReferencePrefix = "#";
 
-        private static readonly List<Regex> _literalReferenceRegexes = new List<Regex>
+        private static readonly List<Regex> _resourceReferenceRegexes = new List<Regex>
         {
-            // Regex for absolute or relative url reference, https://www.hl7.org/fhir/references.html#literal
+            // Regex for absolute or relative literal url reference, https://www.hl7.org/fhir/references.html#literal
             new Regex(@"^(?<prefix>((http|https)://([A-Za-z0-9\\\/\.\:\%\$])*)?("
                       + string.Join("|", ModelInfo.SupportedResources)
                       + @")\/)(?<id>[A-Za-z0-9\-\.]{1,64})(?<suffix>\/_history\/[A-Za-z0-9\-\.]{1,64})?$"),
+            // Regex for conditional references with identifier, https://www.hl7.org/fhir/http.html#trules
+            new Regex(@"^(?<prefix>("
+                      + string.Join("|", ModelInfo.SupportedResources)
+                      + @")\?identifier=((http|https)://([A-Za-z0-9\\\/\.\:\%\$\-])*\|)?)(?<id>[A-Za-z0-9\-\.]{1,64})$")
+        };
+
+        private static readonly List<Regex> _referenceRegexes = _resourceReferenceRegexes.Concat(new List<Regex>
+        {
             // Regex for oid reference https://www.hl7.org/fhir/datatypes.html#oid
             new Regex(@"^(?<prefix>urn:oid:)(?<id>[0-2](\.(0|[1-9][0-9]*))+)(?<suffix>)$"),
             // Regex for uuid reference https://www.hl7.org/fhir/datatypes.html#uuid
             new Regex(
                 @"^(?<prefix>urn:uuid:)(?<id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?<suffix>)$")
-        };
+        }).ToList();
 
         public static string GetReferencePrefix(string reference)
         {
-            foreach (var regex in _literalReferenceRegexes)
+            foreach (var regex in _referenceRegexes)
             {
                 var match = regex.Match(reference);
                 if (match.Success)
@@ -43,10 +52,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 return false;
             }
 
-            var absoluteOrRelativeUrReferenceRegex = _literalReferenceRegexes[0];
-            var match = absoluteOrRelativeUrReferenceRegex.Match(value);
+            foreach (var regex in _resourceReferenceRegexes)
+            {
+                var match = regex.Match(value);
+                if (match.Success)
+                {
+                    return true;
+                }
+            }
 
-            return match.Success;
+            return false;
         }
 
         public static string TransformReferenceId(string reference, Func<string, string> transformation)
@@ -64,7 +79,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 return newReference;
             }
 
-            foreach (var regex in _literalReferenceRegexes)
+            foreach (var regex in _referenceRegexes)
             {
                 var match = regex.Match(reference);
                 if (match.Success)
