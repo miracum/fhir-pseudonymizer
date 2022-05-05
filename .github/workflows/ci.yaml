@@ -54,21 +54,21 @@ jobs:
             quay.io/miracum/fhir-pseudonymizer
             harbor.miracum.org/miracum-etl/fhir-pseudonymizer
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         if: ${{ github.event_name != 'pull_request' }}
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to Quay.io Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         if: ${{ github.event_name != 'pull_request' }}
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_IO_USERNAME }}
           password: ${{ secrets.QUAY_IO_TOKEN }}
       - name: Login to MIRACUM Harbor Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         if: ${{ github.event_name != 'pull_request' }}
         with:
           registry: harbor.miracum.org
