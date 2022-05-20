@@ -44,7 +44,7 @@ namespace FhirPseudonymizer.Pseudonymization
 
             // Pseudonymize the id part for "Reference.reference" node and
             // pseudonymize whole input for other node types
-            if (node.IsReferenceStringNode() || IsReferenceUriNode(node, input) || IsConditionalElement(node,input))
+            if (node.IsReferenceStringNode() || IsReferenceUriNode(node, input) || IsConditionalElement(node, input))
             {
                 // if the domain setting is not set,
                 // create a domain from the reference, ie "Patient/123" -> "Patient"
