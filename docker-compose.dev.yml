@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   jaeger:
-    image: jaegertracing/all-in-one:1.26
+    image: jaegertracing/all-in-one:1.38
     ports:
       - "6831:6831/udp"
       - "16686:16686"
