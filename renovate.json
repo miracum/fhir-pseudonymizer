@@ -2,7 +2,17 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base",
-    "group:allNonMajor",
-    ":disableDependencyDashboard"
+    ":disableDependencyDashboard",
+    "helpers:pinGitHubActionDigests",
+    "docker:pinDigests",
+    "schedule:monthly",
+    "group:allNonMajor"
+  ],
+  "bumpVersion": "patch",
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    }
   ]
 }
