@@ -75,14 +75,15 @@ See <https://github.com/microsoft/FHIR-Tools-for-Anonymization> for details on t
 
 Additionally, there are some optional configuration values that can be set as environment variables:
 
-| Environment Variable            | Description                                                                                                                                                               | Default                     |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| `GPAS__URL`                     | The gPAS TTP FHIR Gateway URL. Only required if any of the anonymization.yaml rules use the `pseudonymize` method.                                                        | `""`                        |
-| `GPAS__AUTH__BASIC__USERNAME`   | The HTTP basic auth username to connect to gPAS                                                                                                                           | `""`                        |
-| `GPAS__AUTH__BASIC__PASSWORD`   | The HTTP basic auth password to connect to gPAS                                                                                                                           | `""`                        |
-| `ANONYMIZATIONENGINECONFIGPATH` | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                                      | `"/etc/anonymization.yaml"` |
-| `APIKEY`                        | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                  | `""`                        |
-| `GPAS__VERSION`                 | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a later version than 1.10.1. | `"1.10.1"`                  |
+| Environment Variable              | Description                                                                                                                                                                                                              | Default                     |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| `gPAS__Url`                       | The gPAS TTP FHIR Gateway URL. Only required if any of the anonymization.yaml rules use the `pseudonymize` method.                                                                                                       | `""`                        |
+| `gPAS__Auth__Basic__Username`     | The HTTP basic auth username to connect to gPAS                                                                                                                                                                          | `""`                        |
+| `gPAS__Auth__Basic__Password`     | The HTTP basic auth password to connect to gPAS                                                                                                                                                                          | `""`                        |
+| `AnonymizationEngineConfigPath`   | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                                                                                     | `"/etc/anonymization.yaml"` |
+| `ApiKey`                          | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                 | `""`                        |
+| `gPAS__Version`                   | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a later version than 1.10.1.                                                | `"1.10.1"`                  |
+| `UseSystemTextJsonFhirSerializer` | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4> | `false`                     |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
 
@@ -218,10 +219,21 @@ pre-commit install --hook-type commit-msg
 
 ## Benchmark
 
+> **Note**
+> Example runs were conducted on the following hardware:
+
+```console
+OS=Windows 11 (10.0.22000.978/21H2)
+12th Gen Intel Core i9-12900K, 1 CPU, 24 logical and 16 physical cores
+32GiB of DDR4 4800MHz RAM
+Samsung SSD 980 Pro 1TiB
+.NET SDK=7.0.100-rc.1.22431.12
+```
+
 Prerequisites: <https://github.com/codesenberg/bombardier>
 
 ```sh
-dotnet run -c Release
+dotnet run -c Release --project=src/FhirPseudonymizer
 ```
 
 In a different terminal
@@ -230,16 +242,50 @@ In a different terminal
 cd benchmark/
 $ ./bombardier.sh
 
-Bombarding http://localhost:5000/fhir/$de-identify for 30s using 125 connection(s)
-[==========================================================================================================================] 30s
+Bombarding http://localhost:5000/fhir/$de-identify for 1m0s using 125 connection(s)
+[====================================================================================================================] 1m0s
 Done!
 Statistics        Avg      Stdev        Max
-  Reqs/sec      2170.62    5239.58  129714.63
-  Latency       69.40ms     4.94ms   164.50ms
+  Reqs/sec     13107.78    1552.49   18917.77
+  Latency        9.53ms   559.41us    53.88ms
+  Latency Distribution
+     50%     9.00ms
+     75%    11.00ms
+     90%    12.00ms
+     95%    13.00ms
+     99%    16.73ms
   HTTP codes:
-    1xx - 0, 2xx - 54033, 3xx - 0, 4xx - 0, 5xx - 0
+    1xx - 0, 2xx - 786655, 3xx - 0, 4xx - 0, 5xx - 0
     others - 0
-  Throughput:    12.97MB/s
+  Throughput:    96.37MB/s
+```
+
+### UseSystemTextJsonFhirSerializer
+
+You can improve throughput and P99 latencies by opting-in to using the System.Text.Json based FHIR resource serializer.
+It can be enabled via `appsettings.json` or using the `UseSystemTextJsonFhirSerializer` environment variable:
+
+```sh
+UseSystemTextJsonFhirSerializer=true dotnet run -c Release --project=src/FhirPseudonymizer
+```
+
+```console
+Bombarding http://localhost:5000/fhir/$de-identify for 1m0s using 125 connection(s)
+[====================================================================================================================] 1m0s
+Done!
+Statistics        Avg      Stdev        Max
+  Reqs/sec     21508.39    3751.90   38993.50
+  Latency        5.80ms     1.63ms   442.82ms
+  Latency Distribution
+     50%     5.00ms
+     75%     6.00ms
+     90%     7.75ms
+     95%     9.00ms
+     99%    12.00ms
+  HTTP codes:
+    1xx - 0, 2xx - 1291159, 3xx - 0, 4xx - 0, 5xx - 0
+    others - 0
+  Throughput:   158.17MB/s
 ```
 
 ## Verify image integrity
@@ -248,7 +294,7 @@ All released container images are signed using [cosign](https://github.com/sigst
 The public key hosted at <https://miracum.github.io/cosign.pub> (see [here](https://github.com/miracum/miracum.github.io) for the repository source) may be used to verify them:
 
 ```sh
-cosign verify -key https://miracum.github.io/cosign.pub ghcr.io/miracum/fhir-pseudonymizer:latest
+cosign verify --key https://miracum.github.io/cosign.pub ghcr.io/miracum/fhir-pseudonymizer:latest
 ```
 
 ## Attribution

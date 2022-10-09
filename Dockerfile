@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/nightly/aspnet:6.0.8-jammy-chiseled@sha256:5258a1139db036d151e49934406c50fc41604b9519441294e017d75347f932e6 AS runtime
+FROM mcr.microsoft.com/dotnet/nightly/aspnet:6.0.9-jammy-chiseled@sha256:e5288b0e7f80b278d8baa15e9f444ccb4cc0cd4caa6e9cc87782cbd2a3805a49 AS runtime
 WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp
 USER 65532:65532

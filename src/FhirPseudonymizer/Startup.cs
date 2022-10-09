@@ -132,8 +132,9 @@ namespace FhirPseudonymizer
 
             services.AddControllers(options =>
             {
-                options.InputFormatters.Insert(0, new FhirInputFormatter());
-                options.OutputFormatters.Insert(0, new FhirOutputFormatter());
+                var useSystemTextJsonFhirSerializer = Configuration.GetValue("UseSystemTextJsonFhirSerializer", false);
+                options.InputFormatters.Insert(0, new FhirInputFormatter(useSystemTextJsonFhirSerializer));
+                options.OutputFormatters.Insert(0, new FhirOutputFormatter(useSystemTextJsonFhirSerializer));
             });
 
             services.AddSwaggerGen(c =>
