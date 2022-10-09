@@ -87,7 +87,7 @@ jobs:
             ${{ runner.os }}-buildx-
       - name: Run unit tests
         id: docker_build_unit_test
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           push: false
           target: test
@@ -103,7 +103,7 @@ jobs:
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
