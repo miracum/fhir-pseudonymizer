@@ -363,3 +363,5 @@ MigrationBackup/
 
 coverage/
 coveragereport/
+
+megalinter-reports/

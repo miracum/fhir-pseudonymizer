@@ -5,17 +5,18 @@ on:
 jobs:
   scan:
     name: Scan
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac # tag=0.7.1
         with:
           image-ref: "ghcr.io/miracum/fhir-pseudonymizer:latest"
           format: "template"
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
+
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@4c8f13758e748234abaa6a831d6f53981844a524 # tag=v2
         with:
           sarif_file: "trivy-results.sarif"
