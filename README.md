@@ -75,13 +75,13 @@ See <https://github.com/microsoft/FHIR-Tools-for-Anonymization> for details on t
 
 Additionally, there are some optional configuration values that can be set as environment variables:
 
-| Environment Variable            | Description                                                                                                                                              | Default                     |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| `GPAS__URL`                     | The gPAS TTP FHIR Gateway URL. Only required if any of the anonymization.yaml rules use the `pseudonymize` method.                                       | `""`                        |
-| `GPAS__AUTH__BASIC__USERNAME`   | The HTTP basic auth username to connect to gPAS                                                                                                          | `""`                        |
-| `GPAS__AUTH__BASIC__PASSWORD`   | The HTTP basic auth password to connect to gPAS                                                                                                          | `""`                        |
-| `ANONYMIZATIONENGINECONFIGPATH` | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                     | `"/etc/anonymization.yaml"` |
-| `APIKEY`                        | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                 | `""`                        |
+| Environment Variable            | Description                                                                                                                                                               | Default                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `GPAS__URL`                     | The gPAS TTP FHIR Gateway URL. Only required if any of the anonymization.yaml rules use the `pseudonymize` method.                                                        | `""`                        |
+| `GPAS__AUTH__BASIC__USERNAME`   | The HTTP basic auth username to connect to gPAS                                                                                                                           | `""`                        |
+| `GPAS__AUTH__BASIC__PASSWORD`   | The HTTP basic auth password to connect to gPAS                                                                                                                           | `""`                        |
+| `ANONYMIZATIONENGINECONFIGPATH` | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                                      | `"/etc/anonymization.yaml"` |
+| `APIKEY`                        | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                  | `""`                        |
 | `GPAS__VERSION`                 | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a later version than 1.10.1. | `"1.10.1"`                  |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
@@ -95,14 +95,16 @@ Pseudonymization via gPAS supports a `domain-prefix` rule setting which can be u
 The following example shows how to use this feature to use a single service configuration in order to support multiple projects which have the same basic domain names, prefixed by a project name.
 
 ### Example
+
 gPAS domains for patient IDs:
 
-| project | domain |
-| ------- | ------:|
+| project |          domain |
+| ------- | --------------: |
 | miracum | miracum-patient |
-| test    | test-patient |
+| test    |    test-patient |
 
 `anonymization.yml`:
+
 ```yml
 ---
 fhirVersion: R4
@@ -111,6 +113,7 @@ fhirPathRules:
     method: pseudonymize
     domain: patient
 ```
+
 Providing the prefix (i.e. miracum- or test-) via the request, pseudonymization can be done with the same rules for different projects.
 
 #### Request body
@@ -160,10 +163,7 @@ The following request body and the (fixed) configuration settings above will res
               "name": [
                 {
                   "family": "Jameson",
-                  "given": [
-                    "J",
-                    "Jonah"
-                  ]
+                  "given": ["J", "Jonah"]
                 }
               ],
               "gender": "male"
@@ -181,10 +181,6 @@ The following request body and the (fixed) configuration settings above will res
 ```
 
 Note: The domain name could also have been replaced completely by overriding the `domain` setting with the desired value. This works for all rule settings regardless of the `method` value.
-
-
-
-
 
 ## Development
 
