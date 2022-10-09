@@ -2,3 +2,5 @@
 !src
 !*stylecop*
 !.editorconfig
+src/**/bin
+src/**/obj
