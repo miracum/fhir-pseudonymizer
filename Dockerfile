@@ -16,7 +16,7 @@ FROM build AS test
 WORKDIR /build/src/FhirPseudonymizer.Tests
 RUN dotnet test -p:CollectCoverage=true
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-bullseye-slim
+FROM mcr.microsoft.com/dotnet/aspnet:7.0-bullseye-slim
 ENV ASPNETCORE_ENVIRONMENT="Production" \
     ASPNETCORE_URLS="http://*:8080"
 USER 65532
