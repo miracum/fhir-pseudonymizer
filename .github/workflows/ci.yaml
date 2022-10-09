@@ -190,5 +190,5 @@ jobs:
               continue
             fi
             echo "Signing '$image'"
-            cosign sign "$image"
+            cosign sign --key /tmp/cosign.key "$image"
           done <<< "$IMAGES"
