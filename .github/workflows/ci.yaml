@@ -103,7 +103,11 @@ jobs:
           if [ "$IS_PULL_REQUEST" == "true" ]; then
             echo "::set-output name=platforms::linux/amd64"
           else
-            echo "::set-output name=platforms::linux/amd64,linux/arm64,linux/arm/v7"
+            # echo "::set-output name=platforms::linux/amd64,linux/arm64,linux/arm/v7"
+            # disabled multi-arch builds for now due to
+            # Error: buildx failed with: ERROR: failed to solve: mcr.microsoft.com/dotnet/nightly/aspnet:6.0.9-jammy-chiseled@sha256:e5288b0e7f80b278d8baa15e9f444ccb4cc0cd4caa6e9cc87782cbd2a3805a49:
+            # no match for platform in manifest sha256:e5288b0e7f80b278d8baa15e9f444ccb4cc0cd4caa6e9cc87782cbd2a3805a49: not found
+            echo "::set-output name=platforms::linux/amd64"
           fi
         env:
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}

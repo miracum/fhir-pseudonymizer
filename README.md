@@ -297,6 +297,12 @@ The public key hosted at <https://miracum.github.io/cosign.pub> (see [here](http
 cosign verify --key https://miracum.github.io/cosign.pub ghcr.io/miracum/fhir-pseudonymizer:latest
 ```
 
+## Semantic versioning exclusion policies
+
+The project's versioning follows the [SemVer](https://semver.org/) convention.
+However, we exclude metrics (ie. anything under the `/metrics` endpoint), traces,
+and the contents of the container image from this. Alwas be prepared to double-check the release notes before updating.
+
 ## Attribution
 
 Icons made by [Freepik](https://www.freepik.com) from [Flaticon](https://www.flaticon.com/).
