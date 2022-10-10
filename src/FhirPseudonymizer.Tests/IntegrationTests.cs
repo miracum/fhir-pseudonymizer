@@ -55,7 +55,12 @@ namespace FhirPseudonymizer.Tests
         [Fact]
         public async Task PostDeIdentify_WithoutApiKeyHeader_ShouldBeAllowed()
         {
-            var content = new StringContent(@"{""resourceType"":""Patient""}");
+            var patient = @"{
+                ""resourceType"": ""Patient"",
+                ""id"": ""glossy""
+            }";
+
+            var content = new StringContent(patient);
             content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
             var response = await _client.PostAsync("/fhir/$de-identify", content);
 
@@ -67,6 +72,17 @@ namespace FhirPseudonymizer.Tests
         {
             var content = new StringContent("");
             content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+            var response = await _client.PostAsync("/fhir/$de-pseudonymize", content);
+
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        [Fact]
+        public async Task PostDePseudonymize_WithWrongApiKey_ShouldReturnUnauthorized()
+        {
+            var content = new StringContent("");
+            content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+            content.Headers.Add("x-api-key", "wrong-key");
             var response = await _client.PostAsync("/fhir/$de-pseudonymize", content);
 
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -101,7 +117,9 @@ namespace FhirPseudonymizer.Tests
 
             response.EnsureSuccessStatusCode();
 
-            var encryptedPatient = new FhirJsonParser().Parse<Patient>(response.Content.ReadAsStringAsync().Result);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            var encryptedPatient = new FhirJsonParser().Parse<Patient>(responseContent);
 
             encryptedPatient.Identifier[0].Value.Should().NotBe("123456");
         }

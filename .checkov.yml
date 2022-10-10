@@ -1,0 +1,19 @@
+skip-check:
+  - CKV_DOCKER_3
+  - CKV_DOCKER_2
+  # CKV_K8S_21: "The default namespace should not be used" - used for simple testing inside a KinD cluster
+  - CKV_K8S_21
+  # CKV_K8S_10: "CPU requests should be set" - ignored for iter8 job pod
+  - CKV_K8S_10
+  # CKV_K8S_11: "CPU limits should be set" - ignored for iter8 job pod
+  - CKV_K8S_11
+  # CKV_K8S_12: "Memory requests should be set"
+  - CKV_K8S_12
+  # CKV_K8S_13: "Memory limits should be set" - ignored for iter8 job pod
+  - CKV_K8S_13
+  # CKV_K8S_15: "Image Pull Policy should be Always" - ignored for digest-pinned iter8
+  - CKV_K8S_15
+  # CKV_K8S_12: "Memory requests should be set" - ignored for iter8
+  - CKV_K8S_12
+  # CKV_K8S_38: "Ensure that Service Account Tokens are only mounted where necessary" - necessary for iter8
+  - CKV_K8S_38

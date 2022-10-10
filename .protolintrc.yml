@@ -1,0 +1,6 @@
+lint:
+  rules_option:
+    max_line_length:
+      max_chars: 120
+    indent:
+      not_insert_newline: true

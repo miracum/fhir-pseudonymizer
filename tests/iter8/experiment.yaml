@@ -1,0 +1,266 @@
+---
+# Source: iter8/templates/k8s.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default-iter8-sa
+---
+# Source: iter8/templates/k8s.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: default
+  annotations:
+    iter8.tools/group: default
+stringData:
+  # TODO: could be put into kustomize
+  experiment.yaml: |
+    spec:
+      - task: ready
+        with:
+          name: "fhir-pseudonymizer"
+          version: v1
+          resource: services
+          namespace: default
+          timeout: 120s
+      - task: ready
+        with:
+          name: "fhir-pseudonymizer"
+          group: apps
+          version: v1
+          resource: deployments
+          condition: Available
+          namespace: default
+          timeout: 120s
+      - task: ready
+        with:
+          name: "vfps"
+          version: v1
+          resource: services
+          namespace: default
+          timeout: 120s
+      - task: ready
+        with:
+          name: "vfps"
+          group: apps
+          version: v1
+          resource: deployments
+          condition: Available
+          namespace: default
+          timeout: 120s
+      # task: create a pseudonym namespace in vfps for this experiment
+      - run: |
+          # using curl since grpcurl isn't installed by default
+          curl -X 'POST' \
+            'http://vfps:8080/v1/namespaces' \
+            -H 'accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -d '{
+                  "name": "mrns",
+                  "pseudonymGenerationMethod": 1,
+                  "pseudonymLength": 32,
+                  "pseudonymPrefix": "p-",
+                  "description": "namespace for MRs for iter8 benchmarking"
+                }' || true
+          curl -X 'POST' \
+            'http://vfps:8080/v1/namespaces' \
+            -H 'accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -d '{
+                  "name": "vns",
+                  "pseudonymGenerationMethod": 1,
+                  "pseudonymLength": 32,
+                  "pseudonymPrefix": "v-",
+                  "description": "namespace for VNs for iter8 benchmarking"
+                }' || true
+      # task: generate http requests for app
+      - task: http
+        with:
+          url: "http://fhir-pseudonymizer:8080/fhir/$de-identify"
+          numRequests: 25000
+          qps: 300
+          contentType: "application/fhir+json"
+          payloadStr: |
+            {
+              "resourceType": "Patient",
+              "id": "glossy",
+              "meta": {
+                "lastUpdated": "2014-11-13T11:41:00+11:00"
+              },
+              "text": {
+                "status": "generated",
+                "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">\n      <p>Henry Levin the 7th</p>\n      <p>MRN: 123456. Male, 24-Sept 1932</p>\n    </div>"
+              },
+              "extension": [
+                {
+                  "url": "http://example.org/StructureDefinition/trials",
+                  "valueCode": "renal"
+                }
+              ],
+              "identifier": [
+                {
+                  "use": "usual",
+                  "type": {
+                    "coding": [
+                      {
+                        "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                        "code": "MR"
+                      }
+                    ]
+                  },
+                  "system": "http://www.goodhealth.org/identifiers/mrn",
+                  "value": "123456"
+                }
+              ],
+              "active": true,
+              "name": [
+                {
+                  "family": "Levin",
+                  "given": ["Henry"],
+                  "suffix": ["The 7th"]
+                }
+              ],
+              "gender": "male",
+              "birthDate": "1932-09-24",
+              "generalPractitioner": [
+                {
+                  "reference": "Practitioner/example",
+                  "display": "Dr Adam Careful"
+                }
+              ],
+              "managingOrganization": {
+                "reference": "Organization/2",
+                "display": "Good Health Clinic"
+              }
+            }
+      # task: validate service level objectives for app using
+      # the metrics collected in an earlier task
+      - task: assess
+        with:
+          SLOs:
+            upper:
+              - metric: http/error-count
+                limit: 0
+              - metric: http/latency-mean
+                limit: 10
+              - metric: http/latency-p99.0
+                limit: 30
+---
+# Source: iter8/templates/k8s.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: default
+  annotations:
+    iter8.tools/group: default
+rules:
+  - apiGroups: [""]
+    resourceNames: ["default"]
+    resources: ["secrets"]
+    verbs: ["get", "update"]
+---
+# Source: iter8/templates/k8s.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: default-ready
+  namespace: default
+  annotations:
+    iter8.tools/group: default
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    resourceNames: ["vfps"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resourceNames: ["vfps"]
+    resources: ["deployments"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["services"]
+    resourceNames: ["fhir-pseudonymizer"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resourceNames: ["fhir-pseudonymizer"]
+    resources: ["deployments"]
+    verbs: ["get"]
+---
+# Source: iter8/templates/k8s.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default
+  annotations:
+    iter8.tools/group: default
+subjects:
+  - kind: ServiceAccount
+    name: default-iter8-sa
+    namespace: default
+roleRef:
+  kind: Role
+  name: default
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: iter8/templates/k8s.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-ready
+  namespace: default
+  annotations:
+    iter8.tools/group: default
+subjects:
+  - kind: ServiceAccount
+    name: default-iter8-sa
+    namespace: default
+roleRef:
+  kind: Role
+  name: default-ready
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: iter8/templates/k8s.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: default-1-job
+  annotations:
+    iter8.tools/group: default
+    iter8.tools/revision: "1"
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        iter8.tools/group: default
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: default-iter8-sa
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+      containers:
+        - name: iter8
+          image: docker.io/iter8/iter8:0.11@sha256:bebdd5913787d1ae765a455780329a397542a6a57d60e5a80f0b5449869a3cee
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            seccompProfile:
+              type: RuntimeDefault
+            runAsNonRoot: true
+            runAsGroup: 65534
+            runAsUser: 65534
+            readOnlyRootFilesystem: true
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              iter8 k run --namespace default --group default -l debug

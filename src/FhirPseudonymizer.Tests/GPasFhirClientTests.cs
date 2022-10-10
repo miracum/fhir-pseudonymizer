@@ -5,7 +5,10 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using FakeItEasy;
-using Microsoft.Extensions.Configuration;
+using FhirPseudonymizer.Config;
+using FhirPseudonymizer.Pseudonymization;
+using FhirPseudonymizer.Pseudonymization.GPas;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Task = System.Threading.Tasks.Task;
@@ -28,10 +31,9 @@ public class GPasFhirClientTests
         yield return new object[] { "1.10.3", HttpMethod.Post, "$dePseudonymize" };
     }
 
-    private static readonly Uri testBaseAddress = new Uri("http://gpas");
+    private static readonly Uri testBaseAddress = new("http://gpas");
 
-
-    private const string responseContent = @"{
+    private const string ResponseContent = @"{
         ""resourceType"": ""Parameters"",
         ""parameter"": [
             {
@@ -53,7 +55,6 @@ public class GPasFhirClientTests
         ]
     }";
 
-
     private readonly HttpMessageHandler messageHandler;
     private readonly IHttpClientFactory clientFactory;
 
@@ -74,7 +75,6 @@ public class GPasFhirClientTests
         // act
         await gpasClient.GetOrCreatePseudonymFor("42", "domain");
 
-
         // verify
         VerifyRequest(requestMethod, requestUri);
     }
@@ -88,7 +88,7 @@ public class GPasFhirClientTests
             .MustHaveHappenedOnceExactly();
     }
 
-    private IHttpClientFactory CreateHttpClientFactory(HttpMessageHandler httpMessageHandler)
+    private static IHttpClientFactory CreateHttpClientFactory(HttpMessageHandler httpMessageHandler)
     {
         var client = new HttpClient(httpMessageHandler)
         {
@@ -111,37 +111,47 @@ public class GPasFhirClientTests
         // act
         await gpasClient.GetOriginalValueFor("42", "domain");
 
-
         // verify request uri and method
         VerifyRequest(requestMethod, requestUri);
     }
 
-    private GPasFhirClient CreateGPasClient(string gPasVersion)
+    private IPseudonymServiceClient CreateGPasClient(string gPasVersion)
     {
-        return new GPasFhirClient(A.Fake<ILogger<GPasFhirClient>>(), clientFactory,
-            CreateConfiguration(gPasVersion));
+        var config = new GPasConfig
+        {
+            Version = gPasVersion,
+            Cache = new CacheConfig
+            {
+                AbsoluteExpirationMinutes = 1,
+                SizeLimit = 1,
+                SlidingExpirationMinutes = 1,
+            }
+        };
+
+        var cache = new MemoryCache(
+            new MemoryCacheOptions
+            {
+                SizeLimit = 1
+            });
+
+        return new GPasFhirClient(
+            A.Fake<ILogger<GPasFhirClient>>(),
+             clientFactory,
+             config,
+             cache,
+             cache);
     }
 
-    private HttpMessageHandler CreateHttpMessageHandler()
+    private static HttpMessageHandler CreateHttpMessageHandler()
     {
         var handler = A.Fake<HttpMessageHandler>();
         A.CallTo(handler).Where(_ => _.Method.Name == "SendAsync").WithReturnType<Task<HttpResponseMessage>>()
             .Returns(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(responseContent),
+                Content = new StringContent(ResponseContent),
             });
 
         return handler;
-    }
-
-    private IConfiguration CreateConfiguration(string gpasVersion)
-    {
-        return new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string> {
-            {"Cache:SizeLimit", "1"},
-            {"gPAS:Version", gpasVersion}
-        })
-            .Build();
     }
 }

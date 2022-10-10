@@ -217,6 +217,44 @@ pre-commit install
 pre-commit install --hook-type commit-msg
 ```
 
+### Run iter8 SLO experiments locally
+
+```sh
+kind create cluster
+
+export IMAGE_TAG="iter8-test"
+
+docker build -t ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG} .
+
+kind load docker-image ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG}
+
+helm repo add chgl https://chgl.github.io/charts
+helm repo add miracum https://miracum.github.io/charts
+helm repo update
+
+helm install \
+  --wait \
+  --timeout=10m \
+  vfps chgl/vfps
+
+helm upgrade --install \
+  --set="image.tag=${IMAGE_TAG}" \
+  -f tests/iter8/values.yaml \
+  --wait \
+  --timeout=10m \
+  fhir-pseudonymizer miracum/fhir-pseudonymizer
+
+kubectl apply -f tests/iter8/experiment.yaml
+
+iter8 k assert -c completed --timeout 15m
+iter8 k assert -c nofailure,slos
+iter8 k report
+
+# to restart:
+kubectl delete job default-1-job
+kubectl apply -f tests/iter8/experiment.yaml
+```
+
 ## Benchmark
 
 > **Note**

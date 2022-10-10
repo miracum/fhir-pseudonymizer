@@ -6,16 +6,16 @@ using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
-namespace FhirPseudonymizer
+namespace FhirPseudonymizer.Pseudonymization
 {
-    public class GPasPseudonymizationProcessor : IAnonymizerProcessor
+    public class PseudonymizationProcessor : IAnonymizerProcessor
     {
-        public GPasPseudonymizationProcessor(IGPasFhirClient psnClient)
+        public PseudonymizationProcessor(IPseudonymServiceClient psnClient)
         {
-            GPasClient = psnClient;
+            PsnClient = psnClient;
         }
 
-        protected IGPasFhirClient GPasClient { get; }
+        protected IPseudonymServiceClient PsnClient { get; }
 
         public ProcessResult Process(ElementNode node, ProcessContext context = null,
             Dictionary<string, object> settings = null)
@@ -27,10 +27,11 @@ namespace FhirPseudonymizer
             }
 
             // prefix the domain, if set
-            var domainPrefix = settings?.GetValueOrDefault("domain-prefix", string.Empty);
+            var domainPrefix = settings?.GetValueOrDefault("domain-prefix", null) ??
+                settings?.GetValueOrDefault("namespace-prefix", string.Empty);
 
-            var domain = settings?
-                .GetValueOrDefault("domain", null)?
+            var domain = settings?.GetValueOrDefault("domain", null) ??
+                settings?.GetValueOrDefault("namespace", null)?
                 .ToString();
 
             var input = node.Value.ToString();
@@ -47,11 +48,11 @@ namespace FhirPseudonymizer
 
                 node.Value = ReferenceUtility.TransformReferenceId(
                     input,
-                    x => GetOrCreatePseudonym(x, domainPrefix + domain));
+                    x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain));
             }
             else
             {
-                node.Value = GetOrCreatePseudonym(input, domainPrefix + domain);
+                node.Value = GetOrCreatePseudonym(input, domainPrefix.ToString() + domain);
             }
 
             processResult.AddProcessRecord(AnonymizationOperations.Pseudonymize, node);
@@ -60,7 +61,7 @@ namespace FhirPseudonymizer
 
         protected virtual string GetOrCreatePseudonym(string input, string domain)
         {
-            return GPasClient.GetOrCreatePseudonymFor(input, domain).Result;
+            return PsnClient.GetOrCreatePseudonymFor(input, domain).Result;
         }
 
         private static bool IsReferenceUriNode(ElementNode node, string value)
@@ -70,15 +71,15 @@ namespace FhirPseudonymizer
         }
     }
 
-    public class GPasDePseudonymizationProcessor : GPasPseudonymizationProcessor
+    public class DePseudonymizationProcessor : PseudonymizationProcessor
     {
-        public GPasDePseudonymizationProcessor(IGPasFhirClient psnClient) : base(psnClient)
+        public DePseudonymizationProcessor(IPseudonymServiceClient psnClient) : base(psnClient)
         {
         }
 
         protected override string GetOrCreatePseudonym(string input, string domain)
         {
-            return GPasClient.GetOriginalValueFor(input, domain).Result;
+            return PsnClient.GetOriginalValueFor(input, domain).Result;
         }
     }
 }
