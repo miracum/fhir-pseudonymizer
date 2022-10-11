@@ -1,13 +1,76 @@
-version: "3.7"
-
 services:
   jaeger:
-    image: jaegertracing/all-in-one:1.38
+    image: docker.io/jaegertracing/all-in-one:1.38@sha256:dc111a693eb22c38ea11a71b8303430a98efe04826049faab6f73dcf6ee9ad5d
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 1g
+    cap_drop:
+      - ALL
+    ipc: none
+    security_opt:
+      - "no-new-privileges:true"
+    privileged: false
     ports:
       - "6831:6831/udp"
-      - "16686:16686"
+      - "127.0.0.1:16686:16686"
+
+  postgresql:
+    image: docker.io/library/postgres:14.5@sha256:b0ee049a2e347f5ec8c64ad225c7edbc88510a9e34450f23c4079a489ce16268
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 1g
+    ipc: private
+    security_opt:
+      - "no-new-privileges:true"
+    privileged: false
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vfps
+
+  vfps:
+    image: ghcr.io/chgl/vfps:v0.5.0@sha256:e089a30509396e2cb7ec31e28b41ef84e8e58419ed308ff9de6ed33df72d9474
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "2"
+        reservations:
+          memory: 512m
+          cpus: "2"
+    ipc: none
+    cap_drop:
+      - ALL
+    read_only: true
+    privileged: false
+    security_opt:
+      - "no-new-privileges:true"
+    environment:
+      COMPlus_EnableDiagnostics: "0"
+      ForceRunDatabaseMigrations: "true"
+      ConnectionStrings__PostgreSQL: "Host=postgresql:5432;Database=vfps;Timeout=60;Max Auto Prepare=5;Application Name=vfps;Maximum Pool Size=50;"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      Tracing__IsEnabled: "true"
+      Tracing__Jaeger__AgentHost: "jaeger"
+      Pseudonymization__Caching__Namespaces__IsEnabled: "true"
+    ports:
+      # Http1, Http2, Http3
+      - "127.0.0.1:8080:8080"
+      # Http2-only for plaintext gRPC
+      - "127.0.0.1:8081:8081"
 
   gpas:
-    image: harbor.miracum.org/gpas/gpas:1.10.0-20201221
+    image: harbor.miracum.org/gpas/gpas:1.10.0-20201221@sha256:09f47082a6bae858f7678bb52cb58c1e20414a8293a96725fe8fbcb0a37f4059
+    profiles:
+      - gpas
     ports:
       - "18081:8080"

@@ -27,7 +27,8 @@ RUN dotnet test \
     --configuration=Release \
     --collect:"XPlat Code Coverage" \
     --results-directory=./coverage \
-    -l "console;verbosity=detailed"
+    -l "console;verbosity=detailed" \
+    --settings=runsettings.xml
 
 FROM runtime
 COPY --from=build /build/publish/*anonymization.yaml /etc

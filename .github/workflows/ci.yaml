@@ -18,6 +18,7 @@ jobs:
       pull-requests: write
     outputs:
       image-tags: ${{ steps.container_meta.outputs.tags }}
+      image-version: ${{ steps.container_meta.outputs.version }}
     steps:
       - name: Docker meta
         id: container_meta
@@ -112,14 +113,15 @@ jobs:
         env:
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v3
+      - name: Build and push image
+        uses: docker/build-push-action@c84f38281176d4c9cdb1626ffafcd6b3911b5d94 # tag=v3
         with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          load: ${{ github.event_name == 'pull_request' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.container_meta.outputs.tags }}
           labels: ${{ steps.container_meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: ${{ steps.platforms.outputs.platforms }}
 
       - name: Add Coverage PR Comment
@@ -128,6 +130,129 @@ jobs:
         with:
           recreate: true
           path: code-coverage-results.md
+
+      - name: Save container image as tar archives
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          IMAGE: ${{ fromJson(steps.container_meta.outputs.json).tags[0] }}
+        run: |
+          docker save "$IMAGE" -o /tmp/image.tar
+
+      - name: Upload container image
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+        with:
+          name: container-image
+          path: |
+            /tmp/image.tar
+
+  run-iter8-tests:
+    name: run iter8 tests
+    runs-on: ubuntu-22.04
+    if: ${{ github.event_name == 'pull_request' }}
+    needs:
+      - build
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+
+      - uses: iter8-tools/iter8@v0.11
+
+      - name: Create KinD cluster
+        uses: helm/kind-action@9e8295d178de23cbfbd8fa16cf844eec1d773a07 # tag=v1.4.0
+        with:
+          cluster_name: kind
+
+      - name: Download container images
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741 # tag=v3.0.0
+        with:
+          name: container-image
+          path: /tmp
+
+      - name: Load image into KinD
+        run: |
+          kind load image-archive /tmp/image.tar
+
+      - name: List images in cluster
+        run: docker exec kind-control-plane crictl images
+
+      - name: Install the latest version of vfps as a pseudonymization service
+        run: |
+          helm repo add chgl https://chgl.github.io/charts
+          helm install \
+            --wait \
+            --timeout=10m \
+            vfps chgl/vfps
+
+      - name: Install "fhir-pseudonymizer"
+        env:
+          IMAGE_TAG: ${{ needs.build.outputs.image-version }}
+        run: |
+          helm repo add miracum https://miracum.github.io/charts
+          helm install \
+            --set="image.tag=${IMAGE_TAG}" \
+            -f tests/iter8/values.yaml \
+            --wait \
+            --timeout=10m \
+            fhir-pseudonymizer miracum/fhir-pseudonymizer
+
+      - name: Launch iter8 experiment
+        run: kubectl apply -f tests/iter8/experiment.yaml
+
+      - name: Wait for experiment completion
+        run: iter8 k assert -c completed --timeout 10m
+
+      - name: Assert no failures and SLOs are satisfied
+        run: iter8 k assert -c nofailure,slos
+
+      - name: Create iter8 reports
+        if: always()
+        run: |
+          iter8 k report | tee iter8-report.txt
+          iter8 k report -o html > iter8-report.html
+
+      - name: Enhance iter8 report output for use as a PR comment
+        run: |
+          ITER8_REPORT_TXT=$(cat iter8-report.txt)
+          {
+            echo -e '---';
+            echo -e '## iter8 report';
+            echo -e '```console';
+            echo -e "${ITER8_REPORT_TXT}";
+            echo -e '```'
+          } >> iter8-output.md
+
+      - name: Append sticky comment with iter8 report
+        uses: marocchino/sticky-pull-request-comment@39c5b5dc7717447d0cba270cd115037d32d28443 # tag=v2.2.0
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          append: true
+          path: iter8-output.md
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+        with:
+          name: iter8-report.html
+          path: |
+            iter8-report.html
+
+      - name: Print cluster and iter8 logs
+        if: always()
+        run: |
+          kubectl cluster-info dump -o yaml | tee kind-cluster-dump.txt
+          iter8 k log -l trace
+
+      - name: Upload cluster dump
+        if: always()
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+        with:
+          name: kind-cluster-dump.txt
+          path: |
+            kind-cluster-dump.txt
 
   release:
     needs: build

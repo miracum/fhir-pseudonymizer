@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package vfps.api.v1;
+
+import "Protos/google/api/annotations.proto";
+import "Protos/vfps/api/v1/meta.proto";
+
+option csharp_namespace = "Vfps.Protos";
+
+// service to manage pseudonyms
+service PseudonymService {
+  // create a new pseudonym in the given namespace for an original value
+  rpc Create(PseudonymServiceCreateRequest) returns (PseudonymServiceCreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/namespaces/{namespace}/pseudonyms"
+      body: "*"
+    };
+  }
+
+  // get information about the given pseudonym. Including its original value.
+  rpc Get(PseudonymServiceGetRequest) returns (PseudonymServiceGetResponse) {
+    option (google.api.http) = {
+      get: "/v1/namespaces/{namespace}/pseudonyms/{pseudonym_value}"
+    };
+  }
+}
+
+// message to fetch details for a given pseudonym
+message PseudonymServiceGetRequest {
+  // the namespace the pseudonym is a part of
+  string namespace = 1;
+  // the actual pseudonym
+  string pseudonym_value = 2;
+}
+
+// response for getting a pseudonym entity
+message PseudonymServiceGetResponse {
+  // the found pseudonym
+  Pseudonym pseudonym = 1;
+}
+
+// request to pseudonymize and store a given value
+message PseudonymServiceCreateRequest {
+  // the namespace in which the pseudonym should be created
+  string namespace = 1;
+  // the original value to be pseudonymized
+  string original_value = 2;
+}
+
+// response for creating a pseudonym entity
+message PseudonymServiceCreateResponse {
+  // the created pseudonym
+  Pseudonym pseudonym = 1;
+}
+
+// the pseudonym entity
+message Pseudonym {
+  // metadata about the pseudonym
+  Meta meta = 1;
+  // the namespace of the pseudonym
+  string namespace = 2;
+  // the original value that was pseudonymized
+  string original_value = 3;
+  // the pseudonym created for the original value
+  string pseudonym_value = 4;
+}

@@ -1,0 +1,36 @@
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+extraEnv:
+  - name: PseudonymizationService
+    value: Vfps
+  - name: Vfps__Address
+    value: "dns:///vfps:8081"
+
+anonymizationConfig: |
+  ---
+  fhirVersion: R4
+  fhirPathRules:
+    - path: nodesByType('HumanName')
+      method: redact
+    - path: nodesByType('Identifier').where(type.coding.system='http://terminology.hl7.org/CodeSystem/v2-0203' and type.coding.code='VN').value
+      method: pseudonymize
+      namespace: vns
+    - path: nodesByType('Identifier').where(type.coding.system='http://terminology.hl7.org/CodeSystem/v2-0203' and type.coding.code='MR').value
+      method: pseudonymize
+      namespace: mrns
+  parameters:
+    dateShiftKey: ""
+    dateShiftScope: resource
+    cryptoHashKey: fhir-pseudonymizer
+    # must be of a valid AES key length; here the key is padded to 192 bits
+    encryptKey: fhir-pseudonymizer000000
+    enablePartialAgesForRedact: true
+    enablePartialDatesForRedact: true
+    enablePartialZipCodesForRedact: true
+    restrictedZipCodeTabulationAreas: []

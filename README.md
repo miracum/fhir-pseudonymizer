@@ -4,7 +4,7 @@
 
 > Send a FHIR® resource to `/fhir/$de-identify` get it back anonymized and/or pseudonymized.
 
-Based on the brilliant [FHIR Tools for Anonymization](https://github.com/microsoft/FHIR-Tools-for-Anonymization/).
+Based on the brilliant [Tools for Health Data Anonymization](https://github.com/microsoft/Tools-for-Health-Data-Anonymization).
 
 ## Usage
 
@@ -19,7 +19,7 @@ Container images are pushed to the following registries:
 - `quay.io/miracum/fhir-pseudonymizer:latest`
 - `harbor.miracum.org/miracum-etl/fhir-pseudonymizer:latest`
 
-For deployment in Kubernetes see <https://github.com/miracum/charts/tree/master/charts/fhir-gateway> for a Helm Chart using the FHIR Pseudonymizer as one of its components.
+For deployment in Kubernetes see <https://github.com/miracum/charts/tree/master/charts/fhir-pseudonymizer> for a Helm Chart deploying the FHIR Pseudonymizer.
 
 ### API Endpoints
 
@@ -29,11 +29,11 @@ An OpenAPI definition for the FHIR operation endpoints is available at `/swagger
 
 #### `$de-identify`
 
-The server provides a `/fhir/$de-identify` operation to de-identfiy received FHIR resources according to the configuration in the [anonymization.yaml](src/FhirPseudonymizer/anonymization.yaml) rules. See <https://github.com/microsoft/FHIR-Tools-for-Anonymization/> for more details on the anonymization rule configuration.
+The server provides a `/fhir/$de-identify` operation to de-identfiy received FHIR resources according to the configuration in the [anonymization.yaml](src/FhirPseudonymizer/anonymization.yaml) rules. See [Tools for Health Data Anonymization](https://github.com/microsoft/Tools-for-Health-Data-Anonymization) for more details on the anonymization rule configuration.
 
 The service comes with a sample configuration file to help meet the requirements of HIPAA Safe Harbor Method (2)(i): [hipaa-anonymization.yaml](src/FhirPseudonymizer/hipaa-anonymization.yaml).This configuration can be used by setting `ANONYMIZATIONENGINECONFIGPATH=/etc/hipaa-anonymization.yaml`.
 
-A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/) to create pseudonyms and replace the values in the resource with them.
+A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses either [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/) or [Vfps](https://github.com/chgl/vfps) to create pseudonyms and replace the values in the resource with them.
 For example, the following rule replaces all identifiers of type `http://terminology.hl7.org/CodeSystem/v2-0203|MR` with a pseudonym generated in the `PATIENT` domain.
 
 ```yaml
@@ -45,7 +45,10 @@ fhirPathRules:
 
 Note that if the `domain` setting is omitted, and an ID or reference is pseudonymized, then the resource name is used as the pseudonym domain. For example, pseudonymizing `"reference": "Patient/123"` will try to create a pseudonym for `123` in the `Patient` domain.
 
-Note that all methods defined in [FHIR-Tools-for-Anonymization](https://github.com/microsoft/FHIR-Tools-for-Anonymization/) are supported. For example, to clamp a patient's birthdate if they were born before January 1st 1931 to 01/01/1930, use:
+When using [Vfps](https://github.com/chgl/vfps), the `domain` setting can instead also be set as `namespace`.
+
+Note that all methods defined in [Tools for Health Data Anonymization](https://github.com/microsoft/Tools-for-Health-Data-Anonymization) are supported.
+For example, to clamp a patient's birthdate if they were born before January 1st 1931 to 01/01/1930, use:
 
 ```yaml
 fhirPathRules:
@@ -77,15 +80,34 @@ Additionally, there are some optional configuration values that can be set as en
 
 | Environment Variable              | Description                                                                                                                                                                                                              | Default                     |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| `gPAS__Url`                       | The gPAS TTP FHIR Gateway URL. Only required if any of the anonymization.yaml rules use the `pseudonymize` method.                                                                                                       | `""`                        |
-| `gPAS__Auth__Basic__Username`     | The HTTP basic auth username to connect to gPAS                                                                                                                                                                          | `""`                        |
-| `gPAS__Auth__Basic__Password`     | The HTTP basic auth password to connect to gPAS                                                                                                                                                                          | `""`                        |
 | `AnonymizationEngineConfigPath`   | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                                                                                     | `"/etc/anonymization.yaml"` |
 | `ApiKey`                          | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                 | `""`                        |
-| `gPAS__Version`                   | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a later version than 1.10.1.                                                | `"1.10.1"`                  |
 | `UseSystemTextJsonFhirSerializer` | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4> | `false`                     |
+| `PseudonymizationService`         | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `None`                                                                                                                                        | `"gPAS"`                    |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
+
+The application supports pseudonymization using either [gPAS](https://www.ths-greifswald.de/forscher/gpas/) or [Vfps](https://github.com/chgl/vfps) which can be configured via the `PseudonymizationService` setting.
+Service-specific configuration settings are listed below.
+
+### gPAS
+
+| Environment Variable          | Description                                                                                                                                                               | Default    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `gPAS__Url`                   | The gPAS TTP FHIR Gateway URL. Only required if any of the anonymization.yaml rules use the `pseudonymize` method.                                                        | `""`       |
+| `gPAS__Auth__Basic__Username` | The HTTP basic auth username to connect to gPAS                                                                                                                           | `""`       |
+| `gPAS__Auth__Basic__Password` | The HTTP basic auth password to connect to gPAS                                                                                                                           | `""`       |
+| `gPAS__Version`               | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a later version than 1.10.1. | `"1.10.1"` |
+
+### Vfps
+
+| Environment Variable                            | Description                                                                                                                                                                                                                        | Default |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `Vfps__Address`                                 | The Vfps service address. Use `dns:///` scheme for client-side load-balancing.                                                                                                                                                     | `""`    |
+| `Vfps__UnsafeUseInsecureChannelCallCredentials` | If set to `true`, `CallCredentials` are applied to gRPC calls made by an insecure channel. Sending authentication headers over an insecure connection has security implications and shouldn't be done in production environments.  | `true`  |
+| `Vfps__UseTls`                                  | If set to `true`, creates client-side SSL credentials loaded from disk file pointed to by the `GRPC_DEFAULT_SSL_ROOTS_FILE_PATH` environment variable. If that fails, gets the roots certificates from a well known place on disk. | `false` |
+| `Vfps__Auth__Basic__Username`                   | The HTTP basic auth username to connect to the Vfps service. Used in the `Authorization: Basic` metadata header value for the gRPC calls.                                                                                          | `""`    |
+| `Vfps__Auth__Basic__Password`                   | The HTTP basic auth password to connect to the Vfps service.                                                                                                                                                                       | `""`    |
 
 ## Dynamic rule settings
 
@@ -217,6 +239,44 @@ pre-commit install
 pre-commit install --hook-type commit-msg
 ```
 
+### Run iter8 SLO experiments locally
+
+```sh
+kind create cluster
+
+export IMAGE_TAG="iter8-test"
+
+docker build -t ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG} .
+
+kind load docker-image ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG}
+
+helm repo add chgl https://chgl.github.io/charts
+helm repo add miracum https://miracum.github.io/charts
+helm repo update
+
+helm install \
+  --wait \
+  --timeout=10m \
+  vfps chgl/vfps
+
+helm upgrade --install \
+  --set="image.tag=${IMAGE_TAG}" \
+  -f tests/iter8/values.yaml \
+  --wait \
+  --timeout=10m \
+  fhir-pseudonymizer miracum/fhir-pseudonymizer
+
+kubectl apply -f tests/iter8/experiment.yaml
+
+iter8 k assert -c completed --timeout 15m
+iter8 k assert -c nofailure,slos
+iter8 k report
+
+# to restart:
+kubectl delete job default-1-job
+kubectl apply -f tests/iter8/experiment.yaml
+```
+
 ## Benchmark
 
 > **Note**
@@ -300,8 +360,8 @@ cosign verify --key https://miracum.github.io/cosign.pub ghcr.io/miracum/fhir-ps
 ## Semantic versioning exclusion policies
 
 The project's versioning follows the [SemVer](https://semver.org/) convention.
-However, we exclude metrics (ie. anything under the `/metrics` endpoint), traces,
-and the contents of the container image from this. Alwas be prepared to double-check the release notes before updating.
+However, we exclude metrics (ie. anything under the `/metrics` endpoint), traces, and the contents of the container image from this.
+Alwas be prepared to double-check the release notes before updating.
 
 ## Attribution
 

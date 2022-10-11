@@ -44,7 +44,7 @@ namespace FhirPseudonymizer
         public override async System.Threading.Tasks.Task WriteResponseBodyAsync(
             OutputFormatterWriteContext context, Encoding selectedEncoding)
         {
-            using var _ = Program.ActivitySource.StartActivity("SerializeFHIRToJSON");
+            using var _ = Program.ActivitySource.StartActivity("SerializeFhirResourceToJson");
 
             var resource = context.Object as Resource;
             var httpContext = context.HttpContext;
@@ -93,6 +93,8 @@ namespace FhirPseudonymizer
         public override async System.Threading.Tasks.Task<InputFormatterResult> ReadRequestBodyAsync(InputFormatterContext context,
             Encoding encoding)
         {
+            using var _ = Program.ActivitySource.StartActivity("DeserializeJsonToFhirResource");
+
             var httpContext = context.HttpContext;
             using var reader = new StreamReader(httpContext.Request.Body, encoding);
             var json = await reader.ReadToEndAsync();

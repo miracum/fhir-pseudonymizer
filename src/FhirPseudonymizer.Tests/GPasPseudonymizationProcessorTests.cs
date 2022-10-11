@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using FakeItEasy;
+using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
@@ -24,9 +25,8 @@ public class GPasPseudonymizationProcessorTests
     public void Process_SupportsDomainPrefixSetting(string domainPrefix, string domainName, DataType element,
         string expectedDomain)
     {
-        // using var mock = AutoMock.GetLoose();
-        var gpasClient = A.Fake<IGPasFhirClient>();
-        var processor = new GPasPseudonymizationProcessor(gpasClient);
+        var psnClient = A.Fake<IPseudonymServiceClient>();
+        var processor = new PseudonymizationProcessor(psnClient);
 
         var node = ElementNode.FromElement(element.ToTypedElement());
         while (!node.HasValue())
@@ -37,8 +37,7 @@ public class GPasPseudonymizationProcessorTests
         processor.Process(node, null,
             new Dictionary<string, object> { { "domain", domainName }, { "domain-prefix", domainPrefix } });
 
-
-        A.CallTo(() => gpasClient.GetOrCreatePseudonymFor(A<string>._, expectedDomain))
+        A.CallTo(() => psnClient.GetOrCreatePseudonymFor(A<string>._, expectedDomain))
             .MustHaveHappenedOnceExactly();
     }
 }

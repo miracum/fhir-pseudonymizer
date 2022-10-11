@@ -75,13 +75,15 @@ namespace FhirPseudonymizer.Controllers
         /// <response code="200">Returns the de-identified resource</response>
         [HttpPost("$de-identify")]
         [AllowAnonymous]
-        public Resource DeIdentify([FromBody] Resource resource)
+        [ProducesResponseType(typeof(Resource), 200)]
+        [ProducesResponseType(typeof(OperationOutcome), 400)]
+        [ProducesResponseType(typeof(OperationOutcome), 500)]
+        public ObjectResult DeIdentify([FromBody] Resource resource)
         {
             if (resource == null)
             {
                 logger.LogWarning("Bad Request: received request body is empty.");
-                Response.StatusCode = StatusCodes.Status400BadRequest;
-                return BadRequestOutcome;
+                return BadRequest(BadRequestOutcome);
             }
 
             logger.LogDebug("De-Identifying resource {resourceType}/{resourceId}",
@@ -90,7 +92,6 @@ namespace FhirPseudonymizer.Controllers
             var settings = new AnonymizerSettings();
             if (resource is Parameters param)
             {
-
                 // parse dynamic rule settings
                 var dynamicSettings = param.GetSingle("settings")?.Part;
                 if (dynamicSettings?.Any() == true)
@@ -104,7 +105,7 @@ namespace FhirPseudonymizer.Controllers
             return Anonymize(resource);
         }
 
-        private Resource Anonymize(Resource resource, AnonymizerSettings anonymizerSettings = null)
+        private ObjectResult Anonymize(Resource resource, AnonymizerSettings anonymizerSettings = null)
         {
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
             activity?.AddTag("resource.type", resource.TypeName);
@@ -118,13 +119,12 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                return anonymizer.AnonymizeResource(resource, anonymizerSettings);
+                return Ok(anonymizer.AnonymizeResource(resource, anonymizerSettings));
             }
             catch (Exception exc)
             {
                 logger.LogError(exc, "Anonymize failed");
-                Response.StatusCode = StatusCodes.Status500InternalServerError;
-                return GetInternalErrorOutcome(exc);
+                return StatusCode(500, GetInternalErrorOutcome(exc));
             }
         }
 
@@ -136,13 +136,15 @@ namespace FhirPseudonymizer.Controllers
         /// <response code="200">Returns the de-pseudonymized resource</response>
         [HttpPost("$de-pseudonymize")]
         [Authorize]
-        public Resource DePseudonymize([FromBody] Resource resource)
+        [ProducesResponseType(typeof(Resource), 200)]
+        [ProducesResponseType(typeof(OperationOutcome), 400)]
+        [ProducesResponseType(typeof(OperationOutcome), 500)]
+        public ObjectResult DePseudonymize([FromBody] Resource resource)
         {
             if (resource == null)
             {
                 logger.LogWarning("Bad Request: received request body is empty.");
-                Response.StatusCode = StatusCodes.Status400BadRequest;
-                return BadRequestOutcome;
+                return BadRequest(BadRequestOutcome);
             }
 
             logger.LogDebug("De-Pseudonymizing resource {resourceType}/{resourceId}",
@@ -155,13 +157,12 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                return dePseudonymizer.DePseudonymizeResource(resource);
+                return Ok(dePseudonymizer.DePseudonymizeResource(resource));
             }
             catch (Exception exc)
             {
                 logger.LogError(exc, "DePseudonymize failed");
-                Response.StatusCode = StatusCodes.Status500InternalServerError;
-                return GetInternalErrorOutcome(exc);
+                return StatusCode(500, GetInternalErrorOutcome(exc));
             }
         }
 
