@@ -1,15 +1,13 @@
 using System;
-using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using FhirPseudonymizer.Config;
-using FhirPseudonymizer.Pseudonymization.Vfps;
 using Grpc.Core;
 using Grpc.Net.Client.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Vfps.Protos;
 
-namespace FhirPseudonymizer.Pseudonymization.GPas;
+namespace FhirPseudonymizer.Pseudonymization.Vfps;
 
 public static class VfpsExtensions
 {

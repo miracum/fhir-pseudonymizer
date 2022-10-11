@@ -25,7 +25,6 @@ public class GPasPseudonymizationProcessorTests
     public void Process_SupportsDomainPrefixSetting(string domainPrefix, string domainName, DataType element,
         string expectedDomain)
     {
-        // using var mock = AutoMock.GetLoose();
         var psnClient = A.Fake<IPseudonymServiceClient>();
         var processor = new PseudonymizationProcessor(psnClient);
 
@@ -37,7 +36,6 @@ public class GPasPseudonymizationProcessorTests
 
         processor.Process(node, null,
             new Dictionary<string, object> { { "domain", domainName }, { "domain-prefix", domainPrefix } });
-
 
         A.CallTo(() => psnClient.GetOrCreatePseudonymFor(A<string>._, expectedDomain))
             .MustHaveHappenedOnceExactly();

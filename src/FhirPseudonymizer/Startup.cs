@@ -5,6 +5,7 @@ using System.Reflection;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.GPas;
+using FhirPseudonymizer.Pseudonymization.Vfps;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
@@ -42,7 +43,7 @@ public class Startup
 
         services.AddApiKeyAuth(appConfig.ApiKey);
 
-        switch (appConfig.PseudonymizationServiceType)
+        switch (appConfig.PseudonymizationService)
         {
             case PseudonymizationServiceType.gPAS:
                 services.AddSingleton<IMemoryCache>(_ => new MemoryCache(

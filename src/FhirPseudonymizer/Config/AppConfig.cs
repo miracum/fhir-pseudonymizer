@@ -8,7 +8,7 @@ public record AppConfig
     public string AnonymizationEngineConfigPath { get; init; }
     public bool UseSystemTextJsonFhirSerializer { get; init; }
     public string ApiKey { get; init; }
-    public PseudonymizationServiceType PseudonymizationServiceType { get; init; }
+    public PseudonymizationServiceType PseudonymizationService { get; init; }
     public CacheConfig Cache { get; init; } = new();
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
