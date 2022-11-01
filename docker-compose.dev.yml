@@ -19,7 +19,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   postgresql:
-    image: docker.io/library/postgres:14.5@sha256:b0ee049a2e347f5ec8c64ad225c7edbc88510a9e34450f23c4079a489ce16268
+    image: docker.io/library/postgres:14.5@sha256:135c62a8134dcef829a1e4f5568bfae44bcfa2c75659ff948f43c71964366aa4
     restart: unless-stopped
     deploy:
       resources:
