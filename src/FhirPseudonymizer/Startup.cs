@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.GPas;
@@ -157,6 +158,7 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapGet("/", context => Task.Run(() => context.Response.Redirect("/swagger")));
             endpoints.MapControllers();
             endpoints.MapMetrics();
         });
