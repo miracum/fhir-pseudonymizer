@@ -19,7 +19,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   postgresql:
-    image: docker.io/library/postgres:14.5@sha256:b0ee049a2e347f5ec8c64ad225c7edbc88510a9e34450f23c4079a489ce16268
+    image: index.docker.io/library/postgres:15.0@sha256:bab8d7be6466e029f7fa1e69ff6aa0082704db330572638fd01f2791824774d8
     restart: unless-stopped
     deploy:
       resources:
@@ -36,7 +36,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/chgl/vfps:v0.6.0@sha256:d43bd4e60d1972b8fc81e6d219c584c50283df20280ba08e5e332cf655a8078e
+    image: ghcr.io/chgl/vfps:v1.0.0@sha256:3a6cf7c3140213dc2d6351693fb8306dc00503f57d51c2b2dc31bfeee99db5a7
     restart: unless-stopped
     deploy:
       resources:
