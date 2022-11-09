@@ -8,6 +8,8 @@ on:
   pull_request:
     branches: [master]
 
+permissions: read-all
+
 env: # Comment env block if you do not want to apply fixes
   # Apply linter fixes configuration
   APPLY_FIXES: none # When active, APPLY_FIXES must also be defined as environment variable (in github/workflows/mega-linter.yml or other CI tool)
@@ -22,6 +24,9 @@ jobs:
   build:
     name: MegaLinter
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       # Git Checkout
       - name: Checkout Code
