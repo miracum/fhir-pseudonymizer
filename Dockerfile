@@ -6,7 +6,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0.100-bullseye-slim-amd64@sha256:26658e5ba4aec0e20ecd6d0ce429b76e520d9ed34a5a59f03246812f33e19c25 AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0.100-bullseye-slim-amd64@sha256:680f4c6544dde8796b7669aa8c080e739d995854e5dad2b6061f65e31a4c7fe8 AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/FhirPseudonymizer/FhirPseudonymizer.csproj .
