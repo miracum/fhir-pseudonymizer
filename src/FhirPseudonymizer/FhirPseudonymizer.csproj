@@ -50,10 +50,4 @@
     <Protobuf Include="Protos\**\*.proto" GrpcServices="Client" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Pseudonymization\NewFolder\**" />
-    <Content Remove="Pseudonymization\NewFolder\**" />
-    <EmbeddedResource Remove="Pseudonymization\NewFolder\**" />
-    <None Remove="Pseudonymization\NewFolder\**" />
-  </ItemGroup>
 </Project>

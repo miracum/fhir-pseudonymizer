@@ -1,16 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
+using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
 using Hl7.Fhir.Utility;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using Prometheus;
 
 namespace FhirPseudonymizer.Pseudonymization.GPas;
@@ -40,6 +35,8 @@ public class GPasFhirClient : IPseudonymServiceClient
         this.logger = logger;
 
         Client = clientFactory.CreateClient("gPAS");
+
+        FhirClient = new FhirClient(Client.BaseAddress, Client);
 
         PseudonymCache = pseudonymCache;
         OriginalValueCache = originalValueCache;
@@ -76,6 +73,7 @@ public class GPasFhirClient : IPseudonymServiceClient
     private TimeSpan AbsoluteExpiration { get; }
     private Func<string, string, Task<string>> GetOrCreatePseudonymForResolver { get; }
     private Func<string, string, Task<string>> GetOriginalValueForResolver { get; }
+    private FhirClient FhirClient { get; }
 
     public async Task<string> GetOrCreatePseudonymFor(string value, string domain)
     {
@@ -189,7 +187,7 @@ public class GPasFhirClient : IPseudonymServiceClient
 
     private async Task<string> GetOrCreatePseudonymForV2(string value, string domain)
     {
-        var responseParameters = await RequestGetOrCreatePseudonymForV2(value, domain, "$pseudonymize-allow-create");
+        var responseParameters = await RequestGetOrCreatePseudonymForV2(value, domain, "pseudonymize-allow-create");
 
         var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
         var pseudonym = firstResponseParameter?.Part.Find(part => part.Name == "pseudonym");
@@ -203,7 +201,7 @@ public class GPasFhirClient : IPseudonymServiceClient
 
     private async Task<string> GetOrCreatePseudonymForV2x(string value, string domain)
     {
-        var responseParameters = await RequestGetOrCreatePseudonymForV2(value, domain, "$pseudonymizeAllowCreate");
+        var responseParameters = await RequestGetOrCreatePseudonymForV2(value, domain, "pseudonymizeAllowCreate");
 
         var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
         var pseudonym = firstResponseParameter?.Part.Find(part => part.Name == "pseudonym");
@@ -221,14 +219,9 @@ public class GPasFhirClient : IPseudonymServiceClient
             .Add("target", new FhirString(domain))
             .Add("original", new FhirString(value));
 
-        var parametersBody = await FhirSerializer.SerializeToStringAsync(parameters);
-        using var content = new StringContent(parametersBody, Encoding.UTF8, "application/fhir+json");
-        var response = await Client.PostAsync(operation, content);
-        logger.LogDebug("Request to {Operation} responded with: {Response}", operation, response);
-        response.EnsureSuccessStatusCode();
+        var response = await FhirClient.WholeSystemOperationAsync(operation, parameters);
 
-        var responseContent = await response.Content.ReadAsStringAsync();
-        return await FhirParser.ParseAsync<Parameters>(responseContent);
+        return response as Parameters;
     }
 
     private async Task<Parameters> RequestGetOriginalValueForV2(string pseudonym, string domain, string operation)

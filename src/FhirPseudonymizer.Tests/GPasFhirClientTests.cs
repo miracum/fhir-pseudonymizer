@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Net.Http.Headers;
 using FakeItEasy;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
@@ -33,27 +29,29 @@ public class GPasFhirClientTests
 
     private static readonly Uri testBaseAddress = new("http://gpas");
 
-    private const string ResponseContent = @"{
-        ""resourceType"": ""Parameters"",
-        ""parameter"": [
+    private const string ResponseContent = $$"""
+    {
+        "resourceType": "Parameters",
+        "parameter": [
             {
-                ""name"": ""pseudonym"",
-                ""part"": [
+                "name": "pseudonym",
+                "part": [
                     {
-                        ""name"": ""pseudonym"",
-                        ""valueIdentifier"": {
-                            ""system"": ""https://ths-greifswald.de/gpas"",
-                            ""value"": ""24""
+                        "name": "pseudonym",
+                        "valueIdentifier": {
+                            "system": "https://ths-greifswald.de/gpas",
+                            "value": "24"
                         }
                     }
                 ]
             },
             {
-                ""name"": ""42"",
-                ""valueString"": ""24""
+                "name": "42",
+                "valueString": "24"
             }
         ]
-    }";
+    }
+    """;
 
     private readonly HttpMessageHandler messageHandler;
     private readonly IHttpClientFactory clientFactory;
@@ -81,10 +79,11 @@ public class GPasFhirClientTests
 
     private void VerifyRequest(HttpMethod requestMethod, string requestUri)
     {
-        A.CallTo(messageHandler).Where(_ => _.Method.Name == "SendAsync")
-            .WhenArgumentsMatch(((HttpRequestMessage r, CancellationToken _) =>
+        A.CallTo(messageHandler)
+            .Where(_ => _.Method.Name == "SendAsync")
+            .WhenArgumentsMatch((HttpRequestMessage r, CancellationToken _) =>
                 r.Method == requestMethod &&
-                r.RequestUri == new Uri(testBaseAddress.AbsoluteUri + requestUri)))
+                r.RequestUri == new Uri(testBaseAddress.AbsoluteUri + requestUri))
             .MustHaveHappenedOnceExactly();
     }
 
@@ -145,11 +144,17 @@ public class GPasFhirClientTests
     private static HttpMessageHandler CreateHttpMessageHandler()
     {
         var handler = A.Fake<HttpMessageHandler>();
-        A.CallTo(handler).Where(_ => _.Method.Name == "SendAsync").WithReturnType<Task<HttpResponseMessage>>()
+        A.CallTo(handler)
+            .Where(_ => _.Method.Name == "SendAsync")
+            .WithReturnType<Task<HttpResponseMessage>>()
             .Returns(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(ResponseContent),
+                // these values have to be set since they are used by the FhirClient:
+                // https://github.com/FirelyTeam/firely-net-common/blob/5899ce463f6cf166520cbbe6322310940942f81c/src/Hl7.Fhir.Support.Poco/Rest/HttpToEntryExtensions.cs#L28 &
+                // https://github.com/FirelyTeam/firely-net-sdk/blob/f71543edc34c9edecf0f13af50d35e9e57ca353a/src/Hl7.Fhir.Core/Rest/TypedEntryResponseToBundle.cs#L24
+                Content = new StringContent(ResponseContent, new MediaTypeHeaderValue("application/json+fhir")),
+                RequestMessage = new HttpRequestMessage(HttpMethod.Post, testBaseAddress),
             });
 
         return handler;
