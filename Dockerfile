@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0.0-jammy-chiseled@sha256:1768d50efc593b58b0f4a0271be89d07e72adbae42ce25e4f9e717463ebcbf0d AS runtime
+FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0.1-jammy-chiseled@sha256:05dd233adae9aaa218df1ac188fa6be415482eb0ee0f826c4c840ed64d473efd AS runtime
 WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp
 USER 65532:65532
@@ -6,7 +6,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0.100-bullseye-slim-amd64@sha256:680f4c6544dde8796b7669aa8c080e739d995854e5dad2b6061f65e31a4c7fe8 AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0.101-bullseye-slim-amd64@sha256:da34b595be986af8c183209c405d8c5d1ebecb11ae1aceef6a6297896ab71ba3 AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/FhirPseudonymizer/FhirPseudonymizer.csproj .
