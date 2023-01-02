@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
 
       - name: Install .NET
-        uses: actions/setup-dotnet@a351d9ea84bc76ec7508debf02a39d88f8b6c0c0 # tag=v2
+        uses: actions/setup-dotnet@607fce577a46308457984d59e4954e075820f10a # v3
         with:
           dotnet-version: "7.0.x"
           include-prerelease: true
