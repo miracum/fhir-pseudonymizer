@@ -2,13 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
+    <LangVersion>11.0</LangVersion>
+    <!-- <Nullable>enable</Nullable> -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
     <UserSecretsId>74fd5f09-6f06-4b68-8c73-152e215728ff</UserSecretsId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="6.0.1" />
+    <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="7.0.0" />
     <PackageReference Include="Google.Protobuf" Version="3.21.12" />
     <PackageReference Include="Grpc.Net.Client" Version="2.51.0" />
     <PackageReference Include="Grpc.Net.ClientFactory" Version="2.51.0" />
@@ -31,7 +37,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="OpenTelemetry" Version="1.4.0-rc.1" />
     <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.4.0-rc.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.0.0-rc9.9" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.4.0-rc.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc9.10" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc9.10" />
   </ItemGroup>

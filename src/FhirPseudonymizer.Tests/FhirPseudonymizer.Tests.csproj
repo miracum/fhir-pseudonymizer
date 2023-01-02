@@ -2,10 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <CodeAnalysisRuleSet>..\..\stylecop.ruleset.xml</CodeAnalysisRuleSet>
+    <LangVersion>11.0</LangVersion>
+    <!-- <Nullable>enable</Nullable> -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
+    <IsPackable>false</IsPackable>
+    <CodeAnalysisRuleSet>..\..\stylecop.ruleset.xml</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <ItemGroup>

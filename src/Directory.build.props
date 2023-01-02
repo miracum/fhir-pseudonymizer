@@ -1,0 +1,21 @@
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <LangVersion>11.0</LangVersion>
+        <!-- <Nullable>enable</Nullable> -->
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AnalysisLevel>latest</AnalysisLevel>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsAsErrors />
+        <Company>miracum.org</Company>
+        <Description>A REST service to pseudonymize and anonymize FHIR resources.</Description>
+        <Copyright>© miracum.org. All rights reserved.</Copyright>
+        <NeutralLanguage>en-US</NeutralLanguage>
+        <Authors>miracum.org</Authors>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+</Project>
