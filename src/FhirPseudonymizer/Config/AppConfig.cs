@@ -12,6 +12,7 @@ public record AppConfig
     public CacheConfig Cache { get; init; } = new();
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
+    public ushort MetricsPort { get; set; } = 8081;
 }
 
 public record CacheConfig

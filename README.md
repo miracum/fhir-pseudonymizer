@@ -68,9 +68,9 @@ Accessing this endpoint requires authentication. So make sure to set the `APIKEY
 
 > ⚠ if decryption or de-pseudonymization of a value fails, then the original value is returned. This behavior may change or be made configurable in the future.
 
-#### `/metrics`
+#### `:8081/metrics`
 
-While not part of the "user" API, the application exposes metrics in the Prometheus format at the `/metrics` endpoint.
+While not part of the "user" API, the application exposes metrics in the Prometheus format at the `/metrics` endpoint on port `8081`.
 
 ## Configuration
 
@@ -86,6 +86,7 @@ Additionally, there are some optional configuration values that can be set as en
 | `ApiKey`                          | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                 | `""`                        |
 | `UseSystemTextJsonFhirSerializer` | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4> | `false`                     |
 | `PseudonymizationService`         | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `None`                                                                                                                                        | `"gPAS"`                    |
+| `MetricsPort`                     | The port where metrics in Prometheus format should be exposed at under the `/metrics` route.                                                                                                                             | `8081`                      |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
 
@@ -209,17 +210,25 @@ Note: The domain name could also have been replaced completely by overriding the
 
 ## Development
 
+### Start Development Fixtures (optional)
+
+To test gPAS, Vfps, and tracing via Jaeger, run
+
+```sh
+docker compose -f docker-compose.dev.yml up
+```
+
 ### Build
 
 ```sh
-dotnet restore src/FhirPseudonymizer
-dotnet build src/FhirPseudonymizer
+dotnet restore
+dotnet build
 ```
 
 Or using Docker:
 
 ```sh
-docker build -t fhir-pseudonymizer:local-build .
+docker build -t ghcr.io/miracum/fhir-pseudonymizer:local-build .
 ```
 
 ### Run
@@ -287,9 +296,9 @@ kubectl apply -f tests/iter8/experiment.yaml
 ```console
 OS=Windows 11 (10.0.22000.978/21H2)
 12th Gen Intel Core i9-12900K, 1 CPU, 24 logical and 16 physical cores
-32GiB of DDR4 4800MHz RAM
+32GiB of DDR5 4800MHz RAM
 Samsung SSD 980 Pro 1TiB
-.NET SDK=7.0.100-rc.1.22431.12
+.NET SDK=7.0.101
 ```
 
 Prerequisites: <https://github.com/codesenberg/bombardier>
@@ -362,7 +371,7 @@ cosign verify --key https://miracum.github.io/cosign.pub ghcr.io/miracum/fhir-ps
 ## Semantic versioning exclusion policies
 
 The project's versioning follows the [SemVer](https://semver.org/) convention.
-However, we exclude metrics (ie. anything under the `/metrics` endpoint), traces, and the contents of the container image from this.
+However, we exclude metrics (ie. anything under the `:8081/metrics` endpoint), traces, and the contents of the container image from this.
 Alwas be prepared to double-check the release notes before updating.
 
 ## Attribution

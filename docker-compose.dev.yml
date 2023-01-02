@@ -5,9 +5,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1g
+          memory: 2g
+          cpus: "1"
         reservations:
           memory: 1g
+          cpus: "1"
     cap_drop:
       - ALL
     ipc: none
@@ -18,15 +20,17 @@ services:
       - "6831:6831/udp"
       - "127.0.0.1:16686:16686"
 
-  postgresql:
+  vfps-db:
     image: index.docker.io/library/postgres:15.1@sha256:f4cd32e7a418d9c9ba043e7d561243388202b654c740bcc85ca40b41d9fb4f1e
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 1g
+          cpus: "1"
         reservations:
           memory: 1g
+          cpus: "1"
     ipc: private
     security_opt:
       - "no-new-privileges:true"
@@ -36,7 +40,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/chgl/vfps:v1.0.0@sha256:3a6cf7c3140213dc2d6351693fb8306dc00503f57d51c2b2dc31bfeee99db5a7
+    image: ghcr.io/miracum/vfps:v1.1.3@sha256:a4940766829e5d5f330030e8813049d2f074651876853f672f45de0709e35fbf
     restart: unless-stopped
     deploy:
       resources:
@@ -56,12 +60,14 @@ services:
     environment:
       COMPlus_EnableDiagnostics: "0"
       ForceRunDatabaseMigrations: "true"
-      ConnectionStrings__PostgreSQL: "Host=postgresql:5432;Database=vfps;Timeout=60;Max Auto Prepare=5;Application Name=vfps;Maximum Pool Size=50;"
+      ConnectionStrings__PostgreSQL: "Host=vfps-db:5432;Database=vfps;Timeout=60;Max Auto Prepare=5;Application Name=vfps;Maximum Pool Size=50;"
       PGUSER: postgres
       PGPASSWORD: postgres
       Tracing__IsEnabled: "true"
       Tracing__Jaeger__AgentHost: "jaeger"
       Pseudonymization__Caching__Namespaces__IsEnabled: "true"
+    depends_on:
+      - vfps-db
     ports:
       # Http1, Http2, Http3
       - "127.0.0.1:8080:8080"
