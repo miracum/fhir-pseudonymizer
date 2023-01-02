@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0.1-jammy-chiseled@sha256:05dd233adae9aaa218df1ac188fa6be415482eb0ee0f826c4c840ed64d473efd AS runtime
 WORKDIR /opt/fhir-pseudonymizer
-EXPOSE 8080/tcp
+EXPOSE 8080/tcp 8081/tcp
 USER 65532:65532
 ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
