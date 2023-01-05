@@ -87,39 +87,11 @@ public class Startup
             .AddCheck("live", () => HealthCheckResult.Healthy())
             .ForwardToPrometheus();
 
-        if (Configuration.GetValue<bool>("Tracing:Enabled"))
+        var isTracingEnabled = Configuration.GetValue("Tracing:IsEnabled", false) ||
+            Configuration.GetValue("Tracing:Enabled", false);
+        if (isTracingEnabled)
         {
-            services.AddOpenTelemetry().WithTracing(builder =>
-            {
-                var serviceName = Environment.GetEnvironmentVariable("JAEGER_SERVICE_NAME") ??
-                    Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ??
-                    Configuration.GetValue<string>("Tracing:ServiceName");
-
-                builder
-                    .AddGrpcClientInstrumentation()
-                    .AddAspNetCoreInstrumentation(o =>
-                    {
-                        o.Filter = (r) =>
-                        {
-                            var ignoredPaths = new[]
-                            {
-                                 "/health",
-                                 "/ready",
-                                 "/live",
-                                 "/fhir/metadata"
-                            };
-
-                            var path = r.Request.Path.Value;
-                            return !ignoredPaths.Any(path.Contains);
-                        };
-                    })
-                    .AddSource(Program.ActivitySource.Name)
-                    .AddHttpClientInstrumentation()
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName))
-                    .AddJaegerExporter();
-            });
-
-            services.Configure<JaegerExporterOptions>(Configuration.GetSection("Tracing:Jaeger"));
+            services.AddTracing(Configuration);
         }
     }
 

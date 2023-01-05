@@ -24,6 +24,7 @@
     </PackageReference>
     <PackageReference Include="Hl7.Fhir.R4" Version="4.3.0" />
     <PackageReference Include="Hl7.FhirPath" Version="4.3.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.4.0-rc.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.0.0-rc9.10" />
     <PackageReference Include="prometheus-net.AspNetCore" Version="7.0.0" />
     <PackageReference Include="prometheus-net" Version="7.0.0" />
