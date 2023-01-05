@@ -22,6 +22,7 @@ jobs:
     outputs:
       image-tags: ${{ steps.container_meta.outputs.tags }}
       image-version: ${{ steps.container_meta.outputs.version }}
+      image-digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Docker meta
         id: container_meta
@@ -117,6 +118,7 @@ jobs:
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
 
       - name: Build and push image
+        id: build
         uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # v3
         with:
           load: ${{ github.event_name == 'pull_request' }}
@@ -276,6 +278,26 @@ jobs:
             conventional-changelog-conventionalcommits@5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+
+  # the image is pushed to multiple registries, but for now only ghcr.io
+  # will be supported for provenance
+  ghcr-container-provenance:
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    needs:
+      - build
+    permissions:
+      actions: read # for detecting the Github Actions environment.
+      id-token: write # for creating OIDC tokens for signing.
+      packages: write # for uploading attestations.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.4.0
+    with:
+      image: ghcr.io/${{ github.repository }}
+      digest: ${{ needs.build.outputs.image-digest }}
+      registry-username: ${{ github.actor }}
+      # TODO(https://github.com/slsa-framework/slsa-github-generator/issues/492): Remove after GA release.
+      compile-generator: true
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   sign-images:
     name: sign images

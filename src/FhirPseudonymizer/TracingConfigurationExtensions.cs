@@ -1,10 +1,10 @@
 using System.Reflection;
-using OpenTelemetry.Trace;
+using OpenTelemetry;
 using OpenTelemetry.Exporter;
+using OpenTelemetry.Instrumentation.AspNetCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using OpenTelemetry;
-using OpenTelemetry.Instrumentation.AspNetCore;
+using OpenTelemetry.Trace;
 
 namespace FhirPseudonymizer;
 

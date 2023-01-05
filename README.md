@@ -1,6 +1,7 @@
 # FHIR® Pseudonymizer
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/miracum/fhir-pseudonymizer/badge)](https://api.securityscorecards.dev/projects/github.com/miracum/fhir-pseudonymizer)
+[![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
 <p align="center"><img width="100" src="docs/img/logo.png" alt="FHIR® Pseudonymizer Logo"></p>
 
