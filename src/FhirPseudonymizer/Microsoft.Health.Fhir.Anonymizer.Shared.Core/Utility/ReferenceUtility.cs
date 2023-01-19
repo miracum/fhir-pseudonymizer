@@ -6,29 +6,34 @@ using Hl7.Fhir.Model;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
 {
-    public class ReferenceUtility
+    public partial class ReferenceUtility
     {
+        // Regex for oid reference https://www.hl7.org/fhir/datatypes.html#oid
+        [GeneratedRegex("^(?<prefix>urn:oid:)(?<id>[0-2](\\.(0|[1-9][0-9]*))+)(?<suffix>)$")]
+        private static partial Regex OidReferenceRegex();
+
+        // Regex for uuid reference https://www.hl7.org/fhir/datatypes.html#uuid
+        [GeneratedRegex("^(?<prefix>urn:uuid:)(?<id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?<suffix>)$")]
+        private static partial Regex UuidReferenceRegex();
+
         private const string InternalReferencePrefix = "#";
 
-        private static readonly List<Regex> _resourceReferenceRegexes = new List<Regex>
+        private static readonly List<Regex> _resourceReferenceRegexes = new()
         {
             // Regex for absolute or relative literal url reference, https://www.hl7.org/fhir/references.html#literal
             new Regex(@"^(?<prefix>((http|https)://([A-Za-z0-9\\\/\.\:\%\$])*)?("
                       + string.Join("|", ModelInfo.SupportedResources)
                       + @")\/)(?<id>[A-Za-z0-9\-\.]{1,64})(?<suffix>\/_history\/[A-Za-z0-9\-\.]{1,64})?$"),
             // Regex for conditional references (https://www.hl7.org/fhir/http.html#trules) or search parameters with identifier
-            new Regex(@"^(?<prefix>(("
+            new Regex("^(?<prefix>(("
                       + string.Join("|", ModelInfo.SupportedResources)
                       + @")\?)?identifier=((http|https)://([A-Za-z0-9\\\/\.\:\%\$\-])*\|)?)(?<id>[A-Za-z0-9\-\.]{1,64})$")
         };
 
         private static readonly List<Regex> _referenceRegexes = _resourceReferenceRegexes.Concat(new List<Regex>
         {
-            // Regex for oid reference https://www.hl7.org/fhir/datatypes.html#oid
-            new Regex(@"^(?<prefix>urn:oid:)(?<id>[0-2](\.(0|[1-9][0-9]*))+)(?<suffix>)$"),
-            // Regex for uuid reference https://www.hl7.org/fhir/datatypes.html#uuid
-            new Regex(
-                @"^(?<prefix>urn:uuid:)(?<id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?<suffix>)$")
+            OidReferenceRegex(),
+            UuidReferenceRegex(),
         }).ToList();
 
         public static string GetReferencePrefix(string reference)
@@ -73,7 +78,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
 
             if (reference.StartsWith(InternalReferencePrefix))
             {
-                var internalId = reference.Substring(InternalReferencePrefix.Length);
+                var internalId = reference[InternalReferencePrefix.Length..];
                 var newReference = $"{InternalReferencePrefix}{transformation(internalId)}";
 
                 return newReference;
