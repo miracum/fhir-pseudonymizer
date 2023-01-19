@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using FakeItEasy;
+using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.FhirPath;
@@ -14,19 +15,26 @@ public class GPasPseudonymizationProcessorTests
 {
     public static IEnumerable<object[]> GetProcessData()
     {
-        yield return new object[] { "foo-", "bar", new FhirString("12345"), "foo-bar" };
-        yield return new object[] { null, "bar", new FhirString("12345"), "bar" };
-        yield return new object[] { "foo-", null, new ResourceReference("Patient/12345"), "foo-Patient" };
-        yield return new object[] { null, null, new ResourceReference("Patient/12345"), "Patient" };
+        foreach (var enableConditionalReferencePseudonymization in new[] { true, false })
+        {
+            yield return new object[] { "foo-", "bar", new FhirString("12345"), "foo-bar", enableConditionalReferencePseudonymization };
+            yield return new object[] { null, "bar", new FhirString("12345"), "bar", enableConditionalReferencePseudonymization };
+            yield return new object[] { "foo-", null, new ResourceReference("Patient/12345"), "foo-Patient", enableConditionalReferencePseudonymization };
+            yield return new object[] { null, null, new ResourceReference("Patient/12345"), "Patient", enableConditionalReferencePseudonymization };
+        }
     }
 
     [Theory]
     [MemberData(nameof(GetProcessData))]
     public void Process_SupportsDomainPrefixSetting(string domainPrefix, string domainName, DataType element,
-        string expectedDomain)
+        string expectedDomain, bool enableConditionalReferencePseudonymization)
     {
+        var features = new FeatureManagement()
+        {
+            ConditionalReferencePseudonymization = enableConditionalReferencePseudonymization,
+        };
         var psnClient = A.Fake<IPseudonymServiceClient>();
-        var processor = new PseudonymizationProcessor(psnClient);
+        var processor = new PseudonymizationProcessor(psnClient, features);
 
         var node = ElementNode.FromElement(element.ToTypedElement());
         while (!node.HasValue())

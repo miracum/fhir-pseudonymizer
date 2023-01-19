@@ -4,7 +4,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 public class ReferenceUtilityTests
 {
-
     [Theory]
     [InlineData("Patient/123")]
     [InlineData("Encounter?identifier=123")]
@@ -23,5 +22,4 @@ public class ReferenceUtilityTests
     {
         Assert.Equal(ReferenceUtility.TransformReferenceId(uri, _ => "xxx"), uri.Replace("123", "xxx"));
     }
-
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using FhirPseudonymizer.Config;
 using Hl7.Fhir.ElementModel;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
@@ -9,15 +10,20 @@ using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 namespace FhirPseudonymizer.Pseudonymization
 {
-    public class PseudonymizationProcessor : IAnonymizerProcessor
+    public partial class PseudonymizationProcessor : IAnonymizerProcessor
     {
-        public PseudonymizationProcessor(IPseudonymServiceClient psnClient)
+        public PseudonymizationProcessor(IPseudonymServiceClient psnClient, FeatureManagement features)
         {
             PsnClient = psnClient;
+            IsConditionalReferencePseudonymizationEnabled = features.ConditionalReferencePseudonymization;
         }
 
+        [GeneratedRegex("^(?<domain>.*?)(\\/|\\?)")]
+        private static partial Regex ResourceTypeRegex();
+
         protected IPseudonymServiceClient PsnClient { get; }
-        private Regex ResourceTypeMatcher { get; } = new(@"^(?<domain>.*?)(\/|\?)");
+        private Regex ResourceTypeMatcher { get; } = ResourceTypeRegex();
+        private bool IsConditionalReferencePseudonymizationEnabled { get; }
 
         public ProcessResult Process(
             ElementNode node,
@@ -32,30 +38,33 @@ namespace FhirPseudonymizer.Pseudonymization
             }
 
             // prefix the domain, if set
-            var domainPrefix =
-                settings?.GetValueOrDefault("domain-prefix", null)
-                ?? settings?.GetValueOrDefault("namespace-prefix", string.Empty);
+            var domainPrefix = settings?.GetValueOrDefault("domain-prefix", null) ??
+                settings?.GetValueOrDefault("namespace-prefix", string.Empty);
 
-            var domain =
-                settings?.GetValueOrDefault("domain", null)
-                ?? settings?.GetValueOrDefault("namespace", null)?.ToString();
+            var domain = settings?.GetValueOrDefault("domain", null) ??
+                settings?.GetValueOrDefault("namespace", null)?
+                .ToString();
 
             var input = node.Value.ToString();
 
             // Pseudonymize the id part for "Reference.reference" node and
             // pseudonymize whole input for other node types
-            if (node.IsReferenceStringNode() || IsReferenceUriNode(node, input) || IsConditionalElement(node, input))
+            if (node.IsReferenceStringNode() || IsReferenceUriNode(node, input))
             {
                 // if the domain setting is not set,
                 // create a domain from the reference, ie "Patient/123" -> "Patient"
-                domain ??= ResourceTypeMatcher
-                    .Match(ReferenceUtility.GetReferencePrefix(input))
-                    .Groups["domain"].Value;
+                domain ??= ReferenceUtility
+                    .GetReferencePrefix(input)
+                    .TrimEnd('/');
 
                 node.Value = ReferenceUtility.TransformReferenceId(
                     input,
-                    x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain)
-                );
+                    x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain));
+            }
+            else if (IsConditionalReferencePseudonymizationEnabled && IsConditionalElement(node, input))
+            {
+                domain ??= ResourceTypeMatcher.Match(ReferenceUtility
+                    .GetReferencePrefix(input)).Groups["domain"].Value;
             }
             else
             {
@@ -86,7 +95,7 @@ namespace FhirPseudonymizer.Pseudonymization
 
     public class DePseudonymizationProcessor : PseudonymizationProcessor
     {
-        public DePseudonymizationProcessor(IPseudonymServiceClient psnClient) : base(psnClient) { }
+        public DePseudonymizationProcessor(IPseudonymServiceClient psnClient, FeatureManagement features) : base(psnClient, features) { }
 
         protected override string GetOrCreatePseudonym(string input, string domain)
         {
