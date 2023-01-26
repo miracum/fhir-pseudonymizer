@@ -35,6 +35,7 @@ public class Startup
 
         services.AddSingleton(_ => appConfig);
         services.AddSingleton(_ => appConfig.GPas);
+        services.AddSingleton(_ => appConfig.Features);
 
         services.AddApiKeyAuth(appConfig.ApiKey);
 

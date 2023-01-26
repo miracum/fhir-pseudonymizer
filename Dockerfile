@@ -31,7 +31,7 @@ RUN dotnet test \
     --settings=runsettings.xml
 
 FROM runtime
-COPY --from=build /build/publish/*anonymization.yaml /etc
+COPY --from=build /build/publish/*anonymization.yaml /etc/
 COPY --from=build /build/publish .
 
 ENTRYPOINT ["dotnet", "/opt/fhir-pseudonymizer/FhirPseudonymizer.dll"]

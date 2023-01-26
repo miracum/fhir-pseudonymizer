@@ -13,6 +13,7 @@ public record AppConfig
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
     public ushort MetricsPort { get; set; } = 8081;
+    public FeatureManagement Features { get; set; } = new();
 }
 
 public record CacheConfig
@@ -48,4 +49,9 @@ public record PseudonymServiceBasicAuthConfig
 {
     public string Username { get; init; }
     public string Password { get; init; }
+}
+
+public record FeatureManagement
+{
+    public bool ConditionalReferencePseudonymization { get; init; }
 }

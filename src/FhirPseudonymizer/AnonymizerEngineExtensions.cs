@@ -23,7 +23,7 @@ public static class AnonymizerEngineExtensions
             var engine = new AnonymizerEngine(anonConfig);
 
             var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor("pseudonymize", new PseudonymizationProcessor(psnClient));
+            engine.AddProcessor("pseudonymize", new PseudonymizationProcessor(psnClient, appConfig.Features));
 
             return engine;
         });
@@ -34,7 +34,7 @@ public static class AnonymizerEngineExtensions
             var engine = new DePseudonymizerEngine(anonConfig);
 
             var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor("pseudonymize", new DePseudonymizationProcessor(psnClient));
+            engine.AddProcessor("pseudonymize", new DePseudonymizationProcessor(psnClient, appConfig.Features));
 
             engine.AddProcessor("encrypt", new DecryptProcessor(anonConfig.GetParameterConfiguration().EncryptKey));
             return engine;
