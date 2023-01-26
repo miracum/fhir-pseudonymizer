@@ -16,11 +16,7 @@ docker run --rm -i -p 8080:8080 ghcr.io/miracum/fhir-pseudonymizer:latest
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
 ```
 
-Container images are pushed to the following registries:
-
-- `ghcr.io/miracum/fhir-pseudonymizer:latest`
-- `quay.io/miracum/fhir-pseudonymizer:latest`
-- `harbor.miracum.org/miracum-etl/fhir-pseudonymizer:latest`
+Container images are pushed to the [ghcr.io package registry](https://github.com/orgs/miracum/packages?repo_name=fhir-pseudonymizer).
 
 For deployment in Kubernetes see <https://github.com/miracum/charts/tree/master/charts/fhir-pseudonymizer> for a Helm Chart deploying the FHIR Pseudonymizer.
 
@@ -373,7 +369,7 @@ cosign verify --key https://miracum.github.io/cosign.pub ghcr.io/miracum/fhir-ps
 
 The project's versioning follows the [SemVer](https://semver.org/) convention.
 However, we exclude metrics (ie. anything under the `:8081/metrics` endpoint), traces, and the contents of the container image from this.
-Alwas be prepared to double-check the release notes before updating.
+Always be prepared to double-check the release notes before updating.
 
 ## Attribution
 
