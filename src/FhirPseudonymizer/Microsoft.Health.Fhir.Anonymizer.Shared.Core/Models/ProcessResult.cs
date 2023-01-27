@@ -10,7 +10,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Models
 
         public bool IsAbstracted => ProcessRecords.ContainsKey(AnonymizationOperations.Abstract);
 
-        public bool IsCryptoHashed => ProcessRecords.ContainsKey(AnonymizationOperations.CryptoHash);
+        public bool IsCryptoHashed =>
+            ProcessRecords.ContainsKey(AnonymizationOperations.CryptoHash);
 
         public bool IsEncrypted => ProcessRecords.ContainsKey(AnonymizationOperations.Encrypt);
 
@@ -19,7 +20,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Models
 
         public bool IsGeneralized => ProcessRecords.ContainsKey(AnonymizationOperations.Generalize);
 
-        public bool IsPseudonymized => ProcessRecords.ContainsKey(AnonymizationOperations.Pseudonymize);
+        public bool IsPseudonymized =>
+            ProcessRecords.ContainsKey(AnonymizationOperations.Pseudonymize);
 
         public Dictionary<string, HashSet<ITypedElement>> ProcessRecords { get; } =
             new Dictionary<string, HashSet<ITypedElement>>();

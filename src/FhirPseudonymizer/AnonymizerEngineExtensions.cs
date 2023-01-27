@@ -8,11 +8,16 @@ namespace FhirPseudonymizer;
 
 public static class AnonymizerEngineExtensions
 {
-    public static IServiceCollection AddAnonymizerEngine(this IServiceCollection services, AppConfig appConfig)
+    public static IServiceCollection AddAnonymizerEngine(
+        this IServiceCollection services,
+        AppConfig appConfig
+    )
     {
         AnonymizerEngine.InitializeFhirPathExtensionSymbols();
 
-        var anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigFile(appConfig.AnonymizationEngineConfigPath);
+        var anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigFile(
+            appConfig.AnonymizationEngineConfigPath
+        );
 
         // add the anon config as an additional service to allow mocking it
         services.AddSingleton(_ => anonConfigManager);
@@ -23,7 +28,10 @@ public static class AnonymizerEngineExtensions
             var engine = new AnonymizerEngine(anonConfig);
 
             var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor("pseudonymize", new PseudonymizationProcessor(psnClient, appConfig.Features));
+            engine.AddProcessor(
+                "pseudonymize",
+                new PseudonymizationProcessor(psnClient, appConfig.Features)
+            );
 
             return engine;
         });
@@ -34,9 +42,15 @@ public static class AnonymizerEngineExtensions
             var engine = new DePseudonymizerEngine(anonConfig);
 
             var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor("pseudonymize", new DePseudonymizationProcessor(psnClient, appConfig.Features));
+            engine.AddProcessor(
+                "pseudonymize",
+                new DePseudonymizationProcessor(psnClient, appConfig.Features)
+            );
 
-            engine.AddProcessor("encrypt", new DecryptProcessor(anonConfig.GetParameterConfiguration().EncryptKey));
+            engine.AddProcessor(
+                "encrypt",
+                new DecryptProcessor(anonConfig.GetParameterConfiguration().EncryptKey)
+            );
             return engine;
         });
 

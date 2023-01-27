@@ -17,15 +17,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Validation
                 var path = string.IsNullOrEmpty(error.MemberNames?.FirstOrDefault())
                     ? string.Empty
                     : error.MemberNames?.FirstOrDefault();
-                _logger.LogDebug(string.IsNullOrEmpty(resource?.Id)
-                    ? $"The input is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
-                    : $"The input of resource ID {resource.Id} is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}.");
+                _logger.LogDebug(
+                    string.IsNullOrEmpty(resource?.Id)
+                        ? $"The input is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
+                        : $"The input of resource ID {resource.Id} is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
+                );
             }
 
             if (results.Any())
             {
                 throw new ResourceNotValidException(
-                    "The input is non-conformant with FHIR specification. Please open verbose log for more details. (-v)");
+                    "The input is non-conformant with FHIR specification. Please open verbose log for more details. (-v)"
+                );
             }
         }
 
@@ -35,15 +38,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Validation
             foreach (var error in results)
             {
                 var path = error.MemberNames?.FirstOrDefault() ?? string.Empty;
-                _logger.LogDebug(string.IsNullOrEmpty(resource?.Id)
-                    ? $"The output is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
-                    : $"The output of resource ID {resource.Id} is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}.");
+                _logger.LogDebug(
+                    string.IsNullOrEmpty(resource?.Id)
+                        ? $"The output is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
+                        : $"The output of resource ID {resource.Id} is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
+                );
             }
 
             if (results.Any())
             {
                 throw new ResourceNotValidException(
-                    "The output is non-conformant with FHIR specification. Please open verbose log for more details. (-v)");
+                    "The output is non-conformant with FHIR specification. Please open verbose log for more details. (-v)"
+                );
             }
         }
     }

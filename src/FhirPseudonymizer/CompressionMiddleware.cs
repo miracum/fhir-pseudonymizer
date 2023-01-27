@@ -25,13 +25,25 @@ namespace FhirPseudonymizer
                 switch (context.Request.Headers[ContentEncodingHeader])
                 {
                     case ContentEncodingGzip:
-                        context.Request.Body = new GZipStream(context.Request.Body, CompressionMode.Decompress, true);
+                        context.Request.Body = new GZipStream(
+                            context.Request.Body,
+                            CompressionMode.Decompress,
+                            true
+                        );
                         break;
                     case ContentEncodingBrotli:
-                        context.Request.Body = new BrotliStream(context.Request.Body, CompressionMode.Decompress, true);
+                        context.Request.Body = new BrotliStream(
+                            context.Request.Body,
+                            CompressionMode.Decompress,
+                            true
+                        );
                         break;
                     case ContentEncodingDeflate:
-                        context.Request.Body = new DeflateStream(context.Request.Body, CompressionMode.Decompress, true);
+                        context.Request.Body = new DeflateStream(
+                            context.Request.Body,
+                            CompressionMode.Decompress,
+                            true
+                        );
                         break;
                 }
             }

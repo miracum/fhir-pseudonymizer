@@ -20,7 +20,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             return node?.Children(Constants.ContainedNodeName).CastElementNodes().ToList();
         }
 
-        public static IEnumerable<ElementNode> ResourceDescendantsWithoutSubResource(this ElementNode node)
+        public static IEnumerable<ElementNode> ResourceDescendantsWithoutSubResource(
+            this ElementNode node
+        )
         {
             foreach (var child in node.Children().CastElementNodes())
             {
@@ -39,7 +41,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             }
         }
 
-        public static IEnumerable<ElementNode> SelfAndDescendantsWithoutSubResource(this IEnumerable<ElementNode> nodes)
+        public static IEnumerable<ElementNode> SelfAndDescendantsWithoutSubResource(
+            this IEnumerable<ElementNode> nodes
+        )
         {
             foreach (var node in nodes)
             {

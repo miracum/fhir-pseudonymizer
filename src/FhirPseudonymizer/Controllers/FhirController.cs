@@ -30,22 +30,28 @@ namespace FhirPseudonymizer.Controllers
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public class FhirController : ControllerBase
     {
-        private static readonly Histogram BundleSizeHistogram = Metrics
-            .CreateHistogram("fhirpseudonymizer_received_bundle_size", "Histogram of received bundle sizes.",
-        new HistogramConfiguration
-        {
-            // we divide measurements in 10 buckets of 5 each, up to 50.
-            Buckets = Histogram.LinearBuckets(start: 1, width: 5, count: 20),
-            LabelNames = new[] { "operation" },
-        });
+        private static readonly Histogram BundleSizeHistogram = Metrics.CreateHistogram(
+            "fhirpseudonymizer_received_bundle_size",
+            "Histogram of received bundle sizes.",
+            new HistogramConfiguration
+            {
+                // we divide measurements in 10 buckets of 5 each, up to 50.
+                Buckets = Histogram.LinearBuckets(start: 1, width: 5, count: 20),
+                LabelNames = new[] { "operation" },
+            }
+        );
 
         private readonly IAnonymizerEngine anonymizer;
         private readonly IConfiguration config;
         private readonly IDePseudonymizerEngine dePseudonymizer;
         private readonly ILogger<FhirController> logger;
 
-        public FhirController(IConfiguration config, ILogger<FhirController> logger, IAnonymizerEngine anonymizer,
-            IDePseudonymizerEngine dePseudonymizer)
+        public FhirController(
+            IConfiguration config,
+            ILogger<FhirController> logger,
+            IAnonymizerEngine anonymizer,
+            IDePseudonymizerEngine dePseudonymizer
+        )
         {
             this.config = config;
             this.logger = logger;
@@ -53,12 +59,14 @@ namespace FhirPseudonymizer.Controllers
             this.dePseudonymizer = dePseudonymizer;
 
             BadRequestOutcome = new();
-            BadRequestOutcome.Issue.Add(new OperationOutcome.IssueComponent
-            {
-                Severity = OperationOutcome.IssueSeverity.Error,
-                Code = OperationOutcome.IssueType.Processing,
-                Diagnostics = "Received malformed or missing resource"
-            });
+            BadRequestOutcome.Issue.Add(
+                new OperationOutcome.IssueComponent
+                {
+                    Severity = OperationOutcome.IssueSeverity.Error,
+                    Code = OperationOutcome.IssueType.Processing,
+                    Diagnostics = "Received malformed or missing resource"
+                }
+            );
         }
 
         private OperationOutcome BadRequestOutcome { get; }
@@ -86,8 +94,11 @@ namespace FhirPseudonymizer.Controllers
                 return BadRequest(BadRequestOutcome);
             }
 
-            logger.LogDebug("De-Identifying resource {resourceType}/{resourceId}",
-                resource.TypeName, resource.Id);
+            logger.LogDebug(
+                "De-Identifying resource {resourceType}/{resourceId}",
+                resource.TypeName,
+                resource.Id
+            );
 
             var settings = new AnonymizerSettings();
             if (resource is Parameters param)
@@ -96,7 +107,10 @@ namespace FhirPseudonymizer.Controllers
                 var dynamicSettings = param.GetSingle("settings")?.Part;
                 if (dynamicSettings?.Any() == true)
                 {
-                    settings.DynamicRuleSettings = dynamicSettings.ToDictionary(p => p.Name, p => p.Value as object);
+                    settings.DynamicRuleSettings = dynamicSettings.ToDictionary(
+                        p => p.Name,
+                        p => p.Value as object
+                    );
                 }
 
                 return Anonymize(param.GetSingle("resource").Resource, settings);
@@ -105,7 +119,10 @@ namespace FhirPseudonymizer.Controllers
             return Anonymize(resource);
         }
 
-        private ObjectResult Anonymize(Resource resource, AnonymizerSettings anonymizerSettings = null)
+        private ObjectResult Anonymize(
+            Resource resource,
+            AnonymizerSettings anonymizerSettings = null
+        )
         {
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
             activity?.AddTag("resource.type", resource.TypeName);
@@ -147,8 +164,11 @@ namespace FhirPseudonymizer.Controllers
                 return BadRequest(BadRequestOutcome);
             }
 
-            logger.LogDebug("De-Pseudonymizing resource {resourceType}/{resourceId}",
-                resource.TypeName, resource.Id);
+            logger.LogDebug(
+                "De-Pseudonymizing resource {resourceType}/{resourceId}",
+                resource.TypeName,
+                resource.Id
+            );
 
             if (resource is Bundle bundle)
             {
@@ -188,7 +208,7 @@ namespace FhirPseudonymizer.Controllers
                 Format = new[] { "application/fhir+json" },
                 Rest = new List<CapabilityStatement.RestComponent>
                 {
-                    new () {Mode = CapabilityStatement.RestfulCapabilityMode.Server}
+                    new() { Mode = CapabilityStatement.RestfulCapabilityMode.Server }
                 }
             };
         }
@@ -196,13 +216,15 @@ namespace FhirPseudonymizer.Controllers
         private static OperationOutcome GetInternalErrorOutcome(Exception exc)
         {
             var outcome = new OperationOutcome();
-            outcome.Issue.Add(new OperationOutcome.IssueComponent
-            {
-                Severity = OperationOutcome.IssueSeverity.Fatal,
-                Code = OperationOutcome.IssueType.Processing,
-                Diagnostics =
-                    $"An internal error occurred when processing the request: {exc.Message}.\nAt: {exc.StackTrace}"
-            });
+            outcome.Issue.Add(
+                new OperationOutcome.IssueComponent
+                {
+                    Severity = OperationOutcome.IssueSeverity.Fatal,
+                    Code = OperationOutcome.IssueType.Processing,
+                    Diagnostics =
+                        $"An internal error occurred when processing the request: {exc.Message}.\nAt: {exc.StackTrace}"
+                }
+            );
             return outcome;
         }
     }

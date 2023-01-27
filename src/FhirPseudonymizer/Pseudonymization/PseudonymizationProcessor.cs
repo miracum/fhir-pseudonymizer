@@ -12,10 +12,14 @@ namespace FhirPseudonymizer.Pseudonymization
 {
     public partial class PseudonymizationProcessor : IAnonymizerProcessor
     {
-        public PseudonymizationProcessor(IPseudonymServiceClient psnClient, FeatureManagement features)
+        public PseudonymizationProcessor(
+            IPseudonymServiceClient psnClient,
+            FeatureManagement features
+        )
         {
             PsnClient = psnClient;
-            IsConditionalReferencePseudonymizationEnabled = features.ConditionalReferencePseudonymization;
+            IsConditionalReferencePseudonymizationEnabled =
+                features.ConditionalReferencePseudonymization;
         }
 
         [GeneratedRegex("^(?<domain>.*?)(\\/|\\?)")]
@@ -38,12 +42,13 @@ namespace FhirPseudonymizer.Pseudonymization
             }
 
             // prefix the domain, if set
-            var domainPrefix = settings?.GetValueOrDefault("domain-prefix", null) ??
-                settings?.GetValueOrDefault("namespace-prefix", string.Empty);
+            var domainPrefix =
+                settings?.GetValueOrDefault("domain-prefix", null)
+                ?? settings?.GetValueOrDefault("namespace-prefix", string.Empty);
 
-            var domain = settings?.GetValueOrDefault("domain", null) ??
-                settings?.GetValueOrDefault("namespace", null)?
-                .ToString();
+            var domain =
+                settings?.GetValueOrDefault("domain", null)
+                ?? settings?.GetValueOrDefault("namespace", null)?.ToString();
 
             var input = node.Value.ToString();
 
@@ -53,18 +58,20 @@ namespace FhirPseudonymizer.Pseudonymization
             {
                 // if the domain setting is not set,
                 // create a domain from the reference, ie "Patient/123" -> "Patient"
-                domain ??= ReferenceUtility
-                    .GetReferencePrefix(input)
-                    .TrimEnd('/');
+                domain ??= ReferenceUtility.GetReferencePrefix(input).TrimEnd('/');
 
                 node.Value = ReferenceUtility.TransformReferenceId(
                     input,
-                    x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain));
+                    x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain)
+                );
             }
-            else if (IsConditionalReferencePseudonymizationEnabled && IsConditionalElement(node, input))
+            else if (
+                IsConditionalReferencePseudonymizationEnabled && IsConditionalElement(node, input)
+            )
             {
-                domain ??= ResourceTypeMatcher.Match(ReferenceUtility
-                    .GetReferencePrefix(input)).Groups["domain"].Value;
+                domain ??= ResourceTypeMatcher
+                    .Match(ReferenceUtility.GetReferencePrefix(input))
+                    .Groups["domain"].Value;
             }
             else
             {
@@ -89,13 +96,17 @@ namespace FhirPseudonymizer.Pseudonymization
         private static bool IsConditionalElement(ElementNode node, string value)
         {
             return node.Name.Equals("ifNoneExist", StringComparison.InvariantCultureIgnoreCase)
-                   && ReferenceUtility.IsResourceReference(value);
+                && ReferenceUtility.IsResourceReference(value);
         }
     }
 
     public class DePseudonymizationProcessor : PseudonymizationProcessor
     {
-        public DePseudonymizationProcessor(IPseudonymServiceClient psnClient, FeatureManagement features) : base(psnClient, features) { }
+        public DePseudonymizationProcessor(
+            IPseudonymServiceClient psnClient,
+            FeatureManagement features
+        )
+            : base(psnClient, features) { }
 
         protected override string GetOrCreatePseudonym(string input, string domain)
         {

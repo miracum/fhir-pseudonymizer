@@ -17,8 +17,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             _key = Encoding.UTF8.GetBytes(encryptKey);
         }
 
-        public ProcessResult Process(ElementNode node, ProcessContext context = null,
-            Dictionary<string, object> settings = null)
+        public ProcessResult Process(
+            ElementNode node,
+            ProcessContext context = null,
+            Dictionary<string, object> settings = null
+        )
         {
             var processResult = new ProcessResult();
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
@@ -28,7 +31,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
             var input = node.Value.ToString();
             node.Value = EncryptUtility.EncryptTextToHexWithAes(input, _key);
-            _logger.LogDebug($"Fhir value '{input}' at '{node.Location}' is encrypted to '{node.Value}'.");
+            _logger.LogDebug(
+                $"Fhir value '{input}' at '{node.Location}' is encrypted to '{node.Value}'."
+            );
 
             processResult.AddProcessRecord(AnonymizationOperations.Encrypt, node);
             return processResult;

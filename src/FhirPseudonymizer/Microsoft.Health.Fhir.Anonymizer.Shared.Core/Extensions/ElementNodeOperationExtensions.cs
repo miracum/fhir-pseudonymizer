@@ -16,8 +16,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
         private static readonly PocoStructureDefinitionSummaryProvider s_provider =
             new PocoStructureDefinitionSummaryProvider();
 
-        public static ElementNode Anonymize(this ElementNode node, AnonymizationFhirPathRule[] rules,
-            Dictionary<string, IAnonymizerProcessor> processors, AnonymizerSettings settings = null)
+        public static ElementNode Anonymize(
+            this ElementNode node,
+            AnonymizationFhirPathRule[] rules,
+            Dictionary<string, IAnonymizerProcessor> processors,
+            AnonymizerSettings settings = null
+        )
         {
             var visitor = new AnonymizationVisitor(rules, processors, settings);
             node.Accept(visitor);
@@ -69,50 +73,122 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             var metaNode = node.GetMeta();
             var meta = metaNode?.ToPoco<Meta>() ?? new Meta();
 
-            if (result.IsRedacted && !meta.Security.Any(x =>
-                string.Equals(x.Code, SecurityLabels.REDACT.Code, StringComparison.InvariantCultureIgnoreCase)))
+            if (
+                result.IsRedacted
+                && !meta.Security.Any(
+                    x =>
+                        string.Equals(
+                            x.Code,
+                            SecurityLabels.REDACT.Code,
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                )
+            )
             {
                 meta.Security.Add(SecurityLabels.REDACT);
             }
 
-            if (result.IsAbstracted && !meta.Security.Any(x =>
-                string.Equals(x.Code, SecurityLabels.ABSTRED.Code, StringComparison.InvariantCultureIgnoreCase)))
+            if (
+                result.IsAbstracted
+                && !meta.Security.Any(
+                    x =>
+                        string.Equals(
+                            x.Code,
+                            SecurityLabels.ABSTRED.Code,
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                )
+            )
             {
                 meta.Security.Add(SecurityLabels.ABSTRED);
             }
 
-            if (result.IsCryptoHashed && !meta.Security.Any(x =>
-                string.Equals(x.Code, SecurityLabels.CRYTOHASH.Code, StringComparison.InvariantCultureIgnoreCase)))
+            if (
+                result.IsCryptoHashed
+                && !meta.Security.Any(
+                    x =>
+                        string.Equals(
+                            x.Code,
+                            SecurityLabels.CRYTOHASH.Code,
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                )
+            )
             {
                 meta.Security.Add(SecurityLabels.CRYTOHASH);
             }
 
-            if (result.IsEncrypted && !meta.Security.Any(x =>
-                string.Equals(x.Code, SecurityLabels.ENCRYPT.Code, StringComparison.InvariantCultureIgnoreCase)))
+            if (
+                result.IsEncrypted
+                && !meta.Security.Any(
+                    x =>
+                        string.Equals(
+                            x.Code,
+                            SecurityLabels.ENCRYPT.Code,
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                )
+            )
             {
                 meta.Security.Add(SecurityLabels.ENCRYPT);
             }
 
-            if (result.IsPerturbed && !meta.Security.Any(x =>
-                string.Equals(x.Code, SecurityLabels.PERTURBED.Code, StringComparison.InvariantCultureIgnoreCase)))
+            if (
+                result.IsPerturbed
+                && !meta.Security.Any(
+                    x =>
+                        string.Equals(
+                            x.Code,
+                            SecurityLabels.PERTURBED.Code,
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                )
+            )
             {
                 meta.Security.Add(SecurityLabels.PERTURBED);
             }
 
-            if (result.IsSubstituted && !meta.Security.Any(x =>
-                string.Equals(x.Code, SecurityLabels.SUBSTITUTED.Code, StringComparison.InvariantCultureIgnoreCase)))
+            if (
+                result.IsSubstituted
+                && !meta.Security.Any(
+                    x =>
+                        string.Equals(
+                            x.Code,
+                            SecurityLabels.SUBSTITUTED.Code,
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                )
+            )
             {
                 meta.Security.Add(SecurityLabels.SUBSTITUTED);
             }
 
-            if (result.IsGeneralized && !meta.Security.Any(x =>
-                string.Equals(x.Code, SecurityLabels.GENERALIZED.Code, StringComparison.InvariantCultureIgnoreCase)))
+            if (
+                result.IsGeneralized
+                && !meta.Security.Any(
+                    x =>
+                        string.Equals(
+                            x.Code,
+                            SecurityLabels.GENERALIZED.Code,
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                )
+            )
             {
                 meta.Security.Add(SecurityLabels.GENERALIZED);
             }
 
-            if (result.IsPseudonymized && !meta.Security.Any(x =>
-                string.Equals(x.Code, SecurityLabels.PSEUDED.Code, StringComparison.InvariantCultureIgnoreCase)))
+            if (
+                result.IsPseudonymized
+                && !meta.Security.Any(
+                    x =>
+                        string.Equals(
+                            x.Code,
+                            SecurityLabels.PSEUDED.Code,
+                            StringComparison.InvariantCultureIgnoreCase
+                        )
+                )
+            )
             {
                 meta.Security.Add(SecurityLabels.PSEUDED);
             }

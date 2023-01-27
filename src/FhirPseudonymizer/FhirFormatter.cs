@@ -22,19 +22,27 @@ namespace FhirPseudonymizer
 
             if (useSystemTextJsonFhirSerializer)
             {
-                SerializeToJsonAsync = (resource) => System.Threading.Tasks.Task.FromResult(JsonSerializer.Serialize(resource, FhirJsonOptions));
+                SerializeToJsonAsync = (resource) =>
+                    System.Threading.Tasks.Task.FromResult(
+                        JsonSerializer.Serialize(resource, FhirJsonOptions)
+                    );
             }
             else
             {
-                SerializeToJsonAsync = (resource) => FhirSerializer.SerializeToStringAsync(resource);
+                SerializeToJsonAsync = (resource) =>
+                    FhirSerializer.SerializeToStringAsync(resource);
             }
         }
 
-        private JsonSerializerOptions FhirJsonOptions { get; } = new JsonSerializerOptions().ForFhir(typeof(Bundle).Assembly);
+        private JsonSerializerOptions FhirJsonOptions { get; } =
+            new JsonSerializerOptions().ForFhir(typeof(Bundle).Assembly);
 
         private FhirJsonSerializer FhirSerializer { get; } = new();
 
-        private Func<Resource, System.Threading.Tasks.Task<string>> SerializeToJsonAsync { get; init; }
+        private Func<
+            Resource,
+            System.Threading.Tasks.Task<string>
+        > SerializeToJsonAsync { get; init; }
 
         protected override bool CanWriteType(Type type)
         {
@@ -42,7 +50,9 @@ namespace FhirPseudonymizer
         }
 
         public override async System.Threading.Tasks.Task WriteResponseBodyAsync(
-            OutputFormatterWriteContext context, Encoding selectedEncoding)
+            OutputFormatterWriteContext context,
+            Encoding selectedEncoding
+        )
         {
             using var _ = Program.ActivitySource.StartActivity("SerializeFhirResourceToJson");
 
@@ -76,7 +86,10 @@ namespace FhirPseudonymizer
 
             if (useSystemTextJsonFhirSerializer)
             {
-                ParseJsonToFhirAsync = (json) => System.Threading.Tasks.Task.FromResult(JsonSerializer.Deserialize<Resource>(json, FhirJsonOptions));
+                ParseJsonToFhirAsync = (json) =>
+                    System.Threading.Tasks.Task.FromResult(
+                        JsonSerializer.Deserialize<Resource>(json, FhirJsonOptions)
+                    );
             }
             else
             {
@@ -86,12 +99,18 @@ namespace FhirPseudonymizer
 
         private FhirJsonParser FhirParser { get; } = new();
 
-        private JsonSerializerOptions FhirJsonOptions { get; } = new JsonSerializerOptions().ForFhir(typeof(Bundle).Assembly);
+        private JsonSerializerOptions FhirJsonOptions { get; } =
+            new JsonSerializerOptions().ForFhir(typeof(Bundle).Assembly);
 
-        private Func<string, System.Threading.Tasks.Task<Resource>> ParseJsonToFhirAsync { get; init; }
+        private Func<
+            string,
+            System.Threading.Tasks.Task<Resource>
+        > ParseJsonToFhirAsync { get; init; }
 
-        public override async System.Threading.Tasks.Task<InputFormatterResult> ReadRequestBodyAsync(InputFormatterContext context,
-            Encoding encoding)
+        public override async System.Threading.Tasks.Task<InputFormatterResult> ReadRequestBodyAsync(
+            InputFormatterContext context,
+            Encoding encoding
+        )
         {
             using var _ = Program.ActivitySource.StartActivity("DeserializeJsonToFhirResource");
 

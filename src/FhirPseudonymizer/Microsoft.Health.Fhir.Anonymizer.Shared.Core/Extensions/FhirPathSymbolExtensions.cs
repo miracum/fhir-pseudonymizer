@@ -17,27 +17,46 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
                 // Check whether extension method already exists
                 if (t.Filter("nodesByType", 2).Count() == 0)
                 {
-                    t.Add("nodesByType", (IEnumerable<ITypedElement> f, string typeName) => NodesByType(f, typeName),
-                        true);
+                    t.Add(
+                        "nodesByType",
+                        (IEnumerable<ITypedElement> f, string typeName) => NodesByType(f, typeName),
+                        true
+                    );
                 }
 
                 if (t.Filter("nodesByName", 2).Count() == 0)
                 {
-                    t.Add("nodesByName", (IEnumerable<ITypedElement> f, string name) => NodesByName(f, name), true);
+                    t.Add(
+                        "nodesByName",
+                        (IEnumerable<ITypedElement> f, string name) => NodesByName(f, name),
+                        true
+                    );
                 }
             }
 
             return t;
         }
 
-        public static IEnumerable<ITypedElement> NodesByType(IEnumerable<ITypedElement> nodes, string typeName)
+        public static IEnumerable<ITypedElement> NodesByType(
+            IEnumerable<ITypedElement> nodes,
+            string typeName
+        )
         {
-            return nodes.CastElementNodes().SelfAndDescendantsWithoutSubResource().Where(n => typeName.Equals(n.InstanceType));
+            return nodes
+                .CastElementNodes()
+                .SelfAndDescendantsWithoutSubResource()
+                .Where(n => typeName.Equals(n.InstanceType));
         }
 
-        public static IEnumerable<ITypedElement> NodesByName(IEnumerable<ITypedElement> nodes, string name)
+        public static IEnumerable<ITypedElement> NodesByName(
+            IEnumerable<ITypedElement> nodes,
+            string name
+        )
         {
-            return nodes.CastElementNodes().SelfAndDescendantsWithoutSubResource().Where(n => name.Equals(n.Name));
+            return nodes
+                .CastElementNodes()
+                .SelfAndDescendantsWithoutSubResource()
+                .Where(n => name.Equals(n.Name));
         }
     }
 }

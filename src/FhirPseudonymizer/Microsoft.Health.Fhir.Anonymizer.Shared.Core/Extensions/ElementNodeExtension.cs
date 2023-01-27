@@ -12,72 +12,114 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
         public static bool IsDateNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.InstanceType, Constants.DateTypeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.InstanceType,
+                    Constants.DateTypeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsDateTimeNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.InstanceType, Constants.DateTimeTypeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.InstanceType,
+                    Constants.DateTimeTypeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsAgeDecimalNode(this ElementNode node)
         {
-            return node != null &&
-                   node.Parent.IsAgeNode() &&
-                   string.Equals(node.InstanceType, Constants.DecimalTypeName,
-                       StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && node.Parent.IsAgeNode()
+                && string.Equals(
+                    node.InstanceType,
+                    Constants.DecimalTypeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsInstantNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.InstanceType, Constants.InstantTypeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.InstanceType,
+                    Constants.InstantTypeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsAgeNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.InstanceType, Constants.AgeTypeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.InstanceType,
+                    Constants.AgeTypeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsBundleNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.InstanceType, Constants.BundleTypeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.InstanceType,
+                    Constants.BundleTypeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsReferenceNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.InstanceType, Constants.ReferenceTypeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.InstanceType,
+                    Constants.ReferenceTypeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsPostalCodeNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.Name, Constants.PostalCodeNodeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.Name,
+                    Constants.PostalCodeNodeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsReferenceStringNode(this ElementNode node)
         {
-            return node != null &&
-                   node.Parent.IsReferenceNode() &&
-                   string.Equals(node.Name, Constants.ReferenceStringNodeName,
-                       StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && node.Parent.IsReferenceNode()
+                && string.Equals(
+                    node.Name,
+                    Constants.ReferenceStringNodeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsEntryNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.Name, Constants.EntryNodeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.Name,
+                    Constants.EntryNodeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool IsContainedNode(this ElementNode node)
         {
-            return node != null && string.Equals(node.Name, Constants.ContainedNodeName,
-                StringComparison.InvariantCultureIgnoreCase);
+            return node != null
+                && string.Equals(
+                    node.Name,
+                    Constants.ContainedNodeName,
+                    StringComparison.InvariantCultureIgnoreCase
+                );
         }
 
         public static bool HasContainedNode(this ElementNode node)
@@ -92,7 +134,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
         public static string GetFhirPath(this ElementNode node)
         {
-            return node == null ? string.Empty : Regex.Replace(node.Location, s_locationToFhirPathRegex, string.Empty);
+            return node == null
+                ? string.Empty
+                : Regex.Replace(node.Location, s_locationToFhirPathRegex, string.Empty);
         }
 
         public static string GetNodeId(this ElementNode node)
@@ -106,16 +150,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             return node?.Children("meta").CastElementNodes().FirstOrDefault();
         }
 
-        public static IEnumerable<ElementNode> CastElementNodes(this IEnumerable<ITypedElement> input)
+        public static IEnumerable<ElementNode> CastElementNodes(
+            this IEnumerable<ITypedElement> input
+        )
         {
             return input.Select(ToElement).Cast<ElementNode>();
         }
 
         private static ITypedElement ToElement(ITypedElement node)
         {
-            return node is ScopedNode scopedNode
-                ? scopedNode.Current
-                : node;
+            return node is ScopedNode scopedNode ? scopedNode.Current : node;
         }
     }
 }

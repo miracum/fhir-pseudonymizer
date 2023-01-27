@@ -12,8 +12,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public class GeneralizeProcessor : IAnonymizerProcessor
     {
-        public ProcessResult Process(ElementNode node, ProcessContext context = null,
-            Dictionary<string, object> settings = null)
+        public ProcessResult Process(
+            ElementNode node,
+            ProcessContext context = null,
+            Dictionary<string, object> settings = null
+        )
         {
             EnsureArg.IsNotNull(node);
             EnsureArg.IsNotNull(context?.VisitedNodes);
@@ -40,7 +43,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 catch (InvalidOperationException ex)
                 {
                     throw new AnonymizerConfigurationErrorsException(
-                        $"Invalid cases expression '{eachCase}': {ex.Message}", ex);
+                        $"Invalid cases expression '{eachCase}': {ex.Message}",
+                        ex
+                    );
                 }
             }
 

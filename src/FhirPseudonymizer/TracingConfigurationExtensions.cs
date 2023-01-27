@@ -10,18 +10,24 @@ namespace FhirPseudonymizer;
 
 public static class TracingConfigurationExtensions
 {
-    public static IServiceCollection AddTracing(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddTracing(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         var assembly = Assembly.GetExecutingAssembly().GetName();
         var assemblyVersion = assembly.Version?.ToString() ?? "unknown";
-        var tracingExporter = configuration.GetValue<string>("Tracing:Exporter")?.ToLowerInvariant() ?? "jaeger";
+        var tracingExporter =
+            configuration.GetValue<string>("Tracing:Exporter")?.ToLowerInvariant() ?? "jaeger";
         var serviceName = configuration.GetValue("Tracing:ServiceName", assembly.Name) ?? "vfps";
 
         // Build a resource configuration action to set service information.
-        void configureResource(ResourceBuilder r) => r.AddService(
-            serviceName: serviceName,
-            serviceVersion: assemblyVersion,
-            serviceInstanceId: Environment.MachineName);
+        void configureResource(ResourceBuilder r) =>
+            r.AddService(
+                serviceName: serviceName,
+                serviceVersion: assemblyVersion,
+                serviceInstanceId: Environment.MachineName
+            );
 
         var rootSamplerType = configuration.GetValue("Tracing:RootSampler", "AlwaysOnSampler");
         var samplingRatio = configuration.GetValue("Tracing:SamplingProbability", 0.1d);
@@ -34,7 +40,8 @@ public static class TracingConfigurationExtensions
             _ => throw new ArgumentException($"Unsupported sampler type '{rootSamplerType}'"),
         };
 
-        services.AddOpenTelemetry()
+        services
+            .AddOpenTelemetry()
             .ConfigureResource(configureResource)
             .WithTracing(tracingBuilder =>
             {
@@ -49,10 +56,10 @@ public static class TracingConfigurationExtensions
                         {
                             var ignoredPaths = new[]
                             {
-                                    "/healthz",
-                                    "/readyz",
-                                    "/livez",
-                                    "/fhir/metadata"
+                                "/healthz",
+                                "/readyz",
+                                "/livez",
+                                "/fhir/metadata"
                             };
 
                             var path = r.Request.Path.Value!;
@@ -60,20 +67,27 @@ public static class TracingConfigurationExtensions
                         };
                     });
 
-                services.Configure<AspNetCoreInstrumentationOptions>(configuration.GetSection("Tracing:AspNetCoreInstrumentation"));
+                services.Configure<AspNetCoreInstrumentationOptions>(
+                    configuration.GetSection("Tracing:AspNetCoreInstrumentation")
+                );
 
                 switch (tracingExporter)
                 {
                     case "jaeger":
                         tracingBuilder.AddJaegerExporter();
-                        services.Configure<JaegerExporterOptions>(configuration.GetSection("Tracing:Jaeger"));
+                        services.Configure<JaegerExporterOptions>(
+                            configuration.GetSection("Tracing:Jaeger")
+                        );
                         break;
 
                     case "otlp":
-                        var endpoint = configuration.GetValue<string>("Tracing:Otlp:Endpoint") ??
-                            throw new ArgumentException("Missing OTLP exporter endpoint URL");
+                        var endpoint =
+                            configuration.GetValue<string>("Tracing:Otlp:Endpoint")
+                            ?? throw new ArgumentException("Missing OTLP exporter endpoint URL");
 
-                        tracingBuilder.AddOtlpExporter(otlpOptions => otlpOptions.Endpoint = new Uri(endpoint));
+                        tracingBuilder.AddOtlpExporter(
+                            otlpOptions => otlpOptions.Endpoint = new Uri(endpoint)
+                        );
                         break;
                 }
             })
