@@ -30,8 +30,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             }
 
             var input = node.Value.ToString();
-            // Hash the id part for "Reference.reference" node and hash whole input for other node types
-            if (node.IsReferenceStringNode())
+            // Hash the id part for "reference" and "uri" nodes and hash whole input for other node types
+            if (node.IsReferenceStringNode() || node.IsReferenceUriNode(input))
             {
                 var newReference = ReferenceUtility.TransformReferenceId(input, _cryptoHashFunction);
                 node.Value = newReference;
