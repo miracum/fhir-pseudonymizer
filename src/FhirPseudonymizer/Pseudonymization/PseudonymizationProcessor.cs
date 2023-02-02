@@ -65,6 +65,10 @@ namespace FhirPseudonymizer.Pseudonymization
             {
                 domain ??= ResourceTypeMatcher.Match(ReferenceUtility
                     .GetReferencePrefix(input)).Groups["domain"].Value;
+
+                node.Value = ReferenceUtility.TransformReferenceId(
+                    input,
+                    x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain));
             }
             else
             {
