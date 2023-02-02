@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Hl7.Fhir.ElementModel;
+using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 {
@@ -66,6 +67,20 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
                    node.Parent.IsReferenceNode() &&
                    string.Equals(node.Name, Constants.ReferenceStringNodeName,
                        StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        public static bool IsReferenceUriNode(this ElementNode node, string value)
+        {
+            return node != null && string.Equals(node.InstanceType, "uri",
+                                    StringComparison.InvariantCultureIgnoreCase)
+                                && ReferenceUtility.IsResourceReference(value);
+        }
+
+        public static bool IsConditionalReferenceNode(this ElementNode node, string value)
+        {
+            return node != null && string.Equals(node.Name, "ifNoneExist",
+                                    StringComparison.InvariantCultureIgnoreCase)
+                                && ReferenceUtility.IsResourceReference(value);
         }
 
         public static bool IsEntryNode(this ElementNode node)
