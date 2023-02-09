@@ -6,11 +6,19 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 {
     public class AnonymizationFhirPathRule : AnonymizerRule
     {
-        private static readonly Regex s_pathRegex =
-            new Regex(@"^(?<resourceType>[A-Z][a-zA-Z]*)?(\.)?(?<expression>.*?)$");
+        private static readonly Regex s_pathRegex = new Regex(
+            @"^(?<resourceType>[A-Z][a-zA-Z]*)?(\.)?(?<expression>.*?)$"
+        );
 
-        public AnonymizationFhirPathRule(string path, string expression, string resourceType, string method,
-            AnonymizerRuleType type, string source, Dictionary<string, object> settings = null)
+        public AnonymizationFhirPathRule(
+            string path,
+            string expression,
+            string resourceType,
+            string method,
+            AnonymizerRuleType type,
+            string source,
+            Dictionary<string, object> settings = null
+        )
             : base(path, method, type, source)
         {
             if (string.IsNullOrEmpty(expression))
@@ -29,7 +37,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 
         public bool IsResourceTypeRule => Path.Equals(ResourceType);
 
-        public static AnonymizationFhirPathRule CreateAnonymizationFhirPathRule(Dictionary<string, object> config)
+        public static AnonymizationFhirPathRule CreateAnonymizationFhirPathRule(
+            Dictionary<string, object> config
+        )
         {
             if (config == null)
             {
@@ -65,8 +75,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
                 expression = path;
             }
 
-            return new AnonymizationFhirPathRule(path, expression, resourceType,
-                method, AnonymizerRuleType.FhirPathRule, path, config);
+            return new AnonymizationFhirPathRule(
+                path,
+                expression,
+                resourceType,
+                method,
+                AnonymizerRuleType.FhirPathRule,
+                path,
+                config
+            );
         }
 
         public AnonymizationFhirPathRule ShallowCopy()

@@ -20,16 +20,24 @@ public class VfpsPseudonymServiceClientTests
 
         var fakeResponse = new PseudonymServiceCreateResponse
         {
-            Pseudonym = new()
-            {
-                PseudonymValue = "not test",
-            },
+            Pseudonym = new() { PseudonymValue = "not test", },
         };
 
         A.CallTo(() => client.CreateAsync(A<PseudonymServiceCreateRequest>._, null, null, default))
-            .Returns(new AsyncUnaryCall<PseudonymServiceCreateResponse>(Task.FromResult(fakeResponse), null, null, null, null));
+            .Returns(
+                new AsyncUnaryCall<PseudonymServiceCreateResponse>(
+                    Task.FromResult(fakeResponse),
+                    null,
+                    null,
+                    null,
+                    null
+                )
+            );
 
-        var sut = new VfpsPseudonymServiceClient(A.Fake<ILogger<VfpsPseudonymServiceClient>>(), client);
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
 
         // Act
         var result = await sut.GetOrCreatePseudonymFor("test", "namespace");
@@ -46,17 +54,24 @@ public class VfpsPseudonymServiceClientTests
 
         var fakeResponse = new PseudonymServiceGetResponse
         {
-            Pseudonym = new()
-            {
-                PseudonymValue = "not test",
-                OriginalValue = "test",
-            },
+            Pseudonym = new() { PseudonymValue = "not test", OriginalValue = "test", },
         };
 
         A.CallTo(() => client.GetAsync(A<PseudonymServiceGetRequest>._, null, null, default))
-            .Returns(new AsyncUnaryCall<PseudonymServiceGetResponse>(Task.FromResult(fakeResponse), null, null, null, null));
+            .Returns(
+                new AsyncUnaryCall<PseudonymServiceGetResponse>(
+                    Task.FromResult(fakeResponse),
+                    null,
+                    null,
+                    null,
+                    null
+                )
+            );
 
-        var sut = new VfpsPseudonymServiceClient(A.Fake<ILogger<VfpsPseudonymServiceClient>>(), client);
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
 
         // Act
         var result = await sut.GetOriginalValueFor("not test", "namespace");
@@ -74,7 +89,10 @@ public class VfpsPseudonymServiceClientTests
         A.CallTo(() => client.GetAsync(A<PseudonymServiceGetRequest>._, null, null, default))
             .Throws(() => throw new RpcException(new Status(StatusCode.NotFound, "doesn't exist")));
 
-        var sut = new VfpsPseudonymServiceClient(A.Fake<ILogger<VfpsPseudonymServiceClient>>(), client);
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
 
         // Act
         var result = await sut.GetOriginalValueFor("test", "namespace");

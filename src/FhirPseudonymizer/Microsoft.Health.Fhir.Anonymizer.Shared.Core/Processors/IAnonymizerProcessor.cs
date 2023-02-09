@@ -6,7 +6,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public interface IAnonymizerProcessor
     {
-        public ProcessResult Process(ElementNode node, ProcessContext context = null,
-            Dictionary<string, object> settings = null);
+        public ProcessResult Process(
+            ElementNode node,
+            ProcessContext context = null,
+            Dictionary<string, object> settings = null
+        );
     }
 }

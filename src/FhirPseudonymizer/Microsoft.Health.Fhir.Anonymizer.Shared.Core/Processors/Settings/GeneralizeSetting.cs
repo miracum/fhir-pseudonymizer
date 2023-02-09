@@ -13,7 +13,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings
         public Dictionary<string, string> Cases { get; set; }
         public GeneralizationOtherValuesOperation OtherValues { get; set; }
 
-        public static GeneralizeSetting CreateFromRuleSettings(Dictionary<string, object> ruleSettings)
+        public static GeneralizeSetting CreateFromRuleSettings(
+            Dictionary<string, object> ruleSettings
+        )
         {
             EnsureArg.IsNotNull(ruleSettings);
 
@@ -24,11 +26,19 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings
             }
             catch (Exception ex)
             {
-                throw new AnonymizerConfigurationErrorsException($"Invalid cases '{RuleKeys.Cases}': {ex.Message}", ex);
+                throw new AnonymizerConfigurationErrorsException(
+                    $"Invalid cases '{RuleKeys.Cases}': {ex.Message}",
+                    ex
+                );
             }
 
-            if (!Enum.TryParse(ruleSettings.GetValueOrDefault(RuleKeys.OtherValues)?.ToString(), true,
-                out GeneralizationOtherValuesOperation otherValues))
+            if (
+                !Enum.TryParse(
+                    ruleSettings.GetValueOrDefault(RuleKeys.OtherValues)?.ToString(),
+                    true,
+                    out GeneralizationOtherValuesOperation otherValues
+                )
+            )
             {
                 otherValues = GeneralizationOtherValuesOperation.Redact;
             }
@@ -45,27 +55,36 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings
             var compiler = new FhirPathCompiler();
             if (ruleSettings == null)
             {
-                throw new AnonymizerConfigurationErrorsException("Generalize rule should not be null.");
+                throw new AnonymizerConfigurationErrorsException(
+                    "Generalize rule should not be null."
+                );
             }
 
             if (!ruleSettings.ContainsKey(Constants.PathKey))
             {
-                throw new AnonymizerConfigurationErrorsException("Missing path in FHIR path rule config.");
+                throw new AnonymizerConfigurationErrorsException(
+                    "Missing path in FHIR path rule config."
+                );
             }
 
             if (!ruleSettings.ContainsKey(Constants.MethodKey))
             {
-                throw new AnonymizerConfigurationErrorsException("Missing method in FHIR path rule config.");
+                throw new AnonymizerConfigurationErrorsException(
+                    "Missing method in FHIR path rule config."
+                );
             }
 
             if (!ruleSettings.ContainsKey(RuleKeys.Cases))
             {
-                throw new AnonymizerConfigurationErrorsException("Missing cases in FHIR path rule config.");
+                throw new AnonymizerConfigurationErrorsException(
+                    "Missing cases in FHIR path rule config."
+                );
             }
 
             try
             {
-                var cases = (Dictionary<object, object>)ruleSettings.GetValueOrDefault(RuleKeys.Cases);
+                var cases =
+                    (Dictionary<object, object>)ruleSettings.GetValueOrDefault(RuleKeys.Cases);
                 foreach (var eachCase in cases)
                 {
                     compiler.Compile(eachCase.Key.ToString());
@@ -75,21 +94,32 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings
             catch (JsonReaderException ex)
             {
                 throw new AnonymizerConfigurationErrorsException(
-                    $"Invalid Json format {ruleSettings.GetValueOrDefault(RuleKeys.Cases)}", ex);
+                    $"Invalid Json format {ruleSettings.GetValueOrDefault(RuleKeys.Cases)}",
+                    ex
+                );
             }
             catch (Exception ex)
             {
                 throw new AnonymizerConfigurationErrorsException(
-                    $"Invalid cases expression {ruleSettings.GetValueOrDefault(RuleKeys.Cases)}", ex);
+                    $"Invalid cases expression {ruleSettings.GetValueOrDefault(RuleKeys.Cases)}",
+                    ex
+                );
             }
 
-            var supportedOtherValuesOperations = Enum.GetNames(typeof(GeneralizationOtherValuesOperation))
+            var supportedOtherValuesOperations = Enum.GetNames(
+                    typeof(GeneralizationOtherValuesOperation)
+                )
                 .ToHashSet(StringComparer.InvariantCultureIgnoreCase);
-            if (ruleSettings.ContainsKey(RuleKeys.OtherValues) &&
-                !supportedOtherValuesOperations.Contains(ruleSettings[RuleKeys.OtherValues].ToString()))
+            if (
+                ruleSettings.ContainsKey(RuleKeys.OtherValues)
+                && !supportedOtherValuesOperations.Contains(
+                    ruleSettings[RuleKeys.OtherValues].ToString()
+                )
+            )
             {
                 throw new AnonymizerConfigurationErrorsException(
-                    $"OtherValues setting is invalid at {ruleSettings[RuleKeys.OtherValues]}.");
+                    $"OtherValues setting is invalid at {ruleSettings[RuleKeys.OtherValues]}."
+                );
             }
         }
     }

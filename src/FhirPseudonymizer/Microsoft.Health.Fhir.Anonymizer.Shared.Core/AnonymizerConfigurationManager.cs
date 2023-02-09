@@ -11,7 +11,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
     public sealed class AnonymizerConfigurationManager
     {
         private readonly AnonymizerConfiguration _configuration;
-        private readonly AnonymizerConfigurationValidator _validator = new AnonymizerConfigurationValidator();
+        private readonly AnonymizerConfigurationValidator _validator =
+            new AnonymizerConfigurationValidator();
 
         public AnonymizerConfigurationManager(AnonymizerConfiguration configuration)
         {
@@ -21,7 +22,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             _configuration = configuration;
 
             FhirPathRules = _configuration.FhirPathRules
-                .Select(entry => AnonymizationFhirPathRule.CreateAnonymizationFhirPathRule(entry)).ToArray();
+                .Select(entry => AnonymizationFhirPathRule.CreateAnonymizationFhirPathRule(entry))
+                .ToArray();
         }
 
         public AnonymizationFhirPathRule[] FhirPathRules { get; }
@@ -44,7 +46,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             }
         }
 
-        public static AnonymizerConfigurationManager CreateFromConfigurationFile(string configFilePath)
+        public static AnonymizerConfigurationManager CreateFromConfigurationFile(
+            string configFilePath
+        )
         {
             try
             {
@@ -54,7 +58,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             }
             catch (IOException innerException)
             {
-                throw new IOException($"Failed to read configuration file {configFilePath}", innerException);
+                throw new IOException(
+                    $"Failed to read configuration file {configFilePath}",
+                    innerException
+                );
             }
         }
 
@@ -74,7 +81,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             }
             catch (IOException innerException)
             {
-                throw new IOException($"Failed to read configuration file {configFilePath}", innerException);
+                throw new IOException(
+                    $"Failed to read configuration file {configFilePath}",
+                    innerException
+                );
             }
         }
 

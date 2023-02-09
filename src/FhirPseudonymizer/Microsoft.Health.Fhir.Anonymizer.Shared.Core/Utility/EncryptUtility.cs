@@ -56,7 +56,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             if (byteData.Length < AesIvSize)
             {
                 throw new FormatException(
-                    $"The input base64Text for decryption should not be less than {AesIvSize} bytes length!");
+                    $"The input base64Text for decryption should not be less than {AesIvSize} bytes length!"
+                );
             }
 
             var iv = new byte[16];
@@ -125,7 +126,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             if (byteData.Length < AesIvSize)
             {
                 throw new FormatException(
-                    $"The input base64Text for decryption should not be less than {AesIvSize} bytes length!");
+                    $"The input base64Text for decryption should not be less than {AesIvSize} bytes length!"
+                );
             }
 
             var iv = new byte[16];

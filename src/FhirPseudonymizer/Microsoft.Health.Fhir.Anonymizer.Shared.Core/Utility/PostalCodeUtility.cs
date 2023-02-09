@@ -13,8 +13,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         private static readonly string s_replacementDigit = "0";
         private static readonly int s_initialDigitsCount = 3;
 
-        public static ProcessResult RedactPostalCode(ElementNode node, bool enablePartialZipCodesForRedact = false,
-            List<string> restrictedZipCodeTabulationAreas = null)
+        public static ProcessResult RedactPostalCode(
+            ElementNode node,
+            bool enablePartialZipCodesForRedact = false,
+            List<string> restrictedZipCodeTabulationAreas = null
+        )
         {
             var processResult = new ProcessResult();
             if (!node.IsPostalCodeNode() || string.IsNullOrEmpty(node?.Value?.ToString()))
@@ -24,8 +27,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
 
             if (enablePartialZipCodesForRedact)
             {
-                if (restrictedZipCodeTabulationAreas != null &&
-                    restrictedZipCodeTabulationAreas.Any(x => node.Value.ToString().StartsWith(x)))
+                if (
+                    restrictedZipCodeTabulationAreas != null
+                    && restrictedZipCodeTabulationAreas.Any(
+                        x => node.Value.ToString().StartsWith(x)
+                    )
+                )
                 {
                     node.Value = Regex.Replace(node.Value.ToString(), @"\d", s_replacementDigit);
                 }

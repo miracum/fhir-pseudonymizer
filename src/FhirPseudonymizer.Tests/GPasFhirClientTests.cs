@@ -15,14 +15,24 @@ public class GPasFhirClientTests
 {
     public static IEnumerable<object[]> GetOrCreatePseudonymFor_Data()
     {
-        yield return new object[] { "1.10.1", HttpMethod.Get, "$pseudonymize-allow-create?domain=domain&original=42" };
+        yield return new object[]
+        {
+            "1.10.1",
+            HttpMethod.Get,
+            "$pseudonymize-allow-create?domain=domain&original=42"
+        };
         yield return new object[] { "1.10.2", HttpMethod.Post, "$pseudonymize-allow-create" };
         yield return new object[] { "1.10.3", HttpMethod.Post, "$pseudonymizeAllowCreate" };
     }
 
     public static IEnumerable<object[]> GetOriginalValueFor_Data()
     {
-        yield return new object[] { "1.10.1", HttpMethod.Get, "$de-pseudonymize?domain=domain&pseudonym=42" };
+        yield return new object[]
+        {
+            "1.10.1",
+            HttpMethod.Get,
+            "$de-pseudonymize?domain=domain&pseudonym=42"
+        };
         yield return new object[] { "1.10.2", HttpMethod.Post, "$de-pseudonymize" };
         yield return new object[] { "1.10.3", HttpMethod.Post, "$dePseudonymize" };
     }
@@ -64,8 +74,11 @@ public class GPasFhirClientTests
 
     [Theory]
     [MemberData(nameof(GetOrCreatePseudonymFor_Data))]
-    public async Task GetOrCreatePseudonymFor_ResolvesToApiVersionOperation(string gpasVersion,
-        HttpMethod requestMethod, string requestUri)
+    public async Task GetOrCreatePseudonymFor_ResolvesToApiVersionOperation(
+        string gpasVersion,
+        HttpMethod requestMethod,
+        string requestUri
+    )
     {
         // create gpas client
         var gpasClient = CreateGPasClient(gpasVersion);
@@ -81,18 +94,17 @@ public class GPasFhirClientTests
     {
         A.CallTo(messageHandler)
             .Where(_ => _.Method.Name == "SendAsync")
-            .WhenArgumentsMatch((HttpRequestMessage r, CancellationToken _) =>
-                r.Method == requestMethod &&
-                r.RequestUri == new Uri(testBaseAddress.AbsoluteUri + requestUri))
+            .WhenArgumentsMatch(
+                (HttpRequestMessage r, CancellationToken _) =>
+                    r.Method == requestMethod
+                    && r.RequestUri == new Uri(testBaseAddress.AbsoluteUri + requestUri)
+            )
             .MustHaveHappenedOnceExactly();
     }
 
     private static IHttpClientFactory CreateHttpClientFactory(HttpMessageHandler httpMessageHandler)
     {
-        var client = new HttpClient(httpMessageHandler)
-        {
-            BaseAddress = testBaseAddress
-        };
+        var client = new HttpClient(httpMessageHandler) { BaseAddress = testBaseAddress };
 
         var factory = A.Fake<IHttpClientFactory>();
         A.CallTo(() => factory.CreateClient(A<string>._)).Returns(client);
@@ -101,8 +113,11 @@ public class GPasFhirClientTests
 
     [Theory]
     [MemberData(nameof(GetOriginalValueFor_Data))]
-    public async Task GetOriginalValueFor_ResolvesToApiVersionOperation(string gpasVersion, HttpMethod requestMethod,
-        string requestUri)
+    public async Task GetOriginalValueFor_ResolvesToApiVersionOperation(
+        string gpasVersion,
+        HttpMethod requestMethod,
+        string requestUri
+    )
     {
         // create gpas client
         var gpasClient = CreateGPasClient(gpasVersion);
@@ -127,18 +142,15 @@ public class GPasFhirClientTests
             }
         };
 
-        var cache = new MemoryCache(
-            new MemoryCacheOptions
-            {
-                SizeLimit = 1
-            });
+        var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 1 });
 
         return new GPasFhirClient(
             A.Fake<ILogger<GPasFhirClient>>(),
-             clientFactory,
-             config,
-             cache,
-             cache);
+            clientFactory,
+            config,
+            cache,
+            cache
+        );
     }
 
     private static HttpMessageHandler CreateHttpMessageHandler()
@@ -147,15 +159,20 @@ public class GPasFhirClientTests
         A.CallTo(handler)
             .Where(_ => _.Method.Name == "SendAsync")
             .WithReturnType<Task<HttpResponseMessage>>()
-            .Returns(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                // these values have to be set since they are used by the FhirClient:
-                // https://github.com/FirelyTeam/firely-net-common/blob/5899ce463f6cf166520cbbe6322310940942f81c/src/Hl7.Fhir.Support.Poco/Rest/HttpToEntryExtensions.cs#L28 &
-                // https://github.com/FirelyTeam/firely-net-sdk/blob/f71543edc34c9edecf0f13af50d35e9e57ca353a/src/Hl7.Fhir.Core/Rest/TypedEntryResponseToBundle.cs#L24
-                Content = new StringContent(ResponseContent, new MediaTypeHeaderValue("application/json+fhir")),
-                RequestMessage = new HttpRequestMessage(HttpMethod.Post, testBaseAddress),
-            });
+            .Returns(
+                new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    // these values have to be set since they are used by the FhirClient:
+                    // https://github.com/FirelyTeam/firely-net-common/blob/5899ce463f6cf166520cbbe6322310940942f81c/src/Hl7.Fhir.Support.Poco/Rest/HttpToEntryExtensions.cs#L28 &
+                    // https://github.com/FirelyTeam/firely-net-sdk/blob/f71543edc34c9edecf0f13af50d35e9e57ca353a/src/Hl7.Fhir.Core/Rest/TypedEntryResponseToBundle.cs#L24
+                    Content = new StringContent(
+                        ResponseContent,
+                        new MediaTypeHeaderValue("application/json+fhir")
+                    ),
+                    RequestMessage = new HttpRequestMessage(HttpMethod.Post, testBaseAddress),
+                }
+            );
 
         return handler;
     }

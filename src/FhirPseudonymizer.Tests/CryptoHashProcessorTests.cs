@@ -14,10 +14,21 @@ public class CryptoHashProcessorTests
 {
     public static IEnumerable<object[]> GetProcessData()
     {
-
-            yield return new object[] { new FhirString("12345"),"098fe201710ca56e73dfb56cb0c610a66900add818c6d625b44b91eaafe79022" };
-            yield return new object[] { new ResourceReference("Patient/12345"),"Patient/098fe201710ca56e73dfb56cb0c610a66900add818c6d625b44b91eaafe79022" };
-            yield return new object[] { new FhirUri("Patient/12345"),"Patient/098fe201710ca56e73dfb56cb0c610a66900add818c6d625b44b91eaafe79022" };
+        yield return new object[]
+        {
+            new FhirString("12345"),
+            "098fe201710ca56e73dfb56cb0c610a66900add818c6d625b44b91eaafe79022"
+        };
+        yield return new object[]
+        {
+            new ResourceReference("Patient/12345"),
+            "Patient/098fe201710ca56e73dfb56cb0c610a66900add818c6d625b44b91eaafe79022"
+        };
+        yield return new object[]
+        {
+            new FhirUri("Patient/12345"),
+            "Patient/098fe201710ca56e73dfb56cb0c610a66900add818c6d625b44b91eaafe79022"
+        };
     }
 
     [Theory]
@@ -35,6 +46,5 @@ public class CryptoHashProcessorTests
         processor.Process(node);
 
         node.Value.ToString().Should().Be(expected);
-
     }
 }

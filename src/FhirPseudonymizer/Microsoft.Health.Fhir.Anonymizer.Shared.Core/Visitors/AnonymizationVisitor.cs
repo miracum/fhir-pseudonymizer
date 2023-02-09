@@ -24,9 +24,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
         private readonly AnonymizationFhirPathRule[] _rules;
         private readonly HashSet<ElementNode> _visitedNodes = new HashSet<ElementNode>();
 
-        public AnonymizationVisitor(AnonymizationFhirPathRule[] rules,
+        public AnonymizationVisitor(
+            AnonymizationFhirPathRule[] rules,
             Dictionary<string, IAnonymizerProcessor> processors,
-            AnonymizerSettings settings = null)
+            AnonymizerSettings settings = null
+        )
         {
             _rules = rules;
             _processors = processors;
@@ -109,7 +111,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                 foreach (var matchNode in matchNodes)
                 {
                     resultOnRule.Update(
-                        ProcessNodeRecursive(matchNode, _processors[method], context, MergeSettings(rule.RuleSettings)));
+                        ProcessNodeRecursive(
+                            matchNode,
+                            _processors[method],
+                            context,
+                            MergeSettings(rule.RuleSettings)
+                        )
+                    );
                 }
 
                 LogProcessResult(node, rule, resultOnRule);
@@ -128,12 +136,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             }
 
             // overwrites existing settings
-            return ImmutableArray.Create(ruleSettings, _settings.DynamicRuleSettings).SelectMany(dict => dict)
-                         .ToLookup(pair => pair.Key, pair => pair.Value)
-                         .ToDictionary(group => group.Key, group => group.Last());
+            return ImmutableArray
+                .Create(ruleSettings, _settings.DynamicRuleSettings)
+                .SelectMany(dict => dict)
+                .ToLookup(pair => pair.Key, pair => pair.Value)
+                .ToDictionary(group => group.Key, group => group.Last());
         }
 
-        private void LogProcessResult(ElementNode node, AnonymizationFhirPathRule rule, ProcessResult resultOnRule)
+        private void LogProcessResult(
+            ElementNode node,
+            AnonymizationFhirPathRule rule,
+            ProcessResult resultOnRule
+        )
         {
             if (_logger.IsEnabled(LogLevel.Debug))
             {
@@ -143,7 +157,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     foreach (var matchNode in processRecord.Value)
                     {
                         _logger.LogDebug(
-                            $"[{resourceId}]: Rule '{rule.Path}' matches '{matchNode.Location}' and perform operation '{processRecord.Key}'");
+                            $"[{resourceId}]: Rule '{rule.Path}' matches '{matchNode.Location}' and perform operation '{processRecord.Key}'"
+                        );
                     }
                 }
             }
@@ -151,14 +166,21 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 
         private IEnumerable<AnonymizationFhirPathRule> GetRulesByType(string typeString)
         {
-            return _rules.Where(r => r.ResourceType.Equals(typeString)
-                                     || string.IsNullOrEmpty(r.ResourceType)
-                                     || string.Equals(Constants.GeneralResourceType, r.ResourceType)
-                                     || string.Equals(Constants.GeneralDomainResourceType, r.ResourceType));
+            return _rules.Where(
+                r =>
+                    r.ResourceType.Equals(typeString)
+                    || string.IsNullOrEmpty(r.ResourceType)
+                    || string.Equals(Constants.GeneralResourceType, r.ResourceType)
+                    || string.Equals(Constants.GeneralDomainResourceType, r.ResourceType)
+            );
         }
 
-        public ProcessResult ProcessNodeRecursive(ElementNode node, IAnonymizerProcessor processor,
-            ProcessContext context, Dictionary<string, object> settings)
+        public ProcessResult ProcessNodeRecursive(
+            ElementNode node,
+            IAnonymizerProcessor processor,
+            ProcessContext context,
+            Dictionary<string, object> settings
+        )
         {
             var result = new ProcessResult();
             if (_visitedNodes.Contains(node))

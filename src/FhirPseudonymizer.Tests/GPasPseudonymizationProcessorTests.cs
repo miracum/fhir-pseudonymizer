@@ -17,17 +17,50 @@ public class GPasPseudonymizationProcessorTests
     {
         foreach (var enableConditionalReferencePseudonymization in new[] { true, false })
         {
-            yield return new object[] { "foo-", "bar", new FhirString("12345"), "foo-bar", enableConditionalReferencePseudonymization };
-            yield return new object[] { null, "bar", new FhirString("12345"), "bar", enableConditionalReferencePseudonymization };
-            yield return new object[] { "foo-", null, new ResourceReference("Patient/12345"), "foo-Patient", enableConditionalReferencePseudonymization };
-            yield return new object[] { null, null, new ResourceReference("Patient/12345"), "Patient", enableConditionalReferencePseudonymization };
+            yield return new object[]
+            {
+                "foo-",
+                "bar",
+                new FhirString("12345"),
+                "foo-bar",
+                enableConditionalReferencePseudonymization
+            };
+            yield return new object[]
+            {
+                null,
+                "bar",
+                new FhirString("12345"),
+                "bar",
+                enableConditionalReferencePseudonymization
+            };
+            yield return new object[]
+            {
+                "foo-",
+                null,
+                new ResourceReference("Patient/12345"),
+                "foo-Patient",
+                enableConditionalReferencePseudonymization
+            };
+            yield return new object[]
+            {
+                null,
+                null,
+                new ResourceReference("Patient/12345"),
+                "Patient",
+                enableConditionalReferencePseudonymization
+            };
         }
     }
 
     [Theory]
     [MemberData(nameof(GetProcessData))]
-    public void Process_SupportsDomainPrefixSetting(string domainPrefix, string domainName, DataType element,
-        string expectedDomain, bool enableConditionalReferencePseudonymization)
+    public void Process_SupportsDomainPrefixSetting(
+        string domainPrefix,
+        string domainName,
+        DataType element,
+        string expectedDomain,
+        bool enableConditionalReferencePseudonymization
+    )
     {
         var features = new FeatureManagement()
         {
@@ -42,8 +75,15 @@ public class GPasPseudonymizationProcessorTests
             node = node.Children().CastElementNodes().First();
         }
 
-        processor.Process(node, null,
-            new Dictionary<string, object> { { "domain", domainName }, { "domain-prefix", domainPrefix } });
+        processor.Process(
+            node,
+            null,
+            new Dictionary<string, object>
+            {
+                { "domain", domainName },
+                { "domain-prefix", domainPrefix }
+            }
+        );
 
         A.CallTo(() => psnClient.GetOrCreatePseudonymFor(A<string>._, expectedDomain))
             .MustHaveHappenedOnceExactly();

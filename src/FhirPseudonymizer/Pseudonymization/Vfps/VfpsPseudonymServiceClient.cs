@@ -9,7 +9,10 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
 {
     private readonly ILogger<VfpsPseudonymServiceClient> logger;
 
-    public VfpsPseudonymServiceClient(ILogger<VfpsPseudonymServiceClient> logger, PseudonymService.PseudonymServiceClient client)
+    public VfpsPseudonymServiceClient(
+        ILogger<VfpsPseudonymServiceClient> logger,
+        PseudonymService.PseudonymServiceClient client
+    )
     {
         Client = client;
         this.logger = logger;
@@ -45,7 +48,11 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
         }
         catch (Exception exc)
         {
-            logger.LogWarning(exc, "Failed to de-pseudonymize. Returning pseudonymized value.", pseudonym);
+            logger.LogWarning(
+                exc,
+                "Failed to de-pseudonymize. Returning pseudonymized value.",
+                pseudonym
+            );
             return pseudonym;
         }
     }
