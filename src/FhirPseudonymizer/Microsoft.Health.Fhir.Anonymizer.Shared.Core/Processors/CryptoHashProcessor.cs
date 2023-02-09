@@ -17,11 +17,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         public CryptoHashProcessor(string cryptoHashKey)
         {
             _cryptoHashKey = cryptoHashKey;
-            _cryptoHashFunction = input => CryptoHashUtility.ComputeHmacSHA256Hash(input, _cryptoHashKey);
+            _cryptoHashFunction = input =>
+                CryptoHashUtility.ComputeHmacSHA256Hash(input, _cryptoHashKey);
         }
 
-        public ProcessResult Process(ElementNode node, ProcessContext context = null,
-            Dictionary<string, object> settings = null)
+        public ProcessResult Process(
+            ElementNode node,
+            ProcessContext context = null,
+            Dictionary<string, object> settings = null
+        )
         {
             var processResult = new ProcessResult();
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
@@ -33,7 +37,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             // Hash the id part for "reference" and "uri" nodes and hash whole input for other node types
             if (node.IsReferenceStringNode() || node.IsReferenceUriNode(input))
             {
-                var newReference = ReferenceUtility.TransformReferenceId(input, _cryptoHashFunction);
+                var newReference = ReferenceUtility.TransformReferenceId(
+                    input,
+                    _cryptoHashFunction
+                );
                 node.Value = newReference;
             }
             else
@@ -41,7 +48,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 node.Value = _cryptoHashFunction(input);
             }
 
-            _logger.LogDebug($"Fhir value '{input}' at '{node.Location}' is hashed to '{node.Value}'.");
+            _logger.LogDebug(
+                $"Fhir value '{input}' at '{node.Location}' is hashed to '{node.Value}'."
+            );
 
             processResult.AddProcessRecord(AnonymizationOperations.CryptoHash, node);
             return processResult;

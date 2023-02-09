@@ -8,7 +8,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public class DateShiftProcessor : IAnonymizerProcessor
     {
-        public DateShiftProcessor(string dateShiftKey, string dateShiftKeyPrefix, bool enablePartialDatesForRedact)
+        public DateShiftProcessor(
+            string dateShiftKey,
+            string dateShiftKeyPrefix,
+            bool enablePartialDatesForRedact
+        )
         {
             DateShiftKey = dateShiftKey;
             DateShiftKeyPrefix = dateShiftKeyPrefix;
@@ -21,8 +25,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
         public bool EnablePartialDatesForRedact { get; set; }
 
-        public ProcessResult Process(ElementNode node, ProcessContext context = null,
-            Dictionary<string, object> settings = null)
+        public ProcessResult Process(
+            ElementNode node,
+            ProcessContext context = null,
+            Dictionary<string, object> settings = null
+        )
         {
             var processResult = new ProcessResult();
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
@@ -32,14 +39,22 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
             if (node.IsDateNode())
             {
-                return DateTimeUtility.ShiftDateNode(node, DateShiftKey, DateShiftKeyPrefix,
-                    EnablePartialDatesForRedact);
+                return DateTimeUtility.ShiftDateNode(
+                    node,
+                    DateShiftKey,
+                    DateShiftKeyPrefix,
+                    EnablePartialDatesForRedact
+                );
             }
 
             if (node.IsDateTimeNode() || node.IsInstantNode())
             {
-                return DateTimeUtility.ShiftDateTimeAndInstantNode(node, DateShiftKey, DateShiftKeyPrefix,
-                    EnablePartialDatesForRedact);
+                return DateTimeUtility.ShiftDateTimeAndInstantNode(
+                    node,
+                    DateShiftKey,
+                    DateShiftKeyPrefix,
+                    EnablePartialDatesForRedact
+                );
             }
 
             return processResult;
@@ -48,8 +63,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         public static DateShiftProcessor Create(AnonymizerConfigurationManager configuratonManager)
         {
             var parameters = configuratonManager.GetParameterConfiguration();
-            return new DateShiftProcessor(parameters.DateShiftKey, parameters.DateShiftKeyPrefix,
-                parameters.EnablePartialDatesForRedact);
+            return new DateShiftProcessor(
+                parameters.DateShiftKey,
+                parameters.DateShiftKeyPrefix,
+                parameters.EnablePartialDatesForRedact
+            );
         }
     }
 }

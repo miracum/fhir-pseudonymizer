@@ -12,19 +12,30 @@ namespace FhirPseudonymizer.Pseudonymization.GPas;
 
 public static class GPasExtensions
 {
-    public static IServiceCollection AddGPasClient(this IServiceCollection services, GPasConfig gPasConfig)
+    public static IServiceCollection AddGPasClient(
+        this IServiceCollection services,
+        GPasConfig gPasConfig
+    )
     {
-        services.AddHttpClient("gPAS", (client) =>
-            {
-                client.BaseAddress = gPasConfig.Url;
-
-                if (!string.IsNullOrEmpty(gPasConfig.Auth.Basic.Username))
+        services
+            .AddHttpClient(
+                "gPAS",
+                (client) =>
                 {
-                    var basicAuthString = $"{gPasConfig.Auth.Basic.Username}:{gPasConfig.Auth.Basic.Password}";
-                    var byteArray = Encoding.UTF8.GetBytes(basicAuthString);
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                    client.BaseAddress = gPasConfig.Url;
+
+                    if (!string.IsNullOrEmpty(gPasConfig.Auth.Basic.Username))
+                    {
+                        var basicAuthString =
+                            $"{gPasConfig.Auth.Basic.Username}:{gPasConfig.Auth.Basic.Password}";
+                        var byteArray = Encoding.UTF8.GetBytes(basicAuthString);
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                            "Basic",
+                            Convert.ToBase64String(byteArray)
+                        );
+                    }
                 }
-            })
+            )
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
             .AddPolicyHandler(GetRetryPolicy(gPasConfig.RequestRetryCount))
             .UseHttpClientMetrics();
@@ -38,6 +49,9 @@ public static class GPasExtensions
     {
         return HttpPolicyExtensions
             .HandleTransientHttpError()
-            .WaitAndRetryAsync(retryCount, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+            .WaitAndRetryAsync(
+                retryCount,
+                retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
+            );
     }
 }

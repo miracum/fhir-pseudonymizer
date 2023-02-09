@@ -20,8 +20,11 @@ namespace FhirPseudonymizer
             _key = Encoding.UTF8.GetBytes(decryptKey);
         }
 
-        public ProcessResult Process(ElementNode node, ProcessContext context = null,
-            Dictionary<string, object> settings = null)
+        public ProcessResult Process(
+            ElementNode node,
+            ProcessContext context = null,
+            Dictionary<string, object> settings = null
+        )
         {
             var processResult = new ProcessResult();
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
@@ -39,7 +42,9 @@ namespace FhirPseudonymizer
                 _logger.LogWarning(exc, "Decryption failed. Returning original value.");
             }
 
-            _logger.LogDebug($"Fhir value '{input}' at '{node.Location}' is decrypted to '{node.Value}'.");
+            _logger.LogDebug(
+                $"Fhir value '{input}' at '{node.Location}' is decrypted to '{node.Value}'."
+            );
 
             return processResult;
         }

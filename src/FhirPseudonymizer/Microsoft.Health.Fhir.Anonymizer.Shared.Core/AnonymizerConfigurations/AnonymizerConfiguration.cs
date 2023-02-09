@@ -8,11 +8,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
     public class AnonymizerConfiguration
     {
         // Static default crypto hash key to provide a same default key for all engine instances
-        private static readonly Lazy<string> s_defaultCryptoKey = new Lazy<string>(() => Guid.NewGuid().ToString("N"));
+        private static readonly Lazy<string> s_defaultCryptoKey = new Lazy<string>(
+            () => Guid.NewGuid().ToString("N")
+        );
 
-        [DataMember(Name = "fhirVersion")] public string FhirVersion { get; set; }
+        [DataMember(Name = "fhirVersion")]
+        public string FhirVersion { get; set; }
 
-        [DataMember(Name = "fhirPathRules")] public Dictionary<string, object>[] FhirPathRules { get; set; }
+        [DataMember(Name = "fhirPathRules")]
+        public Dictionary<string, object>[] FhirPathRules { get; set; }
 
         [DataMember(Name = "parameters")]
         // renamed to "Parameters" due to missing support for DataMember attributes

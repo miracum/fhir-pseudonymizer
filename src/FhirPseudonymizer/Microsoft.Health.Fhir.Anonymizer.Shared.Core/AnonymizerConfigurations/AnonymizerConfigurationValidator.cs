@@ -10,7 +10,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 {
     public class AnonymizerConfigurationValidator
     {
-        private readonly ILogger _logger = AnonymizerLogging.CreateLogger<AnonymizerConfigurationValidator>();
+        private readonly ILogger _logger =
+            AnonymizerLogging.CreateLogger<AnonymizerConfigurationValidator>();
 
         public void Validate(AnonymizerConfiguration config)
         {
@@ -18,17 +19,24 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
             {
                 _logger.LogWarning("Version is not specified in configuration file.");
             }
-            else if (!string.Equals(Constants.SupportedVersion, config.FhirVersion,
-                StringComparison.InvariantCultureIgnoreCase))
+            else if (
+                !string.Equals(
+                    Constants.SupportedVersion,
+                    config.FhirVersion,
+                    StringComparison.InvariantCultureIgnoreCase
+                )
+            )
             {
                 throw new AnonymizerConfigurationErrorsException(
-                    $"Configuration of fhirVersion {config.FhirVersion} is not supported. Expected fhirVersion: {Constants.SupportedVersion}");
+                    $"Configuration of fhirVersion {config.FhirVersion} is not supported. Expected fhirVersion: {Constants.SupportedVersion}"
+                );
             }
 
             if (config.FhirPathRules == null)
             {
                 throw new AnonymizerConfigurationErrorsException(
-                    "The configuration is invalid, please specify any fhirPathRules");
+                    "The configuration is invalid, please specify any fhirPathRules"
+                );
             }
 
             var compiler = new FhirPathCompiler();
@@ -39,7 +47,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
                 if (!rule.ContainsKey(Constants.PathKey) || !rule.ContainsKey(Constants.MethodKey))
                 {
                     throw new AnonymizerConfigurationErrorsException(
-                        "Missing path or method in Fhir path rule config.");
+                        "Missing path or method in Fhir path rule config."
+                    );
                 }
 
                 // Grammar check on FHIR path
@@ -49,32 +58,51 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
                 }
                 catch (Exception ex)
                 {
-                    throw new AnonymizerConfigurationErrorsException($"Invalid FHIR path {rule[Constants.PathKey]}",
-                        ex);
+                    throw new AnonymizerConfigurationErrorsException(
+                        $"Invalid FHIR path {rule[Constants.PathKey]}",
+                        ex
+                    );
                 }
 
                 // Method validate
                 var method = rule[Constants.MethodKey].ToString();
                 if (!supportedMethods.Contains(method))
                 {
-                    throw new AnonymizerConfigurationErrorsException($"Anonymization method {method} not supported.");
+                    throw new AnonymizerConfigurationErrorsException(
+                        $"Anonymization method {method} not supported."
+                    );
                 }
 
                 // Should provide replacement value for substitute rule
-                if (string.Equals(method, AnonymizerMethod.Substitute.ToString(),
-                    StringComparison.InvariantCultureIgnoreCase))
+                if (
+                    string.Equals(
+                        method,
+                        AnonymizerMethod.Substitute.ToString(),
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
+                )
                 {
                     SubstituteSetting.ValidateRuleSettings(rule);
                 }
 
-                if (string.Equals(method, AnonymizerMethod.Perturb.ToString(),
-                    StringComparison.InvariantCultureIgnoreCase))
+                if (
+                    string.Equals(
+                        method,
+                        AnonymizerMethod.Perturb.ToString(),
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
+                )
                 {
                     PerturbSetting.ValidateRuleSettings(rule);
                 }
 
-                if (string.Equals(method, AnonymizerMethod.Generalize.ToString(),
-                    StringComparison.InvariantCultureIgnoreCase))
+                if (
+                    string.Equals(
+                        method,
+                        AnonymizerMethod.Generalize.ToString(),
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
+                )
                 {
                     GeneralizeSetting.ValidateRuleSettings(rule);
                 }
@@ -88,7 +116,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
                 if (!IsValidKeySize(encryptKeySize, aes.LegalKeySizes))
                 {
                     throw new AnonymizerConfigurationErrorsException(
-                        $"Invalid encrypt key size : {encryptKeySize} bits! Please provide key sizes of 128, 192 or 256 bits.");
+                        $"Invalid encrypt key size : {encryptKeySize} bits! Please provide key sizes of 128, 192 or 256 bits."
+                    );
                 }
             }
         }
@@ -104,7 +133,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 
             for (var i = 0; i < validSizes.Length; i++)
             {
-                for (var j = validSizes[i].MinSize; j <= validSizes[i].MaxSize; j += validSizes[i].SkipSize)
+                for (
+                    var j = validSizes[i].MinSize;
+                    j <= validSizes[i].MaxSize;
+                    j += validSizes[i].SkipSize
+                )
                 {
                     if (j == bitLength)
                     {

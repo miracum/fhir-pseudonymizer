@@ -13,28 +13,33 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         private static partial Regex OidReferenceRegex();
 
         // Regex for uuid reference https://www.hl7.org/fhir/datatypes.html#uuid
-        [GeneratedRegex("^(?<prefix>urn:uuid:)(?<id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?<suffix>)$")]
+        [GeneratedRegex(
+            "^(?<prefix>urn:uuid:)(?<id>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?<suffix>)$"
+        )]
         private static partial Regex UuidReferenceRegex();
 
         private const string InternalReferencePrefix = "#";
 
-        private static readonly List<Regex> _resourceReferenceRegexes = new()
-        {
-            // Regex for absolute or relative literal url reference, https://www.hl7.org/fhir/references.html#literal
-            new Regex(@"^(?<prefix>((http|https)://([A-Za-z0-9\\\/\.\:\%\$])*)?("
-                      + string.Join("|", ModelInfo.SupportedResources)
-                      + @")\/)(?<id>[A-Za-z0-9\-\.]{1,64})(?<suffix>\/_history\/[A-Za-z0-9\-\.]{1,64})?$"),
-            // Regex for conditional references (https://www.hl7.org/fhir/http.html#trules) or search parameters with identifier
-            new Regex("^(?<prefix>(("
-                      + string.Join("|", ModelInfo.SupportedResources)
-                      + @")\?)?identifier=((http|https)://([A-Za-z0-9\\\/\.\:\%\$\-])*\|)?)(?<id>[A-Za-z0-9\-\.]{1,64})$")
-        };
+        private static readonly List<Regex> _resourceReferenceRegexes =
+            new()
+            {
+                // Regex for absolute or relative literal url reference, https://www.hl7.org/fhir/references.html#literal
+                new Regex(
+                    @"^(?<prefix>((http|https)://([A-Za-z0-9\\\/\.\:\%\$])*)?("
+                        + string.Join("|", ModelInfo.SupportedResources)
+                        + @")\/)(?<id>[A-Za-z0-9\-\.]{1,64})(?<suffix>\/_history\/[A-Za-z0-9\-\.]{1,64})?$"
+                ),
+                // Regex for conditional references (https://www.hl7.org/fhir/http.html#trules) or search parameters with identifier
+                new Regex(
+                    "^(?<prefix>(("
+                        + string.Join("|", ModelInfo.SupportedResources)
+                        + @")\?)?identifier=((http|https)://([A-Za-z0-9\\\/\.\:\%\$\-])*\|)?)(?<id>[A-Za-z0-9\-\.]{1,64})$"
+                )
+            };
 
-        private static readonly List<Regex> _referenceRegexes = _resourceReferenceRegexes.Concat(new List<Regex>
-        {
-            OidReferenceRegex(),
-            UuidReferenceRegex(),
-        }).ToList();
+        private static readonly List<Regex> _referenceRegexes = _resourceReferenceRegexes
+            .Concat(new List<Regex> { OidReferenceRegex(), UuidReferenceRegex(), })
+            .ToList();
 
         public static string GetReferencePrefix(string reference)
         {
@@ -69,7 +74,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             return false;
         }
 
-        public static string TransformReferenceId(string reference, Func<string, string> transformation)
+        public static string TransformReferenceId(
+            string reference,
+            Func<string, string> transformation
+        )
         {
             if (string.IsNullOrEmpty(reference))
             {
@@ -91,7 +99,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 {
                     var group = match.Groups["id"];
                     var newId = transformation(group.Value);
-                    var newReference = $"{match.Groups["prefix"].Value}{newId}{match.Groups["suffix"].Value}";
+                    var newReference =
+                        $"{match.Groups["prefix"].Value}{newId}{match.Groups["suffix"].Value}";
 
                     return newReference;
                 }

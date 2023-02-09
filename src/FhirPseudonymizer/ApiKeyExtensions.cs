@@ -10,7 +10,8 @@ public static class ApiKeyExtensions
 {
     public static IServiceCollection AddApiKeyAuth(this IServiceCollection services, string apiKey)
     {
-        services.AddAuthentication(ApiKeyDefaults.AuthenticationScheme)
+        services
+            .AddAuthentication(ApiKeyDefaults.AuthenticationScheme)
             .AddApiKeyInHeaderOrQueryParams(options =>
             {
                 options.Realm = "FHIR Pseudonymizer";
@@ -21,7 +22,10 @@ public static class ApiKeyExtensions
                 {
                     OnValidateKey = ctx =>
                     {
-                        if (string.IsNullOrWhiteSpace(apiKey) || !apiKey.Equals(ctx.ApiKey, StringComparison.InvariantCulture))
+                        if (
+                            string.IsNullOrWhiteSpace(apiKey)
+                            || !apiKey.Equals(ctx.ApiKey, StringComparison.InvariantCulture)
+                        )
                         {
                             ctx.ValidationFailed();
                             return Task.CompletedTask;
@@ -32,7 +36,9 @@ public static class ApiKeyExtensions
                             new Claim("ApiAccess", "Access to FHIR Pseudonymizer API")
                         };
 
-                        ctx.Principal = new ClaimsPrincipal(new ClaimsIdentity(claims, ctx.Scheme.Name));
+                        ctx.Principal = new ClaimsPrincipal(
+                            new ClaimsIdentity(claims, ctx.Scheme.Name)
+                        );
                         ctx.Success();
                         return Task.CompletedTask;
                     }

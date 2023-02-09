@@ -24,8 +24,10 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var response = await _client.GetAsync("/fhir/metadata");
 
         response.EnsureSuccessStatusCode();
-        response.Content.Headers.ContentType.ToString()
-            .Should().Be("application/fhir+json; charset=utf-8");
+        response.Content.Headers.ContentType
+            .ToString()
+            .Should()
+            .Be("application/fhir+json; charset=utf-8");
     }
 
     [Theory]
@@ -55,7 +57,8 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
     [Fact]
     public async Task PostDeIdentify_WithoutApiKeyHeader_ShouldBeAllowed()
     {
-        var patient = @"{
+        var patient =
+            @"{
                 ""resourceType"": ""Patient"",
                 ""id"": ""glossy""
             }";
@@ -91,7 +94,8 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
     [Fact]
     public async Task PostDeIdentify_WithDefaultConfig_ShouldEncryptPatientIdentifier()
     {
-        var patient = @"{
+        var patient =
+            @"{
                 ""resourceType"": ""Patient"",
                 ""id"": ""glossy"",
                 ""identifier"": [
@@ -127,7 +131,8 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
     [Fact]
     public async Task PostDePseudonymize_WithDefaultConfig_ShouldDecryptPatientIdentifier()
     {
-        var patient = @"{
+        var patient =
+            @"{
                 ""resourceType"": ""Patient"",
                 ""id"": ""glossy"",
                 ""identifier"": [
@@ -154,7 +159,9 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
 
         response.EnsureSuccessStatusCode();
 
-        var decryptedPatient = new FhirJsonParser().Parse<Patient>(response.Content.ReadAsStringAsync().Result);
+        var decryptedPatient = new FhirJsonParser().Parse<Patient>(
+            response.Content.ReadAsStringAsync().Result
+        );
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");
     }

@@ -7,8 +7,11 @@ namespace FhirPseudonymizer
 {
     public static class Program
     {
-        internal static ActivitySource ActivitySource { get; }
-            = new ActivitySource("FhirPseudonymizer", typeof(Program).Assembly.GetName().Version.ToString());
+        internal static ActivitySource ActivitySource { get; } =
+            new ActivitySource(
+                "FhirPseudonymizer",
+                typeof(Program).Assembly.GetName().Version.ToString()
+            );
 
         public static void Main(string[] args)
         {
@@ -19,13 +22,15 @@ namespace FhirPseudonymizer
         {
             return Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<Startup>())
-                .ConfigureLogging(builder =>
-                    builder.AddSimpleConsole(options =>
-                    {
-                        options.UseUtcTimestamp = true;
-                        options.IncludeScopes = true;
-                        options.TimestampFormat = "yyyy-MM-ddTHH:mm:ssZ ";
-                    }));
+                .ConfigureLogging(
+                    builder =>
+                        builder.AddSimpleConsole(options =>
+                        {
+                            options.UseUtcTimestamp = true;
+                            options.IncludeScopes = true;
+                            options.TimestampFormat = "yyyy-MM-ddTHH:mm:ssZ ";
+                        })
+                );
         }
     }
 }

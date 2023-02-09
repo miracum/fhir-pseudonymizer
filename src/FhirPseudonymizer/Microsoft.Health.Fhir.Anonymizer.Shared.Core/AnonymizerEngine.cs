@@ -24,10 +24,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
         private readonly AnonymizationFhirPathRule[] _rules;
         private readonly ResourceValidator _validator = new ResourceValidator();
 
-        public AnonymizerEngine(string configFilePath) : this(
-            AnonymizerConfigurationManager.CreateFromConfigurationFile(configFilePath))
-        {
-        }
+        public AnonymizerEngine(string configFilePath)
+            : this(AnonymizerConfigurationManager.CreateFromConfigurationFile(configFilePath)) { }
 
         public AnonymizerEngine(AnonymizerConfigurationManager configurationManager)
         {
@@ -46,7 +44,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             EnsureArg.IsNotNull(resource, nameof(resource));
 
             ValidateInput(settings, resource);
-            var anonymizedResource = AnonymizeElement(resource.ToTypedElement(), settings).ToPoco<Resource>();
+            var anonymizedResource = AnonymizeElement(resource.ToTypedElement(), settings)
+                .ToPoco<Resource>();
             ValidateOutput(settings, anonymizedResource);
 
             return anonymizedResource;
@@ -57,10 +56,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             FhirPathCompiler.DefaultSymbolTable.AddExtensionSymbols();
         }
 
-        public static AnonymizerEngine CreateWithFileContext(string configFilePath, string fileName,
-            string inputFolderName)
+        public static AnonymizerEngine CreateWithFileContext(
+            string configFilePath,
+            string fileName,
+            string inputFolderName
+        )
         {
-            var configurationManager = AnonymizerConfigurationManager.CreateFromConfigurationFile(configFilePath);
+            var configurationManager = AnonymizerConfigurationManager.CreateFromConfigurationFile(
+                configFilePath
+            );
             var dateShiftScope = configurationManager.GetParameterConfiguration().DateShiftScope;
             var dateShiftKeyPrefix = string.Empty;
             if (dateShiftScope == DateShiftScope.File)
@@ -76,7 +80,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             return new AnonymizerEngine(configurationManager);
         }
 
-        public ITypedElement AnonymizeElement(ITypedElement element, AnonymizerSettings settings = null)
+        public ITypedElement AnonymizeElement(
+            ITypedElement element,
+            AnonymizerSettings settings = null
+        )
         {
             EnsureArg.IsNotNull(element, nameof(element));
 
@@ -121,13 +128,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             _processors[AnonymizerMethod.Redact.ToString().ToUpperInvariant()] =
                 RedactProcessor.Create(configurationManager);
             _processors[AnonymizerMethod.CryptoHash.ToString().ToUpperInvariant()] =
-                new CryptoHashProcessor(configurationManager.GetParameterConfiguration().CryptoHashKey);
+                new CryptoHashProcessor(
+                    configurationManager.GetParameterConfiguration().CryptoHashKey
+                );
             _processors[AnonymizerMethod.Encrypt.ToString().ToUpperInvariant()] =
                 new EncryptProcessor(configurationManager.GetParameterConfiguration().EncryptKey);
-            _processors[AnonymizerMethod.Substitute.ToString().ToUpperInvariant()] = new SubstituteProcessor();
-            _processors[AnonymizerMethod.Perturb.ToString().ToUpperInvariant()] = new PerturbProcessor();
+            _processors[AnonymizerMethod.Substitute.ToString().ToUpperInvariant()] =
+                new SubstituteProcessor();
+            _processors[AnonymizerMethod.Perturb.ToString().ToUpperInvariant()] =
+                new PerturbProcessor();
             _processors[AnonymizerMethod.Keep.ToString().ToUpperInvariant()] = new KeepProcessor();
-            _processors[AnonymizerMethod.Generalize.ToString().ToUpperInvariant()] = new GeneralizeProcessor();
+            _processors[AnonymizerMethod.Generalize.ToString().ToUpperInvariant()] =
+                new GeneralizeProcessor();
         }
 
         public void ClearProcessors()
@@ -143,12 +155,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
     public class DePseudonymizerEngine : AnonymizerEngine, IDePseudonymizerEngine
     {
-        public DePseudonymizerEngine(AnonymizerConfigurationManager configurationManager) : base(configurationManager)
+        public DePseudonymizerEngine(AnonymizerConfigurationManager configurationManager)
+            : base(configurationManager)
         {
             ClearProcessors();
         }
 
-        public Resource DePseudonymizeResource(Resource resource, AnonymizerSettings settings = null)
+        public Resource DePseudonymizeResource(
+            Resource resource,
+            AnonymizerSettings settings = null
+        )
         {
             return AnonymizeResource(resource, settings);
         }

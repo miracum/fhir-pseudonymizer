@@ -8,8 +8,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public class RedactProcessor : IAnonymizerProcessor
     {
-        public RedactProcessor(bool enablePartialDatesForRedact, bool enablePartialAgesForRedact,
-            bool enablePartialZipCodesForRedact, List<string> restrictedZipCodeTabulationAreas)
+        public RedactProcessor(
+            bool enablePartialDatesForRedact,
+            bool enablePartialAgesForRedact,
+            bool enablePartialZipCodesForRedact,
+            List<string> restrictedZipCodeTabulationAreas
+        )
         {
             EnablePartialDatesForRedact = enablePartialDatesForRedact;
             EnablePartialAgesForRedact = enablePartialAgesForRedact;
@@ -25,8 +29,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
         public List<string> RestrictedZipCodeTabulationAreas { get; set; }
 
-        public ProcessResult Process(ElementNode node, ProcessContext context = null,
-            Dictionary<string, object> settings = null)
+        public ProcessResult Process(
+            ElementNode node,
+            ProcessContext context = null,
+            Dictionary<string, object> settings = null
+        )
         {
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
             {
@@ -40,7 +47,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
             if (node.IsDateTimeNode() || node.IsInstantNode())
             {
-                return DateTimeUtility.RedactDateTimeAndInstantNode(node, EnablePartialDatesForRedact);
+                return DateTimeUtility.RedactDateTimeAndInstantNode(
+                    node,
+                    EnablePartialDatesForRedact
+                );
             }
 
             if (node.IsAgeDecimalNode())
@@ -50,8 +60,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
             if (node.IsPostalCodeNode())
             {
-                return PostalCodeUtility.RedactPostalCode(node, EnablePartialZipCodesForRedact,
-                    RestrictedZipCodeTabulationAreas);
+                return PostalCodeUtility.RedactPostalCode(
+                    node,
+                    EnablePartialZipCodesForRedact,
+                    RestrictedZipCodeTabulationAreas
+                );
             }
 
             node.Value = null;
@@ -63,8 +76,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         public static RedactProcessor Create(AnonymizerConfigurationManager configuratonManager)
         {
             var parameters = configuratonManager.GetParameterConfiguration();
-            return new RedactProcessor(parameters.EnablePartialDatesForRedact, parameters.EnablePartialAgesForRedact,
-                parameters.EnablePartialZipCodesForRedact, parameters.RestrictedZipCodeTabulationAreas);
+            return new RedactProcessor(
+                parameters.EnablePartialDatesForRedact,
+                parameters.EnablePartialAgesForRedact,
+                parameters.EnablePartialZipCodesForRedact,
+                parameters.RestrictedZipCodeTabulationAreas
+            );
         }
     }
 }

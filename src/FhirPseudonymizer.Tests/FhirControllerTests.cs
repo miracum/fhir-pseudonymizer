@@ -25,8 +25,12 @@ public class FhirControllerTests
         A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
             .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings);
 
-        var controller = new FhirController(A.Fake<IConfiguration>(), A.Fake<ILogger<FhirController>>(),
-            anonymizer, A.Fake<IDePseudonymizerEngine>());
+        var controller = new FhirController(
+            A.Fake<IConfiguration>(),
+            A.Fake<ILogger<FhirController>>(),
+            anonymizer,
+            A.Fake<IDePseudonymizerEngine>()
+        );
 
         var parameters = new Parameters()
             .Add("settings", new[] { Tuple.Create<string, Base>(domainPrefix, domainPrefixValue) })
@@ -48,7 +52,8 @@ public class FhirControllerTests
             A.Fake<IConfiguration>(),
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
-            A.Fake<IDePseudonymizerEngine>());
+            A.Fake<IDePseudonymizerEngine>()
+        );
 
         var response = controller.DeIdentify(new Bundle());
 
@@ -61,14 +66,17 @@ public class FhirControllerTests
     public void DePseudonymize_WithExceptionThrownInDePseudonymizer_ShouldReturnInternalError()
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
-        A.CallTo(() => dePseudonymizer.DePseudonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
+        A.CallTo(
+                () => dePseudonymizer.DePseudonymizeResource(A<Resource>._, A<AnonymizerSettings>._)
+            )
             .Throws(new Exception("something went wrong"));
 
         var controller = new FhirController(
             A.Fake<IConfiguration>(),
             A.Fake<ILogger<FhirController>>(),
             A.Fake<IAnonymizerEngine>(),
-            dePseudonymizer);
+            dePseudonymizer
+        );
 
         var response = controller.DePseudonymize(new Bundle());
 

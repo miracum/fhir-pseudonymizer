@@ -42,11 +42,12 @@ public class Startup
         switch (appConfig.PseudonymizationService)
         {
             case PseudonymizationServiceType.gPAS:
-                services.AddSingleton<IMemoryCache>(_ => new MemoryCache(
-                    new MemoryCacheOptions
-                    {
-                        SizeLimit = appConfig.GPas.Cache.SizeLimit
-                    }));
+                services.AddSingleton<IMemoryCache>(
+                    _ =>
+                        new MemoryCache(
+                            new MemoryCacheOptions { SizeLimit = appConfig.GPas.Cache.SizeLimit }
+                        )
+                );
                 services.AddGPasClient(appConfig.GPas);
                 break;
             case PseudonymizationServiceType.Vfps:
@@ -60,18 +61,27 @@ public class Startup
 
         services.AddResponseCompression(options =>
         {
-            options.MimeTypes =
-                ResponseCompressionDefaults.MimeTypes.Concat(
-                    new[] { "application/fhir+json" });
+            options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+                new[] { "application/fhir+json" }
+            );
         });
 
         services.AddRouting(options => options.LowercaseUrls = true);
 
         services.AddControllers(options =>
         {
-            var useSystemTextJsonFhirSerializer = Configuration.GetValue("UseSystemTextJsonFhirSerializer", false);
-            options.InputFormatters.Insert(0, new FhirInputFormatter(useSystemTextJsonFhirSerializer));
-            options.OutputFormatters.Insert(0, new FhirOutputFormatter(useSystemTextJsonFhirSerializer));
+            var useSystemTextJsonFhirSerializer = Configuration.GetValue(
+                "UseSystemTextJsonFhirSerializer",
+                false
+            );
+            options.InputFormatters.Insert(
+                0,
+                new FhirInputFormatter(useSystemTextJsonFhirSerializer)
+            );
+            options.OutputFormatters.Insert(
+                0,
+                new FhirOutputFormatter(useSystemTextJsonFhirSerializer)
+            );
         });
 
         services.AddSwaggerGen(c =>
@@ -84,12 +94,14 @@ public class Startup
             c.IncludeXmlComments(xmlPath);
         });
 
-        services.AddHealthChecks()
+        services
+            .AddHealthChecks()
             .AddCheck("live", () => HealthCheckResult.Healthy())
             .ForwardToPrometheus();
 
-        var isTracingEnabled = Configuration.GetValue("Tracing:IsEnabled", false) ||
-            Configuration.GetValue("Tracing:Enabled", false);
+        var isTracingEnabled =
+            Configuration.GetValue("Tracing:IsEnabled", false)
+            || Configuration.GetValue("Tracing:Enabled", false);
         if (isTracingEnabled)
         {
             services.AddTracing(Configuration);
@@ -107,7 +119,9 @@ public class Startup
         app.UseResponseCompression();
 
         app.UseSwagger();
-        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v2/swagger.json", "FhirPseudonymizer v2"));
+        app.UseSwaggerUI(
+            c => c.SwaggerEndpoint("/swagger/v2/swagger.json", "FhirPseudonymizer v2")
+        );
 
         app.UseRouting();
 
@@ -115,10 +129,14 @@ public class Startup
         app.UseGrpcMetrics();
 
         app.UseHealthChecks("/ready");
-        app.UseHealthChecks("/live", new HealthCheckOptions
-        {
-            Predicate = r => r.Name.Contains("live", StringComparison.InvariantCultureIgnoreCase),
-        });
+        app.UseHealthChecks(
+            "/live",
+            new HealthCheckOptions
+            {
+                Predicate = r =>
+                    r.Name.Contains("live", StringComparison.InvariantCultureIgnoreCase),
+            }
+        );
 
         app.UseAuthentication();
         app.UseAuthorization();

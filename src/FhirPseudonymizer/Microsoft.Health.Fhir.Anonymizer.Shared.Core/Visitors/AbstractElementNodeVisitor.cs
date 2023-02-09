@@ -9,8 +9,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             return true;
         }
 
-        public virtual void EndVisit(ElementNode node)
-        {
-        }
+        public virtual void EndVisit(ElementNode node) { }
     }
 }
