@@ -26,14 +26,14 @@ jobs:
     steps:
       - name: Docker meta
         id: container_meta
-        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea # v4
+        uses: docker/metadata-action@c4ee3adeed93b1fa6a762f209fb01608c1a22f1e # v4
         with:
           images: |
             ghcr.io/${{ github.repository }}
 
       - name: Container meta for the unit test image
         id: container_tests_meta
-        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea # v4
+        uses: docker/metadata-action@c4ee3adeed93b1fa6a762f209fb01608c1a22f1e # v4
         with:
           images: |
             ghcr.io/${{ github.repository }}-tests
@@ -42,7 +42,7 @@ jobs:
         uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325 # v2
+        uses: docker/setup-buildx-action@4b4e9c3e2d4531116a6f8ba8e71fc6e2cb6e6c8c # v2
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2
@@ -54,7 +54,7 @@ jobs:
 
       # ran first to avoid pushing failing images when running on master.
       - name: Run unit tests
-        uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # v3
+        uses: docker/build-push-action@1104d471370f9806843c095c1db02b5a90c5f8b6 # v3
         with:
           push: false
           load: true
@@ -101,7 +101,7 @@ jobs:
 
       - name: Build and push image
         id: build
-        uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # v3
+        uses: docker/build-push-action@1104d471370f9806843c095c1db02b5a90c5f8b6 # v3
         with:
           load: ${{ github.event_name == 'pull_request' }}
           push: ${{ github.event_name != 'pull_request' }}
@@ -112,7 +112,7 @@ jobs:
           platforms: ${{ steps.platforms.outputs.platforms }}
 
       - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@fcf6fe9e4a0409cd9316a5011435be0f3327f1e1 # v2.3.1
+        uses: marocchino/sticky-pull-request-comment@f61b6cf21ef2fcc468f4345cdfcc9bda741d2343 # v2.6.2
         if: ${{ github.event_name == 'pull_request' }}
         with:
           recreate: true
@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload container image
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: container-image
           path: |
@@ -144,9 +144,9 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3
 
-      - uses: iter8-tools/iter8@c891bca5deb188774fed8dd68312b5c1dd478750 # tag=v0.12.3
+      - uses: iter8-tools/iter8@9b867240dcaa77858d2458f52a3845e47ea2c657 # v0.13.17
 
       - name: Create KinD cluster
         uses: helm/kind-action@d8ccf8fb623ce1bb360ae2f45f323d9d5c5e9f00 # v1.5.0
@@ -154,7 +154,7 @@ jobs:
           cluster_name: kind
 
       - name: Download container images
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # v3.0.1
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: container-image
           path: /tmp
@@ -213,7 +213,7 @@ jobs:
           } >> iter8-output.md
 
       - name: Append sticky comment with iter8 report
-        uses: marocchino/sticky-pull-request-comment@fcf6fe9e4a0409cd9316a5011435be0f3327f1e1 # v2.3.1
+        uses: marocchino/sticky-pull-request-comment@f61b6cf21ef2fcc468f4345cdfcc9bda741d2343 # v2.6.2
         if: ${{ github.event_name == 'pull_request' }}
         with:
           append: true
@@ -221,7 +221,7 @@ jobs:
 
       - name: Upload report
         if: always()
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: iter8-report.html
           path: |
@@ -235,7 +235,7 @@ jobs:
 
       - name: Upload cluster dump
         if: always()
-        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # v3.1.1
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: kind-cluster-dump.txt
           path: |
@@ -251,7 +251,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@3b88c82b34098e8b51e401c1082c9170b0a3ec3c # tag=v3
@@ -269,7 +269,7 @@ jobs:
       actions: read # for detecting the Github Actions environment.
       id-token: write # for creating OIDC tokens for signing.
       packages: write # for uploading attestations.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.4.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.5.0
     with:
       image: ghcr.io/${{ github.repository }}
       digest: ${{ needs.build.outputs.image-digest }}
