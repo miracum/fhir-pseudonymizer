@@ -1,6 +1,6 @@
 services:
   jaeger:
-    image: docker.io/jaegertracing/all-in-one:1.45@sha256:5d5c9d2d8c8cbb42f1db4aac1f1f8487bac63da6802004d0da8580fc0c7311a1
+    image: docker.io/jaegertracing/all-in-one:1.47@sha256:ac85f812596ffb596ddcdbfe7c287eb44f781706e4232741bf9f81ff23aa1da9
     restart: unless-stopped
     deploy:
       resources:
@@ -21,7 +21,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   vfps-db:
-    image: docker.io/library/postgres:15.3@sha256:31c9342603866f29206a06b77c8fed48b3c3f70d710a4be4e8216b134f92d0df
+    image: docker.io/library/postgres:15.3@sha256:362a63cb1e864195ea2bc29b5066bdb222bc9a4461bfaff2418f63a06e56bce0
     restart: unless-stopped
     deploy:
       resources:
@@ -40,7 +40,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.2.0@sha256:ec09f1badfaca056b0a7be976fd6acdbf1b331194997d4d993938d86d83592f8
+    image: ghcr.io/miracum/vfps:v1.3.0@sha256:16d723600764eeebb49c88c4bfdf2bd7f84e3d5f9602c25b307bf52cf50e7e37
     restart: unless-stopped
     deploy:
       resources:
