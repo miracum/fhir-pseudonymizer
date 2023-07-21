@@ -307,4 +307,4 @@ jobs:
           TAGS: ${{ needs.build.outputs.image-tags }}
           DIGEST: ${{ needs.build.outputs.image-digest }}
         run: |
-          echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+          echo "${TAGS}" | xargs -I {} cosign sign --yes {}@"${DIGEST}"
