@@ -6,7 +6,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/FhirPseudonymizer/bin/Debug/net6.0/FhirPseudonymizer.dll",
+      "program": "${workspaceFolder}/src/FhirPseudonymizer/bin/Debug/net7.0/FhirPseudonymizer.dll",
       "args": [],
       "cwd": "${workspaceFolder}/src/FhirPseudonymizer",
       "stopAtEntry": false,
