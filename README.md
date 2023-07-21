@@ -352,13 +352,30 @@ Statistics        Avg      Stdev        Max
   Throughput:   158.17MB/s
 ```
 
-## Verify image integrity
+## Image signature and provenance verification
 
-All released container images are signed using [cosign](https://github.com/sigstore/cosign).
-The public key hosted at <https://miracum.github.io/cosign.pub> (see [here](https://github.com/miracum/miracum.github.io) for the repository source) may be used to verify them:
+Prerequisites:
+
+- [cosign](https://github.com/sigstore/cosign/releases)
+- [slsa-verifier](https://github.com/slsa-framework/slsa-verifier/releases)
+- [crane](https://github.com/google/go-containerregistry/releases)
+
+All released container images are signed using [cosign](https://github.com/sigstore/cosign) and SLSA Level 3 provenance is available for verification.
 
 ```sh
-cosign verify --key https://miracum.github.io/cosign.pub ghcr.io/miracum/fhir-pseudonymizer:latest
+# You can also retrieve the latest release from https://github.com/miracum/fhir-pseudonymizer/releases
+LATEST_RELEASE=$(git describe --abbrev=0 --tags)
+IMAGE_DIGEST=$(crane digest ghcr.io/miracum/fhir-pseudonymizer:${LATEST_RELEASE})
+IMAGE="ghcr.io/miracum/fhir-pseudonymizer@${IMAGE_DIGEST}"
+
+cosign verify \
+   --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+   --certificate-identity="https://github.com/miracum/fhir-pseudonymizer/.github/workflows/ci.yaml@refs/tags/${LATEST_RELEASE}" \
+   "$IMAGE"
+
+slsa-verifier verify-image "$IMAGE" \
+    --source-uri github.com/miracum/fhir-pseudonymizer \
+    --source-tag ${LATEST_RELEASE}
 ```
 
 ## Semantic versioning exclusion policies
