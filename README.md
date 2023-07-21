@@ -94,10 +94,10 @@ Service-specific configuration settings are listed below.
 
 | Environment Variable          | Description                                                                                                                                                               | Default    |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `gPAS__Url`                   | The gPAS TTP FHIR Gateway URL. Only required if any of the anonymization.yaml rules use the `pseudonymize` method.                                                        | `""`       |
+| `gPAS__Url`                   | The gPAS TTP FHIR Gateway URL. E.g. `http://localhost:8080/ttp-fhir/fhir/gpas/` for gPAS `2023.1.0`. Used if `PseudonymizationService` is set to `gPAS`.                  | `""`       |
 | `gPAS__Auth__Basic__Username` | The HTTP basic auth username to connect to gPAS                                                                                                                           | `""`       |
 | `gPAS__Auth__Basic__Password` | The HTTP basic auth password to connect to gPAS                                                                                                                           | `""`       |
-| `gPAS__Version`               | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a later version than 1.10.1. | `"1.10.1"` |
+| `gPAS__Version`               | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a version newer than 1.10.1. | `"1.10.1"` |
 
 ### Vfps
 
