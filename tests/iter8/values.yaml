@@ -6,11 +6,10 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-extraEnv:
-  - name: PseudonymizationService
-    value: Vfps
-  - name: Vfps__Address
-    value: "dns:///vfps:8081"
+pseudonymizationService: Vfps
+
+externalVfps:
+  address: "dns:///vfps:8081"
 
 anonymizationConfig: |
   ---
