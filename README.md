@@ -212,7 +212,7 @@ Note: The domain name could also have been replaced completely by overriding the
 To test gPAS, Vfps, and tracing via Jaeger, run
 
 ```sh
-docker compose -f docker-compose.dev.yml --profile=gpas up
+docker compose -f compose.dev.yml --profile=gpas up
 ```
 
 ### Build
@@ -258,21 +258,17 @@ docker build -t ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG} .
 
 kind load docker-image ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG}
 
-helm repo add chgl https://chgl.github.io/charts
-helm repo add miracum https://miracum.github.io/charts
-helm repo update
-
 helm install \
   --wait \
   --timeout=10m \
-  vfps chgl/vfps
+  vfps oci://ghcr.io/miracum/charts/vfps
 
 helm upgrade --install \
   --set="image.tag=${IMAGE_TAG}" \
   -f tests/iter8/values.yaml \
   --wait \
   --timeout=10m \
-  fhir-pseudonymizer miracum/fhir-pseudonymizer
+  fhir-pseudonymizer oci://ghcr.io/miracum/charts/fhir-pseudonymizer
 
 kubectl apply -f tests/iter8/experiment.yaml
 

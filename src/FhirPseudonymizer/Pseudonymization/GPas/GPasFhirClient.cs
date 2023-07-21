@@ -7,6 +7,7 @@ using Hl7.Fhir.Utility;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Prometheus;
+using Semver;
 
 namespace FhirPseudonymizer.Pseudonymization.GPas;
 
@@ -49,18 +50,22 @@ public class GPasFhirClient : IPseudonymServiceClient
         var configGPasVersion = config.Version;
         var supportedGPasVersion = SemVersion.Parse(configGPasVersion);
 
-        if (supportedGPasVersion < SemVersion.Parse("1.10.2"))
+        logger.LogInformation($"Configured gPAS version {supportedGPasVersion}");
+        if (supportedGPasVersion.CompareSortOrderTo(SemVersion.Parse("1.10.2")) < 0)
         {
+            logger.LogInformation("Using gPAS API version < 1.10.2.");
             GetOrCreatePseudonymForResolver = GetOrCreatePseudonymForV1;
             GetOriginalValueForResolver = GetOriginalValueForV1;
         }
         else if (supportedGPasVersion == SemVersion.Parse("1.10.2"))
         {
+            logger.LogInformation("Using gPAS API version == 1.10.2.");
             GetOrCreatePseudonymForResolver = GetOrCreatePseudonymForV2;
             GetOriginalValueForResolver = GetOriginalValueForV2;
         }
         else
         {
+            logger.LogInformation("Using gPAS API version > 1.10.2.");
             GetOrCreatePseudonymForResolver = GetOrCreatePseudonymForV2x;
             GetOriginalValueForResolver = GetOriginalValueForV2x;
         }
