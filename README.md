@@ -212,7 +212,7 @@ Note: The domain name could also have been replaced completely by overriding the
 To test gPAS, Vfps, and tracing via Jaeger, run
 
 ```sh
-docker compose -f compose.dev.yml --profile=gpas up
+docker compose -f compose.dev.yaml --profile=gpas up
 ```
 
 ### Build

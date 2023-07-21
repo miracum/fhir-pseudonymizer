@@ -15,33 +15,33 @@
 
   <ItemGroup>
     <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="7.0.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.21.12" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.51.0" />
-    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.51.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.51.0">
+    <PackageReference Include="Google.Protobuf" Version="3.23.4" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.55.0" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.55.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.56.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Hl7.Fhir.R4" Version="5.2.0" />
     <PackageReference Include="Hl7.Fhir.Base" Version="5.2.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.4.0-rc.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.0.0-rc9.10" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.5.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.0.0-rc9.14" />
     <PackageReference Include="prometheus-net.AspNetCore" Version="7.0.0" />
     <PackageReference Include="prometheus-net" Version="7.0.0" />
     <PackageReference Include="prometheus-net.AspNetCore.Grpc" Version="7.0.0" />
     <PackageReference Include="prometheus-net.AspNetCore.HealthChecks" Version="7.0.0" />
     <PackageReference Include="Semver" Version="3.0.0-beta.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.9" />
     <PackageReference Include="NetEscapades.Configuration.Yaml" Version="2.2.0" />
     <PackageReference Include="Ensure.That" Version="10.1.0" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="OpenTelemetry" Version="1.4.0-rc.1" />
-    <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.4.0-rc.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.4.0-rc.1" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc9.10" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc9.10" />
+    <PackageReference Include="OpenTelemetry" Version="1.5.1" />
+    <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.5.1" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.5.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc9.14" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc9.14" />
   </ItemGroup>
 
   <ItemGroup>
