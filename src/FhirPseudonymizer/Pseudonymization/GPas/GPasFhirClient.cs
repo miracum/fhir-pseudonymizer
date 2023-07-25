@@ -3,7 +3,6 @@ using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
-using Hl7.Fhir.Utility;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Prometheus;
@@ -51,6 +50,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         var supportedGPasVersion = SemVersion.Parse(configGPasVersion);
 
         logger.LogInformation($"Configured gPAS version {supportedGPasVersion}");
+
         if (supportedGPasVersion.CompareSortOrderTo(SemVersion.Parse("1.10.2")) < 0)
         {
             logger.LogInformation("Using gPAS API version < 1.10.2.");
@@ -65,7 +65,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         }
         else
         {
-            logger.LogInformation("Using gPAS API version > 1.10.2.");
+            logger.LogInformation("Using gPAS API version > 1.10.2");
             GetOrCreatePseudonymForResolver = GetOrCreatePseudonymForV2x;
             GetOriginalValueForResolver = GetOriginalValueForV2x;
         }
@@ -215,7 +215,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         var query = new Dictionary<string, string> { ["domain"] = domain, ["original"] = value };
 
         // this currently uses a HttpClient instead of the FhirClient to leverage
-        // Polly, tracing, and metrics support. Once FhirClient allows for overring the HttpClient,
+        // Polly, tracing, and metrics support. Once FhirClient allows for overriding the HttpClient,
         // we can simplify this code a lot: https://github.com/FirelyTeam/firely-net-sdk/issues/1483
         var response = await Client.GetAsync(
             QueryHelpers.AddQueryString("$pseudonymize-allow-create", query)

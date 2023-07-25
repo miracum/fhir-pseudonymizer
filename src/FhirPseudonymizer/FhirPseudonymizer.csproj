@@ -11,6 +11,7 @@
     <WarningsAsErrors />
     <UserSecretsId>74fd5f09-6f06-4b68-8c73-152e215728ff</UserSecretsId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
   <ItemGroup>

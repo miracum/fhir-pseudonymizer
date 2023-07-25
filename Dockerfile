@@ -10,7 +10,8 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0.306-bullseye-slim-amd64@sha256:3a024733ce4
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/FhirPseudonymizer/FhirPseudonymizer.csproj .
-RUN dotnet restore
+COPY src/FhirPseudonymizer/packages.lock.json .
+RUN dotnet restore --locked-mode
 COPY . .
 
 ARG VERSION=0.0.0
