@@ -1,4 +1,5 @@
 using System;
+using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Pseudonymization;
 
 namespace FhirPseudonymizer.Config;
@@ -44,6 +45,20 @@ public record VfpsConfig
 public record PseudonymServiceAuthConfig
 {
     public PseudonymServiceBasicAuthConfig Basic { get; init; } = new();
+    public PseudonymServiceOAuthConfig OAuth { get; init; } = new();
+}
+
+public record PseudonymServiceOAuthConfig
+{
+    public Uri TokenUrl { get; init; }
+
+    public string ClientId { get; init; }
+
+    public string ClientSecret { get; init; }
+
+    public string Scope { get; init; } = "api";
+
+    public string Resource { get; init; }
 }
 
 public record PseudonymServiceBasicAuthConfig
