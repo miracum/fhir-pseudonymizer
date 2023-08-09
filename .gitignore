@@ -365,3 +365,6 @@ coverage/
 coveragereport/
 
 megalinter-reports/
+
+tests/chaos/argo
+*-iid.txt

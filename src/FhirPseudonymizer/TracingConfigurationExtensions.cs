@@ -19,7 +19,8 @@ public static class TracingConfigurationExtensions
         var assemblyVersion = assembly.Version?.ToString() ?? "unknown";
         var tracingExporter =
             configuration.GetValue<string>("Tracing:Exporter")?.ToLowerInvariant() ?? "jaeger";
-        var serviceName = configuration.GetValue("Tracing:ServiceName", assembly.Name) ?? "fhir-pseudonymizer";
+        var serviceName =
+            configuration.GetValue("Tracing:ServiceName", assembly.Name) ?? "fhir-pseudonymizer";
 
         // Build a resource configuration action to set service information.
         void configureResource(ResourceBuilder r) =>

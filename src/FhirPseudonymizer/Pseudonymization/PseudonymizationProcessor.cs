@@ -10,10 +10,7 @@ namespace FhirPseudonymizer.Pseudonymization;
 
 public partial class PseudonymizationProcessor : IAnonymizerProcessor
 {
-    public PseudonymizationProcessor(
-        IPseudonymServiceClient psnClient,
-        FeatureManagement features
-    )
+    public PseudonymizationProcessor(IPseudonymServiceClient psnClient, FeatureManagement features)
     {
         PsnClient = psnClient;
         IsConditionalReferencePseudonymizationEnabled =
@@ -64,13 +61,12 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
             );
         }
         else if (
-            IsConditionalReferencePseudonymizationEnabled
-            && node.IsConditionalReferenceNode(input)
+            IsConditionalReferencePseudonymizationEnabled && node.IsConditionalReferenceNode(input)
         )
         {
-            domain ??= ResourceTypeMatcher
-                .Match(ReferenceUtility.GetReferencePrefix(input))
-                .Groups["domain"].Value;
+            domain ??= ResourceTypeMatcher.Match(ReferenceUtility.GetReferencePrefix(input)).Groups[
+                "domain"
+            ].Value;
 
             node.Value = ReferenceUtility.TransformReferenceId(
                 input,

@@ -1,0 +1,41 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  namespace: fhir-pseudonymizer
+  name: fail-one-of-the-fhir-pseudonymizer-pods
+spec:
+  schedule: "@every 2m"
+  concurrencyPolicy: Forbid
+  historyLimit: 1
+  type: PodChaos
+  podChaos:
+    selector:
+      namespaces:
+        - fhir-pseudonymizer
+      labelSelectors:
+        app.kubernetes.io/name: fhir-pseudonymizer
+        app.kubernetes.io/instance: fhir-pseudonymizer
+    mode: one
+    action: pod-failure
+    duration: 30s
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  namespace: fhir-pseudonymizer
+  name: fail-one-of-the-vfps-pods
+spec:
+  schedule: "@every 2m"
+  concurrencyPolicy: Forbid
+  historyLimit: 1
+  type: PodChaos
+  podChaos:
+    selector:
+      namespaces:
+        - fhir-pseudonymizer
+      labelSelectors:
+        app.kubernetes.io/name: vfps
+        app.kubernetes.io/instance: fhir-pseudonymizer
+    mode: one
+    action: pod-failure
+    duration: 30s

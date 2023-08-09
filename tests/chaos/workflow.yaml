@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/argoproj/argo-workflows/v3.4.3/api/jsonschema/schema.json
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: fhir-pseudonymizer-chaos-workflow-
+spec:
+  entrypoint: run-chaos-and-test
+  serviceAccountName: chaos-mesh-cluster-manager
+  onExit: exit-handler
+  templates:
+    - name: test
+      container:
+        image: ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1
+        imagePullPolicy: IfNotPresent
+        command:
+          - dotnet
+        args:
+          - test
+          - /opt/fhir-pseudonymizer-stress/FhirPseudonymizer.StressTests.dll
+          - -l
+          - console;verbosity=detailed
+        env:
+          - name: FHIR_PSEUDONYMIZER_BASE_URL
+            value: http://fhir-pseudonymizer:8080/fhir
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          # currently running into <https://github.com/dotnet/runtime/issues/80619>
+          # when running as non-root.
+          runAsNonRoot: false
+
+    - name: install-chaos
+      container:
+        image: ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1
+        imagePullPolicy: IfNotPresent
+        command:
+          - kubectl
+        args:
+          - apply
+          - -f
+          - /tmp/chaos.yaml
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+
+    - name: delete-chaos
+      container:
+        image: ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1
+        imagePullPolicy: IfNotPresent
+        command:
+          - kubectl
+        args:
+          - delete
+          - -f
+          - /tmp/chaos.yaml
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+
+    - name: exit-handler
+      steps:
+        - - name: delete-chaos
+            template: delete-chaos
+
+    - name: run-chaos-and-test
+      steps:
+        - - name: install-chaos
+            template: install-chaos
+        - - name: test
+            template: test
