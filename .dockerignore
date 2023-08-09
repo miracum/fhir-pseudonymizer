@@ -2,5 +2,6 @@
 !src
 !*stylecop*
 !.editorconfig
+!tests/chaos
 src/**/bin
 src/**/obj

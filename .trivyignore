@@ -1,3 +1,5 @@
 # iter8 requires access to secrets
 AVD-KSV-0041
 KSV041
+# necessary, see inline comments in workflow and Dockerfile. Only used for stress-testing
+AVD-DS-0002

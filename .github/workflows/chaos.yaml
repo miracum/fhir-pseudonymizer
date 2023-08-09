@@ -1,0 +1,32 @@
+name: nightly chaos testing
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # daily at 06:23
+    - cron: "23 06 * * *"
+
+# Declare default permissions as read only.
+permissions: read-all
+
+jobs:
+  chaos-testing:
+    name: chaos testing
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # tag=v2
+
+      - name: Install Task
+        uses: arduino/setup-task@e26d8975574116b0097a1161e0fe16ba75d84c1c # tag=v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run chaos-test task
+        run: task chaos-test
