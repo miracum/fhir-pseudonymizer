@@ -73,10 +73,3 @@ services:
       - "127.0.0.1:8080:8080"
       # Http2-only for plaintext gRPC
       - "127.0.0.1:8081:8081"
-
-  gpas:
-    image: harbor.miracum.org/gpas/gpas:1.10.0-20201221@sha256:09f47082a6bae858f7678bb52cb58c1e20414a8293a96725fe8fbcb0a37f4059
-    profiles:
-      - gpas
-    ports:
-      - "18081:8080"
