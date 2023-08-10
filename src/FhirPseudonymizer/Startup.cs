@@ -54,6 +54,7 @@ public class Startup
                 services.AddVfpsClient(appConfig.Vfps);
                 break;
             case PseudonymizationServiceType.None:
+                services.AddTransient<IPseudonymServiceClient, NoopPseudonymServiceClient>();
                 break;
         }
 

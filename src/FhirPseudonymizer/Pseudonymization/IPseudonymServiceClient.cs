@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace FhirPseudonymizer.Pseudonymization;
 
 public interface IPseudonymServiceClient
