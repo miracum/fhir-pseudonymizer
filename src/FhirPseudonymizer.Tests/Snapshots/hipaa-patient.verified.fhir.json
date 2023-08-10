@@ -1,0 +1,104 @@
+{
+  "resourceType": "Patient",
+  "id": "a43d05b5c2dce2cef9e716ae2812722c49f5ec93f75c0f3b2a21c35f39c072ed",
+  "meta": {
+    "security": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "REDACTED",
+        "display": "redacted"
+      },
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "ABSTRED",
+        "display": "abstracted"
+      },
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "CRYTOHASH",
+        "display": "cryptographic hash function"
+      },
+      {
+        "code": "PERTURBED",
+        "display": "exact value is replaced with another exact value"
+      }
+    ]
+  },
+  "identifier": [
+    {
+      "use": "usual",
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203"
+          }
+        ]
+      },
+      "system": "urn:oid:1.2.36.146.595.217.0.1",
+      "period": {
+        "start": "2001-04-02"
+      }
+    }
+  ],
+  "active": true,
+  "name": [
+    {
+      "use": "official"
+    },
+    {
+      "use": "usual"
+    },
+    {
+      "use": "maiden",
+      "period": {
+        "end": "2002"
+      }
+    }
+  ],
+  "telecom": [
+    {
+      "period": {
+        "end": "2014"
+      }
+    }
+  ],
+  "gender": "male",
+  "birthDate": "1974-11-21",
+  "deceasedBoolean": false,
+  "address": [
+    {
+      "state": "Vic",
+      "postalCode": "3990",
+      "period": {
+        "start": "1974-11-21"
+      }
+    }
+  ],
+  "contact": [
+    {
+      "relationship": [
+        {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/v2/0131"
+            }
+          ]
+        }
+      ],
+      "address": {
+        "state": "Vic",
+        "postalCode": "3990",
+        "period": {
+          "start": "1974-11-21"
+        }
+      },
+      "gender": "female",
+      "period": {
+        "start": "2012"
+      }
+    }
+  ],
+  "managingOrganization": {
+    "reference": "Organization/f65daf157ca4736e7b43da47d959d83705b89ee31c635a381e2c626273a903b4"
+  }
+}

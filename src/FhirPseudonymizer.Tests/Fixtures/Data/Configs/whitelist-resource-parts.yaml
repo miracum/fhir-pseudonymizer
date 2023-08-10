@@ -1,0 +1,18 @@
+fhirVersion: R4
+fhirPathRules:
+  - path: Resource.id
+    method: keep
+  - path: Patient.birthDate
+    method: keep
+  - path: Resource
+    method: redact
+parameters:
+  dateShiftKey: ""
+  dateShiftScope: resource
+  cryptoHashKey: fhir-pseudonymizer
+  # must be of a valid AES key length; here the key is padded to 192 bits
+  encryptKey: fhir-pseudonymizer000000
+  enablePartialAgesForRedact: false
+  enablePartialDatesForRedact: false
+  enablePartialZipCodesForRedact: false
+  restrictedZipCodeTabulationAreas: []

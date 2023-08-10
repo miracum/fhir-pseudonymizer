@@ -1,9 +1,9 @@
-using System.Linq;
 using FakeItEasy;
 using FhirPseudonymizer.Pseudonymization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FhirPseudonymizer.Tests
@@ -11,6 +11,8 @@ namespace FhirPseudonymizer.Tests
     public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStartup>
         where TStartup : class
     {
+        public string AnonymizationConfigFilePath { get; set; } = null;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureTestServices(services =>
@@ -36,6 +38,22 @@ namespace FhirPseudonymizer.Tests
 
                 services.AddTransient(_ => gpas);
             });
+
+            if (AnonymizationConfigFilePath is not null)
+            {
+                builder.ConfigureAppConfiguration(
+                    (context, configBuilder) =>
+                    {
+                        configBuilder.AddInMemoryCollection(
+                            new Dictionary<string, string>
+                            {
+                                ["AnonymizationEngineConfigPath"] = AnonymizationConfigFilePath,
+                                ["EnableMetrics"] = "false",
+                            }
+                        );
+                    }
+                );
+            }
         }
     }
 }

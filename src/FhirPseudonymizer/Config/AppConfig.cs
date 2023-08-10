@@ -13,6 +13,7 @@ public record AppConfig
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
     public ushort MetricsPort { get; set; } = 8081;
+    public bool EnableMetrics { get; set; } = true;
     public FeatureManagement Features { get; set; } = new();
 }
 
