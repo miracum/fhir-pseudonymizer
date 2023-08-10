@@ -31,7 +31,10 @@ public class Startup
         var appConfig = new AppConfig();
         Configuration.Bind(appConfig);
 
-        services.AddMetricServer(options => options.Port = appConfig.MetricsPort);
+        if (appConfig.EnableMetrics)
+        {
+            services.AddMetricServer(options => options.Port = appConfig.MetricsPort);
+        }
 
         services.AddSingleton(_ => appConfig);
         services.AddSingleton(_ => appConfig.GPas);

@@ -368,3 +368,5 @@ megalinter-reports/
 
 tests/chaos/argo
 *-iid.txt
+
+*.received.*
