@@ -30,3 +30,16 @@ jobs:
 
       - name: Run chaos-test task
         run: task chaos-test
+
+      - name: Print cluster logs
+        if: always()
+        run: |
+          kubectl cluster-info dump -o yaml | tee kind-cluster-dump.txt
+
+      - name: Upload cluster dump
+        if: always()
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: kind-cluster-dump.txt
+          path: |
+            kind-cluster-dump.txt

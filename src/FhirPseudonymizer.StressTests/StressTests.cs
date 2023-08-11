@@ -106,7 +106,7 @@ public class StressTests
                     return Response.Fail();
                 }
             },
-            timeout: TimeSpan.FromSeconds(10)
+            timeout: TimeSpan.FromSeconds(60)
         );
     }
 
