@@ -274,8 +274,6 @@ jobs:
       image: ghcr.io/${{ github.repository }}
       digest: ${{ needs.build.outputs.image-digest }}
       registry-username: ${{ github.actor }}
-      # TODO(https://github.com/slsa-framework/slsa-github-generator/issues/492): Remove after GA release.
-      compile-generator: true
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
 
