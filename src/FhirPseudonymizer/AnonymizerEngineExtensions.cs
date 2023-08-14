@@ -1,7 +1,5 @@
-using FhirPseudonymizer;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 
 namespace FhirPseudonymizer;
@@ -15,9 +13,28 @@ public static class AnonymizerEngineExtensions
     {
         AnonymizerEngine.InitializeFhirPathExtensionSymbols();
 
-        var anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigFile(
-            appConfig.AnonymizationEngineConfigPath
-        );
+        var configFilePath =
+            appConfig.AnonymizationConfig.Path ?? appConfig.AnonymizationEngineConfigPath;
+
+        AnonymizerConfigurationManager anonConfigManager = null;
+        if (!string.IsNullOrEmpty(appConfig.AnonymizationConfig.Inline))
+        {
+            anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigString(
+                appConfig.AnonymizationConfig.Inline
+            );
+        }
+        else if (!string.IsNullOrEmpty(configFilePath))
+        {
+            anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigFile(
+                appConfig.AnonymizationEngineConfigPath
+            );
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                "Anonymization config not set. Specify either a path or an inline config."
+            );
+        }
 
         // add the anon config as an additional service to allow mocking it
         services.AddSingleton(_ => anonConfigManager);

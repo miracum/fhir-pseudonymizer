@@ -70,14 +70,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             try
             {
                 var content = File.ReadAllText(configFilePath);
-
-                var deserializer = new DeserializerBuilder()
-                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                    .Build();
-
-                var config = deserializer.Deserialize<AnonymizerConfiguration>(content);
-
-                return new AnonymizerConfigurationManager(config);
+                return CreateFromYamlConfigString(content);
             }
             catch (IOException innerException)
             {
@@ -86,6 +79,17 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
                     innerException
                 );
             }
+        }
+
+        public static AnonymizerConfigurationManager CreateFromYamlConfigString(string yamlConfig)
+        {
+            var deserializer = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build();
+
+            var config = deserializer.Deserialize<AnonymizerConfiguration>(yamlConfig);
+
+            return new AnonymizerConfigurationManager(config);
         }
 
         public ParameterConfiguration GetParameterConfiguration()
