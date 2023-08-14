@@ -80,6 +80,7 @@ Additionally, there are some optional configuration values that can be set as en
 | Environment Variable              | Description                                                                                                                                                                                                              | Default                     |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
 | `AnonymizationEngineConfigPath`   | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                                                                                     | `"/etc/anonymization.yaml"` |
+| `AnonymizationEngineConfigInline` | The `anonymization.yaml` as an inline YAML string instead of a separate file. Takes precedence if both `Path` and `Inline` are set.                                                                                      | `""`                        |
 | `ApiKey`                          | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                 | `""`                        |
 | `UseSystemTextJsonFhirSerializer` | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4> | `false`                     |
 | `PseudonymizationService`         | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `None`                                                                                                                                        | `"gPAS"`                    |
@@ -92,12 +93,27 @@ Service-specific configuration settings are listed below.
 
 ### gPAS
 
-| Environment Variable          | Description                                                                                                                                                               | Default    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `gPAS__Url`                   | The gPAS TTP FHIR Gateway URL. E.g. `http://localhost:8080/ttp-fhir/fhir/gpas/` for gPAS `2023.1.0`. Used if `PseudonymizationService` is set to `gPAS`.                  | `""`       |
-| `gPAS__Auth__Basic__Username` | The HTTP basic auth username to connect to gPAS                                                                                                                           | `""`       |
-| `gPAS__Auth__Basic__Password` | The HTTP basic auth password to connect to gPAS                                                                                                                           | `""`       |
-| `gPAS__Version`               | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a version newer than 1.10.1. | `"1.10.1"` |
+| Environment Variable | Description                                                                                                                                                               | Default    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `gPAS__Url`          | The gPAS TTP FHIR Gateway URL. E.g. `http://localhost:8080/ttp-fhir/fhir/gpas/` for gPAS `2023.1.0`. Used if `PseudonymizationService` is set to `gPAS`.                  | `""`       |
+| `gPAS__Version`      | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a version newer than 1.10.1. | `"1.10.1"` |
+
+#### gPAS Basic Auth
+
+| Environment Variable          | Description                                     | Default |
+| ----------------------------- | ----------------------------------------------- | ------- |
+| `gPAS__Auth__Basic__Username` | The HTTP basic auth username to connect to gPAS | `""`    |
+| `gPAS__Auth__Basic__Password` | The HTTP basic auth password to connect to gPAS | `""`    |
+
+#### gPAS OAuth
+
+| Environment Variable               | Description                       | Default |
+| ---------------------------------- | --------------------------------- | ------- |
+| `gPAS__Auth__OAuth__TokenEndpoint` | The URL of the token endpoint     | `""`    |
+| `gPAS__Auth__OAuth__ClientId`      | The client ID                     | `""`    |
+| `gPAS__Auth__OAuth__ClientSecret`  | The static (shared) client secret | `""`    |
+| `gPAS__Auth__OAuth__Scope`         | The scope                         | `""`    |
+| `gPAS__Auth__OAuth__Resource`      | The resource                      | `""`    |
 
 ### Vfps
 
@@ -106,8 +122,13 @@ Service-specific configuration settings are listed below.
 | `Vfps__Address`                                 | The Vfps service address. Use `dns:///` scheme for client-side load-balancing.                                                                                                                                                     | `""`    |
 | `Vfps__UnsafeUseInsecureChannelCallCredentials` | If set to `true`, `CallCredentials` are applied to gRPC calls made by an insecure channel. Sending authentication headers over an insecure connection has security implications and shouldn't be done in production environments.  | `true`  |
 | `Vfps__UseTls`                                  | If set to `true`, creates client-side SSL credentials loaded from disk file pointed to by the `GRPC_DEFAULT_SSL_ROOTS_FILE_PATH` environment variable. If that fails, gets the roots certificates from a well known place on disk. | `false` |
-| `Vfps__Auth__Basic__Username`                   | The HTTP basic auth username to connect to the Vfps service. Used in the `Authorization: Basic` metadata header value for the gRPC calls.                                                                                          | `""`    |
-| `Vfps__Auth__Basic__Password`                   | The HTTP basic auth password to connect to the Vfps service.                                                                                                                                                                       | `""`    |
+
+#### Vfps Basic Auth
+
+| Environment Variable          | Description                                                                                                                               | Default |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `Vfps__Auth__Basic__Username` | The HTTP basic auth username to connect to the Vfps service. Used in the `Authorization: Basic` metadata header value for the gRPC calls. | `""`    |
+| `Vfps__Auth__Basic__Password` | The HTTP basic auth password to connect to the Vfps service.                                                                              | `""`    |
 
 ## Dynamic rule settings
 
@@ -209,10 +230,16 @@ Note: The domain name could also have been replaced completely by overriding the
 
 ### Start Development Fixtures (optional)
 
-To test gPAS, Vfps, and tracing via Jaeger, run
+To test Vfps and tracing via Jaeger, run
 
 ```sh
-docker compose -f compose.dev.yaml --profile=gpas up
+docker compose -f compose.dev.yaml up
+```
+
+to also start a Keycloak instance with pre-configured fhir-pseudonymizer client, set `--profile=keycloak`:
+
+```sh
+docker compose -f compose.dev.yaml --profile=keycloak up
 ```
 
 ### Build

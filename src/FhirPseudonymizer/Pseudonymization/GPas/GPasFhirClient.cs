@@ -38,7 +38,11 @@ public class GPasFhirClient : IPseudonymServiceClient
 
         Client = clientFactory.CreateClient("gPAS");
 
-        FhirClient = new FhirClient(Client.BaseAddress, Client);
+        FhirClient = new FhirClient(
+            Client.BaseAddress,
+            Client,
+            settings: new() { PreferredFormat = ResourceFormat.Json }
+        );
 
         PseudonymCache = pseudonymCache;
         OriginalValueCache = originalValueCache;

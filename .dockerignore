@@ -1,7 +1,8 @@
 *
 !src
+src/**/bin
+src/**/obj
 !*stylecop*
 !.editorconfig
 !tests/chaos
-src/**/bin
-src/**/obj
+!LICENSE

@@ -8,10 +8,6 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
-using OpenTelemetry;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using Prometheus;
 
 namespace FhirPseudonymizer;
@@ -41,6 +37,8 @@ public class Startup
         services.AddSingleton(_ => appConfig.Features);
 
         services.AddApiKeyAuth(appConfig.ApiKey);
+
+        services.AddDistributedMemoryCache();
 
         switch (appConfig.PseudonymizationService)
         {

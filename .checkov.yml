@@ -19,3 +19,5 @@ skip-check:
   - CKV_K8S_38
   # CKV_ARGO_2: "Ensure Workflow pods are running as non-root user" - necessary, see inline comments in workflow and Dockerfile
   - CKV_ARGO_2
+  # CKV_SECRET_6: "Base64 High Entropy String" - already covered by gitleaks & co. with more configuration options.
+  - CKV_SECRET_6

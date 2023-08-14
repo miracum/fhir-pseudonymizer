@@ -1,4 +1,3 @@
-using System;
 using FhirPseudonymizer.Pseudonymization;
 
 namespace FhirPseudonymizer.Config;
@@ -6,6 +5,7 @@ namespace FhirPseudonymizer.Config;
 public record AppConfig
 {
     public string AnonymizationEngineConfigPath { get; init; }
+    public string AnonymizationEngineConfigInline { get; set; }
     public bool UseSystemTextJsonFhirSerializer { get; init; }
     public string ApiKey { get; init; }
     public PseudonymizationServiceType PseudonymizationService { get; init; }
@@ -44,6 +44,20 @@ public record VfpsConfig
 public record PseudonymServiceAuthConfig
 {
     public PseudonymServiceBasicAuthConfig Basic { get; init; } = new();
+    public PseudonymServiceOAuthConfig OAuth { get; init; } = new();
+}
+
+public record PseudonymServiceOAuthConfig
+{
+    public Uri TokenEndpoint { get; init; }
+
+    public string ClientId { get; init; }
+
+    public string ClientSecret { get; init; }
+
+    public string Scope { get; init; } = "api";
+
+    public string Resource { get; init; }
 }
 
 public record PseudonymServiceBasicAuthConfig

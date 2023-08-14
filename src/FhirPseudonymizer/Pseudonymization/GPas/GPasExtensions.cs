@@ -1,9 +1,6 @@
-using System;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using FhirPseudonymizer.Config;
-using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
 using Prometheus;
@@ -17,8 +14,43 @@ public static class GPasExtensions
         GPasConfig gPasConfig
     )
     {
-        services
-            .AddHttpClient(
+        var oAuthConfig = gPasConfig.Auth.OAuth;
+
+        var isOAuthEnabled = oAuthConfig.TokenEndpoint is not null;
+        if (isOAuthEnabled)
+        {
+            services
+                .AddClientCredentialsTokenManagement()
+                .AddClient(
+                    "gPAS.oAuth.client",
+                    client =>
+                    {
+                        client.TokenEndpoint = oAuthConfig.TokenEndpoint.AbsoluteUri;
+
+                        client.ClientId = oAuthConfig.ClientId;
+                        client.ClientSecret = oAuthConfig.ClientSecret;
+
+                        client.Scope = oAuthConfig.Scope;
+                        client.Resource = oAuthConfig.Resource;
+                    }
+                );
+        }
+
+        IHttpClientBuilder clientBuilder = null;
+        if (isOAuthEnabled)
+        {
+            clientBuilder = services.AddClientCredentialsHttpClient(
+                "gPAS",
+                "gPAS.oAuth.client",
+                client =>
+                {
+                    client.BaseAddress = gPasConfig.Url;
+                }
+            );
+        }
+        else
+        {
+            clientBuilder = services.AddHttpClient(
                 "gPAS",
                 (client) =>
                 {
@@ -35,7 +67,10 @@ public static class GPasExtensions
                         );
                     }
                 }
-            )
+            );
+        }
+
+        clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
             .AddPolicyHandler(GetRetryPolicy(gPasConfig.RequestRetryCount))
             .UseHttpClientMetrics();

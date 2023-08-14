@@ -61,7 +61,9 @@ ENTRYPOINT ["dotnet"]
 CMD ["test", "/opt/fhir-pseudonymizer-stress/FhirPseudonymizer.StressTests.dll", "-l", "console;verbosity=detailed"]
 
 FROM runtime
+COPY LICENSE .
 COPY --from=build /build/publish/*anonymization.yaml /etc/
 COPY --from=build /build/publish .
+COPY --from=build /build/packages.lock.json .
 
 ENTRYPOINT ["dotnet", "/opt/fhir-pseudonymizer/FhirPseudonymizer.dll"]
