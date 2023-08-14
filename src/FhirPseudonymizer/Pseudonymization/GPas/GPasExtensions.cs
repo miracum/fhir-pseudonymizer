@@ -15,15 +15,17 @@ public static class GPasExtensions
     )
     {
         var oAuthConfig = gPasConfig.Auth.OAuth;
-        if (oAuthConfig.TokenUrl is not null)
+
+        var isOAuthEnabled = oAuthConfig.TokenEndpoint is not null;
+        if (isOAuthEnabled)
         {
             services
                 .AddClientCredentialsTokenManagement()
                 .AddClient(
-                    "gPAS.oauth.client",
+                    "gPAS.oAuth.client",
                     client =>
                     {
-                        client.TokenEndpoint = oAuthConfig.TokenUrl.AbsoluteUri;
+                        client.TokenEndpoint = oAuthConfig.TokenEndpoint.AbsoluteUri;
 
                         client.ClientId = oAuthConfig.ClientId;
                         client.ClientSecret = oAuthConfig.ClientSecret;
@@ -34,35 +36,39 @@ public static class GPasExtensions
                 );
         }
 
-        // TODO: use either this or basic auth depending on the settings. or even both?
         IHttpClientBuilder clientBuilder = null;
-        clientBuilder = services.AddClientCredentialsHttpClient(
-            "gPAS",
-            "gPAS.oauth.client",
-            client =>
-            {
-                client.BaseAddress = gPasConfig.Url;
-            }
-        );
-
-        clientBuilder = services.AddHttpClient(
-            "gPAS",
-            (client) =>
-            {
-                client.BaseAddress = gPasConfig.Url;
-
-                if (!string.IsNullOrEmpty(gPasConfig.Auth.Basic.Username))
+        if (isOAuthEnabled)
+        {
+            clientBuilder = services.AddClientCredentialsHttpClient(
+                "gPAS",
+                "gPAS.oAuth.client",
+                client =>
                 {
-                    var basicAuthString =
-                        $"{gPasConfig.Auth.Basic.Username}:{gPasConfig.Auth.Basic.Password}";
-                    var byteArray = Encoding.UTF8.GetBytes(basicAuthString);
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                        "Basic",
-                        Convert.ToBase64String(byteArray)
-                    );
+                    client.BaseAddress = gPasConfig.Url;
                 }
-            }
-        );
+            );
+        }
+        else
+        {
+            clientBuilder = services.AddHttpClient(
+                "gPAS",
+                (client) =>
+                {
+                    client.BaseAddress = gPasConfig.Url;
+
+                    if (!string.IsNullOrEmpty(gPasConfig.Auth.Basic.Username))
+                    {
+                        var basicAuthString =
+                            $"{gPasConfig.Auth.Basic.Username}:{gPasConfig.Auth.Basic.Password}";
+                        var byteArray = Encoding.UTF8.GetBytes(basicAuthString);
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                            "Basic",
+                            Convert.ToBase64String(byteArray)
+                        );
+                    }
+                }
+            );
+        }
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))

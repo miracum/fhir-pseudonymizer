@@ -42,6 +42,8 @@ public class Startup
 
         services.AddApiKeyAuth(appConfig.ApiKey);
 
+        services.AddDistributedMemoryCache();
+
         switch (appConfig.PseudonymizationService)
         {
             case PseudonymizationServiceType.gPAS:

@@ -50,7 +50,7 @@ public record PseudonymServiceAuthConfig
 
 public record PseudonymServiceOAuthConfig
 {
-    public Uri TokenUrl { get; init; }
+    public Uri TokenEndpoint { get; init; }
 
     public string ClientId { get; init; }
 

@@ -73,3 +73,37 @@ services:
       - "127.0.0.1:8080:8080"
       # Http2-only for plaintext gRPC
       - "127.0.0.1:8081:8081"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.1@sha256:4d74df855d11725ea5020b5329c94837254cd72af44fd6afeb7668672e8fb460
+    restart: unless-stopped
+    profiles:
+      - keycloak
+    ipc: none
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    privileged: false
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1"
+        reservations:
+          memory: 2g
+          cpus: "1"
+    command:
+      - start-dev
+      - --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - type: bind
+        # /opt/keycloak/bin/kc.sh export --file /tmp/fhir-pseudonymizer-test-realm-export.json --realm fhir-pseudonymizer-test
+        source: ./hack/keycloak/fhir-pseudonymizer-test-realm-export.json
+        target: /opt/keycloak/data/import/fhir-pseudonymizer-test-realm-export.json
+        read_only: true
+    ports:
+      - "127.0.0.1:8083:8080"
