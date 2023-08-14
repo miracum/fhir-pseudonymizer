@@ -13,20 +13,19 @@ public static class AnonymizerEngineExtensions
     {
         AnonymizerEngine.InitializeFhirPathExtensionSymbols();
 
-        var configFilePath =
-            appConfig.AnonymizationConfig.Path ?? appConfig.AnonymizationEngineConfigPath;
+        var configFilePath = appConfig.AnonymizationEngineConfigPath;
 
         AnonymizerConfigurationManager anonConfigManager = null;
-        if (!string.IsNullOrEmpty(appConfig.AnonymizationConfig.Inline))
+        if (!string.IsNullOrEmpty(appConfig.AnonymizationEngineConfigInline))
         {
             anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigString(
-                appConfig.AnonymizationConfig.Inline
+                appConfig.AnonymizationEngineConfigInline
             );
         }
         else if (!string.IsNullOrEmpty(configFilePath))
         {
             anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigFile(
-                appConfig.AnonymizationEngineConfigPath
+                configFilePath
             );
         }
         else

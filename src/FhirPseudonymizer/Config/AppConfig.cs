@@ -5,7 +5,7 @@ namespace FhirPseudonymizer.Config;
 public record AppConfig
 {
     public string AnonymizationEngineConfigPath { get; init; }
-    public AnonymizationConfig AnonymizationConfig { get; set; }
+    public string AnonymizationEngineConfigInline { get; set; }
     public bool UseSystemTextJsonFhirSerializer { get; init; }
     public string ApiKey { get; init; }
     public PseudonymizationServiceType PseudonymizationService { get; init; }
@@ -15,12 +15,6 @@ public record AppConfig
     public ushort MetricsPort { get; set; } = 8081;
     public bool EnableMetrics { get; set; } = true;
     public FeatureManagement Features { get; set; } = new();
-}
-
-public record AnonymizationConfig
-{
-    public string Path { get; init; }
-    public string Inline { get; init; }
 }
 
 public record CacheConfig
