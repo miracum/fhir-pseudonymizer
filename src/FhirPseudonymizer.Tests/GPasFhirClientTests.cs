@@ -1,13 +1,10 @@
 using System.Net;
 using System.Net.Http.Headers;
-using FakeItEasy;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.GPas;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Xunit;
-using Task = System.Threading.Tasks.Task;
 
 namespace FhirPseudonymizer.Tests;
 

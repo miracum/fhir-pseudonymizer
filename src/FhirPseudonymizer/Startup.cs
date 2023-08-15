@@ -1,6 +1,7 @@
 using System.Reflection;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
+using FhirPseudonymizer.Pseudonymization.Entici;
 using FhirPseudonymizer.Pseudonymization.GPas;
 using FhirPseudonymizer.Pseudonymization.Vfps;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -38,6 +39,7 @@ public class Startup
 
         services.AddApiKeyAuth(appConfig.ApiKey);
 
+        // Required by the OAuth implementation. Could be used for all cache implementations later.
         services.AddDistributedMemoryCache();
 
         switch (appConfig.PseudonymizationService)
@@ -53,6 +55,9 @@ public class Startup
                 break;
             case PseudonymizationServiceType.Vfps:
                 services.AddVfpsClient(appConfig.Vfps);
+                break;
+            case PseudonymizationServiceType.Entici:
+                services.AddEnticiClient(appConfig.Entici);
                 break;
             case PseudonymizationServiceType.None:
                 services.AddTransient<IPseudonymServiceClient, NoopPseudonymServiceClient>();

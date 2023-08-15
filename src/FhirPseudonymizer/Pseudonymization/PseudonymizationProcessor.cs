@@ -57,7 +57,7 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
 
             node.Value = ReferenceUtility.TransformReferenceId(
                 input,
-                x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain)
+                x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain, settings)
             );
         }
         else if (
@@ -70,33 +70,25 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
 
             node.Value = ReferenceUtility.TransformReferenceId(
                 input,
-                x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain)
+                x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain, settings)
             );
         }
         else
         {
-            node.Value = GetOrCreatePseudonym(input, domainPrefix.ToString() + domain);
+            node.Value = GetOrCreatePseudonym(input, domainPrefix.ToString() + domain, settings);
         }
 
         processResult.AddProcessRecord(AnonymizationOperations.Pseudonymize, node);
         return processResult;
     }
 
-    protected virtual string GetOrCreatePseudonym(string input, string domain)
+    protected virtual string GetOrCreatePseudonym(
+        string input,
+        string domain,
+        IReadOnlyDictionary<string, object> settings
+    )
     {
-        return PsnClient.GetOrCreatePseudonymFor(input, domain).Result;
-    }
-
-    private static bool IsReferenceUriNode(ElementNode node, string value)
-    {
-        return node.InstanceType.Equals("uri", StringComparison.InvariantCultureIgnoreCase)
-            && ReferenceUtility.IsResourceReference(value);
-    }
-
-    private static bool IsConditionalElement(ElementNode node, string value)
-    {
-        return node.Name.Equals("ifNoneExist", StringComparison.InvariantCultureIgnoreCase)
-            && ReferenceUtility.IsResourceReference(value);
+        return PsnClient.GetOrCreatePseudonymFor(input, domain, settings).Result;
     }
 }
 
@@ -108,8 +100,12 @@ public class DePseudonymizationProcessor : PseudonymizationProcessor
     )
         : base(psnClient, features) { }
 
-    protected override string GetOrCreatePseudonym(string input, string domain)
+    protected override string GetOrCreatePseudonym(
+        string input,
+        string domain,
+        IReadOnlyDictionary<string, object> settings
+    )
     {
-        return PsnClient.GetOriginalValueFor(input, domain).Result;
+        return PsnClient.GetOriginalValueFor(input, domain, settings).Result;
     }
 }

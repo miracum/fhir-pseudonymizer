@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
-using FakeItEasy;
 using FhirPseudonymizer.Controllers;
-using FluentAssertions;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
-using Xunit;
 
 namespace FhirPseudonymizer.Tests;
 

@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 public class ReferenceUtilityTests

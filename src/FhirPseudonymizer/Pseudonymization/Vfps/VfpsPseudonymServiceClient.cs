@@ -17,7 +17,11 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
 
     private PseudonymService.PseudonymServiceClient Client { get; }
 
-    public async Task<string> GetOrCreatePseudonymFor(string value, string domain)
+    public async Task<string> GetOrCreatePseudonymFor(
+        string value,
+        string domain,
+        IReadOnlyDictionary<string, object> settings = null
+    )
     {
         var request = new PseudonymServiceCreateRequest
         {
@@ -30,7 +34,11 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
         return response.Pseudonym.PseudonymValue;
     }
 
-    public async Task<string> GetOriginalValueFor(string pseudonym, string domain)
+    public async Task<string> GetOriginalValueFor(
+        string pseudonym,
+        string domain,
+        IReadOnlyDictionary<string, object> settings = null
+    )
     {
         var request = new PseudonymServiceGetRequest
         {
@@ -47,7 +55,7 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
         {
             logger.LogWarning(
                 exc,
-                "Failed to de-pseudonymize. Returning pseudonymized value.",
+                "Failed to de-pseudonymize {Pseudonym}. Returning pseudonymized value.",
                 pseudonym
             );
             return pseudonym;

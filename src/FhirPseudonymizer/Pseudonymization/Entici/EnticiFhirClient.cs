@@ -1,0 +1,87 @@
+using Hl7.Fhir.Model;
+using Hl7.Fhir.Rest;
+
+namespace FhirPseudonymizer.Pseudonymization.Entici;
+
+public class EnticiFhirClient : IPseudonymServiceClient
+{
+    private readonly ILogger<EnticiFhirClient> logger;
+
+    public EnticiFhirClient(ILogger<EnticiFhirClient> logger, IHttpClientFactory clientFactory)
+    {
+        this.logger = logger;
+
+        var client = clientFactory.CreateClient("Entici");
+
+        FhirClient = new FhirClient(
+            client.BaseAddress,
+            client,
+            settings: new() { PreferredFormat = ResourceFormat.Json }
+        );
+    }
+
+    private FhirClient FhirClient { get; }
+
+    public async Task<string> GetOrCreatePseudonymFor(
+        string value,
+        string domain,
+        IReadOnlyDictionary<string, object> settings
+    )
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        var hasEnticiSettings = settings.TryGetValue("entici", out var enticiSettingsObject);
+        if (!hasEnticiSettings || enticiSettingsObject is null)
+        {
+            throw new InvalidOperationException(
+                "Pseudonymization using Entici requires a special settings object as part of the rule definition."
+            );
+        }
+
+        var enticiSettings = enticiSettingsObject as IReadOnlyDictionary<string, object>;
+
+        // this should throw if resourceType is unset.
+        var resourceType = Enum.Parse<ResourceType>(enticiSettings["resourceType"].ToString());
+
+        var request = new EnticiPseudonymizationRequest
+        {
+            Identifier = new Identifier(domain, value),
+            ResourceType = new Code(resourceType.ToString()),
+        };
+
+        var hasTargetSystem = enticiSettings.TryGetValue(
+            "targetSystem",
+            out var targetSystemObject
+        );
+        if (hasTargetSystem)
+        {
+            request.TargetSystem = new FhirUri(targetSystemObject.ToString());
+        }
+
+        var response = await FhirClient.WholeSystemOperationAsync(
+            "pseudonymize",
+            request.ToFhirParameters()
+        );
+        if (response is Parameters responseParameters)
+        {
+            return responseParameters.GetSingleValue<FhirString>("externalPsn").Value;
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                "Pseudonymization failed. Entici backend did not return a response of type 'Parameters'."
+            );
+        }
+    }
+
+    public Task<string> GetOriginalValueFor(
+        string pseudonym,
+        string domain,
+        IReadOnlyDictionary<string, object> settings
+    )
+    {
+        throw new NotImplementedException(
+            "De-Pseudonymization is not yet implemented for the Entici backend."
+        );
+    }
+}

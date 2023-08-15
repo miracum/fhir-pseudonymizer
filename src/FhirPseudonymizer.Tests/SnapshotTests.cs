@@ -1,13 +1,6 @@
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Reflection;
-using FluentAssertions;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
-using Xunit;
-using Task = System.Threading.Tasks.Task;
 
 namespace FhirPseudonymizer.Tests;
 

@@ -27,13 +27,35 @@ namespace FhirPseudonymizer.Tests
                 }
 
                 var gpas = A.Fake<IPseudonymServiceClient>();
-                A.CallTo(() => gpas.GetOrCreatePseudonymFor(A<string>._, A<string>._))
+                A.CallTo(
+                        () =>
+                            gpas.GetOrCreatePseudonymFor(
+                                A<string>._,
+                                A<string>._,
+                                A<IReadOnlyDictionary<string, object>>._
+                            )
+                    )
                     .ReturnsLazily(
-                        (string original, string domain) => $"pseuded-{original}@{domain}"
+                        (
+                            string original,
+                            string domain,
+                            IReadOnlyDictionary<string, object> settings
+                        ) => $"pseuded-{original}@{domain}"
                     );
-                A.CallTo(() => gpas.GetOriginalValueFor(A<string>._, A<string>._))
+                A.CallTo(
+                        () =>
+                            gpas.GetOriginalValueFor(
+                                A<string>._,
+                                A<string>._,
+                                A<IReadOnlyDictionary<string, object>>._
+                            )
+                    )
                     .ReturnsLazily(
-                        (string pseudonym, string domain) => $"original-{pseudonym}@{domain}"
+                        (
+                            string pseudonym,
+                            string domain,
+                            IReadOnlyDictionary<string, object> settings
+                        ) => $"original-{pseudonym}@{domain}"
                     );
 
                 services.AddTransient(_ => gpas);

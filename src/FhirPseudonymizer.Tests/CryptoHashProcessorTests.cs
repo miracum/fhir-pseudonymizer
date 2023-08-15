@@ -1,12 +1,8 @@
-using FakeItEasy;
-using FluentAssertions;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
-using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
-using Xunit;
 
 namespace FhirPseudonymizer.Tests;
 

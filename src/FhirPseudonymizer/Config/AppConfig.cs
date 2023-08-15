@@ -12,6 +12,7 @@ public record AppConfig
     public CacheConfig Cache { get; init; } = new();
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
+    public EnticiConfig Entici { get; init; } = new();
     public ushort MetricsPort { get; set; } = 8081;
     public bool EnableMetrics { get; set; } = true;
     public FeatureManagement Features { get; set; } = new();
@@ -31,6 +32,13 @@ public record GPasConfig
     public string Version { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
     public CacheConfig Cache { get; init; } = new();
+}
+
+public record EnticiConfig
+{
+    public Uri Url { get; init; }
+    public PseudonymServiceAuthConfig Auth { get; init; } = new();
+    public int RequestRetryCount { get; init; }
 }
 
 public record VfpsConfig
