@@ -81,7 +81,6 @@ dotnet_naming_symbols.constant_fields.required_modifiers = const
 # C# Code Style Rules         #
 ###############################
 
-[*.cs]
 # var preferences
 csharp_style_var_for_built_in_types = true:silent
 csharp_style_var_when_type_is_apparent = true:silent

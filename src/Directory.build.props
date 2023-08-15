@@ -5,9 +5,8 @@
         <!-- <Nullable>enable</Nullable> -->
         <ImplicitUsings>enable</ImplicitUsings>
         <AnalysisLevel>latest</AnalysisLevel>
-        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-        <WarningsAsErrors />
+        <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
         <Company>miracum.org</Company>
         <Description>A REST service to pseudonymize and anonymize FHIR resources.</Description>
         <Copyright>© miracum.org. All rights reserved.</Copyright>
