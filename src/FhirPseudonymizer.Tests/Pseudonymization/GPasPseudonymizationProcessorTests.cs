@@ -5,7 +5,7 @@ using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 
-namespace FhirPseudonymizer.Tests;
+namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class GPasPseudonymizationProcessorTests
 {

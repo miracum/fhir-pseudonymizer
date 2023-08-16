@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using FhirPseudonymizer.Pseudonymization.Entici;
 using Microsoft.Extensions.Logging;
 
-namespace FhirPseudonymizer.Tests;
+namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class EnticiFhirClientTests
 {

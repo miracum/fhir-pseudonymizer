@@ -1,6 +1,6 @@
 using FhirPseudonymizer.Pseudonymization;
 
-namespace FhirPseudonymizer.Tests;
+namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class NoopPseudonymServiceClientTests
 {

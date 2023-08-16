@@ -6,7 +6,7 @@ using FhirPseudonymizer.Pseudonymization.GPas;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
-namespace FhirPseudonymizer.Tests;
+namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class GPasFhirClientTests
 {

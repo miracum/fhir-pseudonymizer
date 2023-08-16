@@ -3,7 +3,7 @@ using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using Vfps.Protos;
 
-namespace FhirPseudonymizer.Tests;
+namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class VfpsPseudonymServiceClientTests
 {
