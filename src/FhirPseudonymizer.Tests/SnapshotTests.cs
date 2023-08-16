@@ -36,7 +36,11 @@ public class SnapshotTests
     {
         var factory = new CustomWebApplicationFactory<Startup>
         {
-            AnonymizationConfigFilePath = anonymizationConfigFilePath
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigPath"] = anonymizationConfigFilePath,
+                ["EnableMetrics"] = "false",
+            }
         };
 
         var client = factory.CreateClient();

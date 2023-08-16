@@ -25,7 +25,7 @@ public class EnticiFhirClient : IPseudonymServiceClient
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
-        IReadOnlyDictionary<string, object> settings
+        IReadOnlyDictionary<string, object> settings = null
     )
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -77,7 +77,7 @@ public class EnticiFhirClient : IPseudonymServiceClient
     public Task<string> GetOriginalValueFor(
         string pseudonym,
         string domain,
-        IReadOnlyDictionary<string, object> settings
+        IReadOnlyDictionary<string, object> settings = null
     )
     {
         throw new NotImplementedException(
