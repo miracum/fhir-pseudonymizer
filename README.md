@@ -38,7 +38,7 @@ The server provides a `/fhir/$de-identify` operation to de-identfiy received FHI
 
 The service comes with a sample configuration file to help meet the requirements of HIPAA Safe Harbor Method (2)(i): [hipaa-anonymization.yaml](src/FhirPseudonymizer/hipaa-anonymization.yaml).This configuration can be used by setting `AnonymizationEngineConfigPath=/etc/hipaa-anonymization.yaml`.
 
-A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses either [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/) or [Vfps](https://github.com/chgl/vfps) to create pseudonyms and replace the values in the resource with them.
+A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses either [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/), [Vfps](https://github.com/miracum/vfps), or Entici to create pseudonyms and replace the values in the resource with them.
 For example, the following rule replaces all identifiers of type `http://terminology.hl7.org/CodeSystem/v2-0203|MR` with a pseudonym generated in the `PATIENT` domain.
 
 ```yaml
@@ -50,7 +50,7 @@ fhirPathRules:
 
 Note that if the `domain` setting is omitted, and an ID or reference is pseudonymized, then the resource name is used as the pseudonym domain. For example, pseudonymizing `"reference": "Patient/123"` will try to create a pseudonym for `123` in the `Patient` domain.
 
-When using [Vfps](https://github.com/chgl/vfps), the `domain` setting can instead also be set as `namespace`.
+When using [Vfps](https://github.com/miracum/vfps), the `domain` setting can instead also be set as `namespace`.
 
 Note that all methods defined in [Tools for Health Data Anonymization](https://github.com/microsoft/Tools-for-Health-Data-Anonymization) are supported.
 For example, to clamp a patient's birthdate if they were born before January 1st 1931 to 01/01/1930, use:
@@ -89,12 +89,12 @@ Additionally, there are some optional configuration values that can be set as en
 | `AnonymizationEngineConfigInline` | The `anonymization.yaml` as an inline YAML string instead of a separate file. Takes precedence if both `Path` and `Inline` are set.                                                                                      | `""`                        |
 | `ApiKey`                          | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                 | `""`                        |
 | `UseSystemTextJsonFhirSerializer` | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4> | `false`                     |
-| `PseudonymizationService`         | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `None`                                                                                                                                        | `"gPAS"`                    |
+| `PseudonymizationService`         | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `Entici`, `None`                                                                                                                              | `"gPAS"`                    |
 | `MetricsPort`                     | The port where metrics in Prometheus format should be exposed at under the `/metrics` route.                                                                                                                             | `8081`                      |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
 
-The application supports pseudonymization using either [gPAS](https://www.ths-greifswald.de/forscher/gpas/) or [Vfps](https://github.com/chgl/vfps) which can be configured via the `PseudonymizationService` setting.
+The application supports pseudonymization using either [gPAS](https://www.ths-greifswald.de/forscher/gpas/) or [Vfps](https://github.com/miracum/vfps) which can be configured via the `PseudonymizationService` setting.
 Service-specific configuration settings are listed below.
 
 ### gPAS
@@ -136,11 +136,29 @@ Service-specific configuration settings are listed below.
 | `Vfps__Auth__Basic__Username` | The HTTP basic auth username to connect to the Vfps service. Used in the `Authorization: Basic` metadata header value for the gRPC calls. | `""`    |
 | `Vfps__Auth__Basic__Password` | The HTTP basic auth password to connect to the Vfps service.                                                                              | `""`    |
 
+### Entici
+
+| Environment Variable | Description                                                                                            | Default |
+| -------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
+| `Entici__Url`        | The Entici service base URL for FHIR operations. Used if `PseudonymizationService` is set to `Entici`. | `""`    |
+
+When using Entici as a pseudonymization backend, you need to set additional settings for each rule that uses the `pseudonymize` method.
+
+#### Entici OAuth
+
+| Environment Variable                 | Description                       | Default |
+| ------------------------------------ | --------------------------------- | ------- |
+| `Entici__Auth__OAuth__TokenEndpoint` | The URL of the token endpoint     | `""`    |
+| `Entici__Auth__OAuth__ClientId`      | The client ID                     | `""`    |
+| `Entici__Auth__OAuth__ClientSecret`  | The static (shared) client secret | `""`    |
+| `Entici__Auth__OAuth__Scope`         | The scope                         | `""`    |
+| `Entici__Auth__OAuth__Resource`      | The resource                      | `""`    |
+
 ## Dynamic rule settings
 
 Anonymization and pseudonymization rules in the `anonymization.yaml` config file can be overridden and/or extended on a per request basis.
 
-Pseudonymization via gPAS supports a `domain-prefix` rule setting which can be used to dynamically configure the target gPAS domain by providing its value as part of the request body.
+Pseudonymization supports a `domain-prefix` rule setting which can be used to dynamically configure the target domain by providing its value as part of the request body.
 
 The following example shows how to use this feature to use a single service configuration in order to support multiple projects which have the same basic domain names, prefixed by a project name.
 
