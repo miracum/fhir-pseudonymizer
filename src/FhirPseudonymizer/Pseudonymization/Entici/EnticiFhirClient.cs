@@ -38,7 +38,7 @@ public class EnticiFhirClient : IPseudonymServiceClient
             );
         }
 
-        var enticiSettings = enticiSettingsObject as IReadOnlyDictionary<string, object>;
+        var enticiSettings = enticiSettingsObject as IReadOnlyDictionary<object, object>;
 
         // this should throw if resourceType is unset.
         var resourceType = Enum.Parse<ResourceType>(enticiSettings["resourceType"].ToString());

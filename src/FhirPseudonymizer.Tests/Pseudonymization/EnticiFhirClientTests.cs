@@ -71,7 +71,7 @@ public class EnticiFhirClientTests
 
         var settings = new Dictionary<string, object>
         {
-            ["entici"] = new Dictionary<string, object> { ["resourceType"] = "Encounter", },
+            ["entici"] = new Dictionary<object, object> { ["resourceType"] = "Encounter", },
         };
 
         var response = await client.GetOrCreatePseudonymFor("42", "domain", settings);
@@ -88,7 +88,7 @@ public class EnticiFhirClientTests
 
         var settings = new Dictionary<string, object>
         {
-            ["entici"] = new Dictionary<string, object>
+            ["entici"] = new Dictionary<object, object>
             {
                 ["resourceType"] = "Patient",
                 ["targetSystem"] = "https://fhir.example.com/test",
@@ -109,7 +109,7 @@ public class EnticiFhirClientTests
 
         var settings = new Dictionary<string, object>
         {
-            ["entici"] = new Dictionary<string, object>
+            ["entici"] = new Dictionary<object, object>
             {
                 ["resourceType"] = "Not-A-FHIR-Resource-Type",
             },
