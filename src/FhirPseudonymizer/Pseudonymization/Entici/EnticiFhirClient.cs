@@ -50,12 +50,12 @@ public class EnticiFhirClient : IPseudonymServiceClient
         };
 
         var hasTargetSystem = enticiSettings.TryGetValue(
-            "targetSystem",
+            "project",
             out var targetSystemObject
         );
         if (hasTargetSystem)
         {
-            request.TargetSystem = new FhirUri(targetSystemObject.ToString());
+            request.Project = new FhirString(targetSystemObject.ToString());
         }
 
         var response = await FhirClient.WholeSystemOperationAsync(

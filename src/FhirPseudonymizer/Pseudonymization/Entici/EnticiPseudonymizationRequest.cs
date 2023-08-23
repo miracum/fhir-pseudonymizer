@@ -8,5 +8,5 @@ public class EnticiPseudonymizationRequest
 {
     public Identifier Identifier { get; set; }
     public Code ResourceType { get; set; }
-    public FhirUri TargetSystem { get; set; }
+    public FhirString Project { get; set; }
 }

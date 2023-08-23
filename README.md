@@ -38,7 +38,7 @@ The server provides a `/fhir/$de-identify` operation to de-identfiy received FHI
 
 The service comes with a sample configuration file to help meet the requirements of HIPAA Safe Harbor Method (2)(i): [hipaa-anonymization.yaml](src/FhirPseudonymizer/hipaa-anonymization.yaml).This configuration can be used by setting `AnonymizationEngineConfigPath=/etc/hipaa-anonymization.yaml`.
 
-A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses either [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/), [Vfps](https://github.com/miracum/vfps), or Entici to create pseudonyms and replace the values in the resource with them.
+A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses either [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/), [Vfps](https://github.com/miracum/vfps), or entici to create pseudonyms and replace the values in the resource with them.
 For example, the following rule replaces all identifiers of type `http://terminology.hl7.org/CodeSystem/v2-0203|MR` with a pseudonym generated in the `PATIENT` domain.
 
 ```yaml
@@ -89,7 +89,7 @@ Additionally, there are some optional configuration values that can be set as en
 | `AnonymizationEngineConfigInline` | The `anonymization.yaml` as an inline YAML string instead of a separate file. Takes precedence if both `Path` and `Inline` are set.                                                                                      | `""`                        |
 | `ApiKey`                          | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                 | `""`                        |
 | `UseSystemTextJsonFhirSerializer` | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4> | `false`                     |
-| `PseudonymizationService`         | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `Entici`, `None`                                                                                                                              | `"gPAS"`                    |
+| `PseudonymizationService`         | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `entici`, `None`                                                                                                                              | `"gPAS"`                    |
 | `MetricsPort`                     | The port where metrics in Prometheus format should be exposed at under the `/metrics` route.                                                                                                                             | `8081`                      |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
@@ -136,23 +136,36 @@ Service-specific configuration settings are listed below.
 | `Vfps__Auth__Basic__Username` | The HTTP basic auth username to connect to the Vfps service. Used in the `Authorization: Basic` metadata header value for the gRPC calls. | `""`    |
 | `Vfps__Auth__Basic__Password` | The HTTP basic auth password to connect to the Vfps service.                                                                              | `""`    |
 
-### Entici
+### entici
 
 | Environment Variable | Description                                                                                            | Default |
 | -------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
-| `Entici__Url`        | The Entici service base URL for FHIR operations. Used if `PseudonymizationService` is set to `Entici`. | `""`    |
+| `entici__Url`        | The entici service base URL for FHIR operations. Used if `PseudonymizationService` is set to `entici`. | `""`    |
 
-When using Entici as a pseudonymization backend, you need to set additional settings for each rule that uses the `pseudonymize` method.
+When using entici as a pseudonymization backend, you need to set additional settings for each rule that uses the `pseudonymize` method. These can be set under a `entici` section inside the anonymization config:
 
-#### Entici OAuth
+```yaml
+fhirPathRules:
+  - path: nodesByType('Identifier').where(type.coding.where(system='http://terminology.hl7.org/CodeSystem/v2-0203' and code='MR').exists()).value
+    method: pseudonymize
+    # the domain will be used as the system of the identifier when invoking the entici pseudonymize operation
+    domain: https://fhir.example.com/identifiers/patient-id
+    entici:
+      # the type of FHIR resource this pseudonym should be associated with
+      resourceType: Patient
+      # (optional) the project within entici the pseudonym is a part of
+      project: some-internal-entici-project-name
+```
+
+#### entici OAuth
 
 | Environment Variable                 | Description                       | Default |
 | ------------------------------------ | --------------------------------- | ------- |
-| `Entici__Auth__OAuth__TokenEndpoint` | The URL of the token endpoint     | `""`    |
-| `Entici__Auth__OAuth__ClientId`      | The client ID                     | `""`    |
-| `Entici__Auth__OAuth__ClientSecret`  | The static (shared) client secret | `""`    |
-| `Entici__Auth__OAuth__Scope`         | The scope                         | `""`    |
-| `Entici__Auth__OAuth__Resource`      | The resource                      | `""`    |
+| `entici__Auth__OAuth__TokenEndpoint` | The URL of the token endpoint     | `""`    |
+| `entici__Auth__OAuth__ClientId`      | The client ID                     | `""`    |
+| `entici__Auth__OAuth__ClientSecret`  | The static (shared) client secret | `""`    |
+| `entici__Auth__OAuth__Scope`         | The scope                         | `""`    |
+| `entici__Auth__OAuth__Resource`      | The resource                      | `""`    |
 
 ## Dynamic rule settings
 

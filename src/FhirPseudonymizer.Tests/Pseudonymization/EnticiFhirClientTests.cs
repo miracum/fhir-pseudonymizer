@@ -91,7 +91,7 @@ public class EnticiFhirClientTests
             ["entici"] = new Dictionary<object, object>
             {
                 ["resourceType"] = "Patient",
-                ["targetSystem"] = "https://fhir.example.com/test",
+                ["project"] = "https://fhir.example.com/test",
             },
         };
 
