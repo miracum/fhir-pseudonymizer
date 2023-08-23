@@ -56,7 +56,7 @@ public class Startup
             case PseudonymizationServiceType.Vfps:
                 services.AddVfpsClient(appConfig.Vfps);
                 break;
-            case PseudonymizationServiceType.Entici:
+            case PseudonymizationServiceType.entici:
                 services.AddEnticiClient(appConfig.Entici);
                 break;
             case PseudonymizationServiceType.None:

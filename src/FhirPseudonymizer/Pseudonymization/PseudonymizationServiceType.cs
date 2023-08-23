@@ -4,6 +4,6 @@ public enum PseudonymizationServiceType
 {
     Vfps,
     gPAS,
-    Entici,
+    entici,
     None
 }

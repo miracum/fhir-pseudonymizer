@@ -1,10 +1,8 @@
-using System;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
-using System.Threading.Tasks;
 using FhirPseudonymizer.Config;
 using Grpc.Core;
 using Grpc.Net.Client.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Vfps.Protos;
 
 namespace FhirPseudonymizer.Pseudonymization.Vfps;
@@ -16,6 +14,13 @@ public static class VfpsExtensions
         VfpsConfig vfpsConfig
     )
     {
+        if (string.IsNullOrWhiteSpace(vfpsConfig.Address.AbsoluteUri))
+        {
+            throw new ValidationException(
+                "Vfps is enabled but the backend service address is unset."
+            );
+        }
+
         var defaultMethodConfig = new MethodConfig
         {
             Names = { MethodName.Default },

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Headers;
 using System.Text;
 using FhirPseudonymizer.Config;
@@ -14,6 +15,11 @@ public static class GPasExtensions
         GPasConfig gPasConfig
     )
     {
+        if (string.IsNullOrWhiteSpace(gPasConfig.Url.AbsoluteUri))
+        {
+            throw new ValidationException("gPAS is enabled but the backend service URL is unset.");
+        }
+
         var oAuthConfig = gPasConfig.Auth.OAuth;
 
         var isOAuthEnabled = oAuthConfig.TokenEndpoint is not null;

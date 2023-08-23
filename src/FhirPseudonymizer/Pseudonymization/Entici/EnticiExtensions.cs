@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Headers;
 using System.Text;
 using FhirPseudonymizer.Config;
@@ -14,6 +15,13 @@ public static class EnticiExtensions
         EnticiConfig enticiConfig
     )
     {
+        if (string.IsNullOrWhiteSpace(enticiConfig.Url.AbsoluteUri))
+        {
+            throw new ValidationException(
+                "entici is enabled but the backend service URL is unset."
+            );
+        }
+
         var oAuthConfig = enticiConfig.Auth.OAuth;
 
         var isOAuthEnabled = oAuthConfig.TokenEndpoint is not null;

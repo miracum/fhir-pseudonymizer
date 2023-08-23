@@ -63,7 +63,7 @@ public record PseudonymServiceOAuthConfig
 
     public string ClientSecret { get; init; }
 
-    public string Scope { get; init; } = "api";
+    public string Scope { get; init; }
 
     public string Resource { get; init; }
 }
