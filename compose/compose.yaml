@@ -1,0 +1,20 @@
+services:
+  fhir-pseudonymizer:
+    image: ghcr.io/miracum/fhir-pseudonymizer:v2.19.0
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    ipc: none
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: true
+    privileged: false
+    environment:
+      DOTNET_EnableDiagnostics: "0"
+      PseudonymizationService: "None"
+      AnonymizationEngineConfigPath: "/opt/fhir-pseudonymizer/anonymization-hipaa.yaml"
+      UseSystemTextJsonFhirSerializer: "true"
+    volumes:
+      - "./anonymization-hipaa.yaml:/opt/fhir-pseudonymizer/anonymization-hipaa.yaml:ro"
+    ports:
+      - "127.0.0.1:8080:8080"
