@@ -12,13 +12,19 @@ Based on the brilliant [Tools for Health Data Anonymization](https://github.com/
 ## Usage
 
 ```sh
-docker run --rm -i -p 8080:8080 ghcr.io/miracum/fhir-pseudonymizer:latest
+docker run --rm -i -p 8080:8080 \
+  -e PseudonymizationService="None" \
+  -e UseSystemTextJsonFhirSerializer="true" \
+  ghcr.io/miracum/fhir-pseudonymizer:v2.19.0
+
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
 ```
 
-Container images are pushed to the [ghcr.io package registry](https://github.com/orgs/miracum/packages?repo_name=fhir-pseudonymizer).
+This uses the [default anonymization config](./src/FhirPseudonymizer/anonymization.yaml) which only changes the sample Observation's `id`.
 
-For deployment in Kubernetes see <https://github.com/miracum/charts/tree/master/charts/fhir-pseudonymizer> for a Helm Chart deploying the FHIR Pseudonymizer.
+An example for deploying using (Docker) Compose can be found in the [compose folder](./compose/README.md).
+
+The recommended deployment is on Kubernetes. See <https://github.com/miracum/charts/tree/master/charts/fhir-pseudonymizer> for a Helm Chart.
 
 ### API Endpoints
 
@@ -30,7 +36,7 @@ An OpenAPI definition for the FHIR operation endpoints is available at `/swagger
 
 The server provides a `/fhir/$de-identify` operation to de-identfiy received FHIR resources according to the configuration in the [anonymization.yaml](src/FhirPseudonymizer/anonymization.yaml) rules. See [Tools for Health Data Anonymization](https://github.com/microsoft/Tools-for-Health-Data-Anonymization) for more details on the anonymization rule configuration.
 
-The service comes with a sample configuration file to help meet the requirements of HIPAA Safe Harbor Method (2)(i): [hipaa-anonymization.yaml](src/FhirPseudonymizer/hipaa-anonymization.yaml).This configuration can be used by setting `ANONYMIZATIONENGINECONFIGPATH=/etc/hipaa-anonymization.yaml`.
+The service comes with a sample configuration file to help meet the requirements of HIPAA Safe Harbor Method (2)(i): [hipaa-anonymization.yaml](src/FhirPseudonymizer/hipaa-anonymization.yaml).This configuration can be used by setting `AnonymizationEngineConfigPath=/etc/hipaa-anonymization.yaml`.
 
 A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses either [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/) or [Vfps](https://github.com/chgl/vfps) to create pseudonyms and replace the values in the resource with them.
 For example, the following rule replaces all identifiers of type `http://terminology.hl7.org/CodeSystem/v2-0203|MR` with a pseudonym generated in the `PATIENT` domain.
@@ -390,19 +396,21 @@ Prerequisites:
 All released container images are signed using [cosign](https://github.com/sigstore/cosign) and SLSA Level 3 provenance is available for verification.
 
 ```sh
-# You can also retrieve the latest release from https://github.com/miracum/fhir-pseudonymizer/releases
-LATEST_RELEASE=$(git describe --abbrev=0 --tags)
-IMAGE_DIGEST=$(crane digest ghcr.io/miracum/fhir-pseudonymizer:${LATEST_RELEASE})
-IMAGE="ghcr.io/miracum/fhir-pseudonymizer@${IMAGE_DIGEST}"
+IMAGE=ghcr.io/miracum/fhir-pseudonymizer:v2.19.0
+DIGEST=$(crane digest "${IMAGE}")
+IMAGE_DIGEST_PINNED="ghcr.io/miracum/fhir-pseudonymizer@${DIGEST}"
+IMAGE_TAG="${IMAGE#*:}"
 
 cosign verify \
    --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-   --certificate-identity="https://github.com/miracum/fhir-pseudonymizer/.github/workflows/ci.yaml@refs/tags/${LATEST_RELEASE}" \
-   "$IMAGE"
+   --certificate-identity="https://github.com/miracum/fhir-pseudonymizer/.github/workflows/ci.yaml@refs/tags/${IMAGE_TAG}" \
+   "${IMAGE_DIGEST_PINNED}"
 
-slsa-verifier verify-image "$IMAGE" \
+slsa-verifier verify-image \
     --source-uri github.com/miracum/fhir-pseudonymizer \
-    --source-tag ${LATEST_RELEASE}
+    --source-tag ${IMAGE_TAG} \
+    --source-branch master \
+    "${IMAGE_DIGEST_PINNED}"
 ```
 
 ## Semantic versioning exclusion policies
