@@ -15,7 +15,7 @@ public static class EnticiExtensions
         EnticiConfig enticiConfig
     )
     {
-        if (string.IsNullOrWhiteSpace(enticiConfig.Url.AbsoluteUri))
+        if (string.IsNullOrWhiteSpace(enticiConfig.Url?.AbsoluteUri))
         {
             throw new ValidationException(
                 "entici is enabled but the backend service URL is unset."

@@ -15,7 +15,7 @@ public static class GPasExtensions
         GPasConfig gPasConfig
     )
     {
-        if (string.IsNullOrWhiteSpace(gPasConfig.Url.AbsoluteUri))
+        if (string.IsNullOrWhiteSpace(gPasConfig.Url?.AbsoluteUri))
         {
             throw new ValidationException("gPAS is enabled but the backend service URL is unset.");
         }

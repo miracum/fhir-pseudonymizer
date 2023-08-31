@@ -49,10 +49,7 @@ public class EnticiFhirClient : IPseudonymServiceClient
             ResourceType = new Code(resourceType.ToString()),
         };
 
-        var hasTargetSystem = enticiSettings.TryGetValue(
-            "project",
-            out var targetSystemObject
-        );
+        var hasTargetSystem = enticiSettings.TryGetValue("project", out var targetSystemObject);
         if (hasTargetSystem)
         {
             request.Project = new FhirString(targetSystemObject.ToString());
@@ -64,7 +61,9 @@ public class EnticiFhirClient : IPseudonymServiceClient
         );
         if (response is Parameters responseParameters)
         {
-            return responseParameters.GetSingleValue<FhirString>("externalPsn").Value;
+            var pseudonym = responseParameters.GetSingleValue<Identifier>("pseudonym");
+            ArgumentException.ThrowIfNullOrEmpty(pseudonym?.Value, nameof(pseudonym));
+            return pseudonym.Value;
         }
         else
         {

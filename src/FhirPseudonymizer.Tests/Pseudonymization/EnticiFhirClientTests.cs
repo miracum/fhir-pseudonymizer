@@ -17,8 +17,12 @@ public class EnticiFhirClientTests
         "resourceType": "Parameters",
         "parameter": [
             {
-                "name": "externalPsn",
-                "valueString": "a-test-pseudonym"
+                "name": "pseudonym",
+                "valueIdentifier": {
+                    "use": "secondary",
+                    "system": "urn:fdc:difuture.de:trustcenter.plain",
+                    "value": "a-test-pseudonym"
+                }
             }
         ]
     }
