@@ -3,5 +3,6 @@
   "extends": ["github>miracum/.github//renovate/default"],
   "kubernetes": {
     "fileMatch": ["tests/iter8/experiment.yaml"]
-  }
+  },
+  "ignoreDeps": ["ghcr.io/miracum/fhir-pseudonymizer"]
 }
