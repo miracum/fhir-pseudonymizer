@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0-jammy-chiseled@sha256:d612147bddd8753f0da14e073e6d3d567e0138e38e622250c60e565046632b77 AS runtime
+FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0-jammy-chiseled@sha256:8b0546dca6b23e438af6454a3242ffc4a3344a872e791e738f0a1be5fa4343b3 AS runtime
 WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp 8081/tcp
 USER 65532:65532
@@ -6,7 +6,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy@sha256:37d079e1a4f1329a428ecc49b21c26a3b900ce93c1a6931e4569754ae7cf69ac AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy@sha256:fff616cce9131105bd3a09bd7033e8604ac761490a703c5ece071751c155b218 AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/FhirPseudonymizer/FhirPseudonymizer.csproj .
@@ -49,7 +49,7 @@ WORKDIR /opt/fhir-pseudonymizer-stress
 
 # https://github.com/hadolint/hadolint/pull/815 isn't yet in mega-linter
 # hadolint ignore=DL3022
-COPY --from=docker.io/bitnami/kubectl:1.27.3@sha256:ee7ea608b35c09d5995d54c087d1f8ec7e820ad2e5031d60b55dd6cc720483e4 /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
+COPY --from=docker.io/bitnami/kubectl:1.27.5@sha256:f8c9112ed8e93374559de09ddb2f4459a8677a3e478206e23efae674dff0dc1f /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
 
 COPY tests/chaos/chaos.yaml /tmp/
 COPY --from=build-stress-test /build/publish .
