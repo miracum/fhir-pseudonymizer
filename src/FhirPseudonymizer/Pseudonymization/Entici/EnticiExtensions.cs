@@ -6,21 +6,23 @@ using Polly;
 using Polly.Extensions.Http;
 using Prometheus;
 
-namespace FhirPseudonymizer.Pseudonymization.GPas;
+namespace FhirPseudonymizer.Pseudonymization.Entici;
 
-public static class GPasExtensions
+public static class EnticiExtensions
 {
-    public static IServiceCollection AddGPasClient(
+    public static IServiceCollection AddEnticiClient(
         this IServiceCollection services,
-        GPasConfig gPasConfig
+        EnticiConfig enticiConfig
     )
     {
-        if (string.IsNullOrWhiteSpace(gPasConfig.Url?.AbsoluteUri))
+        if (string.IsNullOrWhiteSpace(enticiConfig.Url?.AbsoluteUri))
         {
-            throw new ValidationException("gPAS is enabled but the backend service URL is unset.");
+            throw new ValidationException(
+                "entici is enabled but the backend service URL is unset."
+            );
         }
 
-        var oAuthConfig = gPasConfig.Auth.OAuth;
+        var oAuthConfig = enticiConfig.Auth.OAuth;
 
         var isOAuthEnabled = oAuthConfig.TokenEndpoint is not null;
         if (isOAuthEnabled)
@@ -28,7 +30,7 @@ public static class GPasExtensions
             services
                 .AddClientCredentialsTokenManagement()
                 .AddClient(
-                    "gPAS.oAuth.client",
+                    "Entici.oAuth.client",
                     client =>
                     {
                         client.TokenEndpoint = oAuthConfig.TokenEndpoint.AbsoluteUri;
@@ -46,26 +48,26 @@ public static class GPasExtensions
         if (isOAuthEnabled)
         {
             clientBuilder = services.AddClientCredentialsHttpClient(
-                "gPAS",
-                "gPAS.oAuth.client",
+                "Entici",
+                "Entici.oAuth.client",
                 client =>
                 {
-                    client.BaseAddress = gPasConfig.Url;
+                    client.BaseAddress = enticiConfig.Url;
                 }
             );
         }
         else
         {
             clientBuilder = services.AddHttpClient(
-                "gPAS",
+                "Entici",
                 (client) =>
                 {
-                    client.BaseAddress = gPasConfig.Url;
+                    client.BaseAddress = enticiConfig.Url;
 
-                    if (!string.IsNullOrEmpty(gPasConfig.Auth.Basic.Username))
+                    if (!string.IsNullOrEmpty(enticiConfig.Auth.Basic.Username))
                     {
                         var basicAuthString =
-                            $"{gPasConfig.Auth.Basic.Username}:{gPasConfig.Auth.Basic.Password}";
+                            $"{enticiConfig.Auth.Basic.Username}:{enticiConfig.Auth.Basic.Password}";
                         var byteArray = Encoding.UTF8.GetBytes(basicAuthString);
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                             "Basic",
@@ -78,10 +80,10 @@ public static class GPasExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(gPasConfig.RequestRetryCount))
+            .AddPolicyHandler(GetRetryPolicy(enticiConfig.RequestRetryCount))
             .UseHttpClientMetrics();
 
-        services.AddTransient<IPseudonymServiceClient, GPasFhirClient>();
+        services.AddTransient<IPseudonymServiceClient, EnticiFhirClient>();
 
         return services;
     }

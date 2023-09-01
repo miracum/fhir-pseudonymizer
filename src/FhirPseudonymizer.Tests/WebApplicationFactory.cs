@@ -1,4 +1,3 @@
-using FakeItEasy;
 using FhirPseudonymizer.Pseudonymization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -11,7 +10,7 @@ namespace FhirPseudonymizer.Tests
     public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStartup>
         where TStartup : class
     {
-        public string AnonymizationConfigFilePath { get; set; } = null;
+        public IDictionary<string, string> CustomInMemorySettings { get; set; } = null;
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -26,32 +25,46 @@ namespace FhirPseudonymizer.Tests
                     services.Remove(descriptor);
                 }
 
-                var gpas = A.Fake<IPseudonymServiceClient>();
-                A.CallTo(() => gpas.GetOrCreatePseudonymFor(A<string>._, A<string>._))
+                var psnClient = A.Fake<IPseudonymServiceClient>();
+                A.CallTo(
+                        () =>
+                            psnClient.GetOrCreatePseudonymFor(
+                                A<string>._,
+                                A<string>._,
+                                A<IReadOnlyDictionary<string, object>>._
+                            )
+                    )
                     .ReturnsLazily(
-                        (string original, string domain) => $"pseuded-{original}@{domain}"
+                        (
+                            string original,
+                            string domain,
+                            IReadOnlyDictionary<string, object> settings
+                        ) => $"pseuded-{original}@{domain}"
                     );
-                A.CallTo(() => gpas.GetOriginalValueFor(A<string>._, A<string>._))
+                A.CallTo(
+                        () =>
+                            psnClient.GetOriginalValueFor(
+                                A<string>._,
+                                A<string>._,
+                                A<IReadOnlyDictionary<string, object>>._
+                            )
+                    )
                     .ReturnsLazily(
-                        (string pseudonym, string domain) => $"original-{pseudonym}@{domain}"
+                        (
+                            string pseudonym,
+                            string domain,
+                            IReadOnlyDictionary<string, object> settings
+                        ) => $"original-{pseudonym}@{domain}"
                     );
 
-                services.AddTransient(_ => gpas);
+                services.AddTransient(_ => psnClient);
             });
 
-            if (AnonymizationConfigFilePath is not null)
+            if (CustomInMemorySettings is not null)
             {
                 builder.ConfigureAppConfiguration(
                     (context, configBuilder) =>
-                    {
-                        configBuilder.AddInMemoryCollection(
-                            new Dictionary<string, string>
-                            {
-                                ["AnonymizationEngineConfigPath"] = AnonymizationConfigFilePath,
-                                ["EnableMetrics"] = "false",
-                            }
-                        );
-                    }
+                        configBuilder.AddInMemoryCollection(CustomInMemorySettings)
                 );
             }
         }

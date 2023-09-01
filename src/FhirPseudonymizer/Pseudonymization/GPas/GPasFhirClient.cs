@@ -86,7 +86,11 @@ public class GPasFhirClient : IPseudonymServiceClient
     private Func<string, string, Task<string>> GetOriginalValueForResolver { get; }
     private FhirClient FhirClient { get; }
 
-    public async Task<string> GetOrCreatePseudonymFor(string value, string domain)
+    public async Task<string> GetOrCreatePseudonymFor(
+        string value,
+        string domain,
+        IReadOnlyDictionary<string, object> settings = null
+    )
     {
         TotalGPasRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
 
@@ -112,7 +116,11 @@ public class GPasFhirClient : IPseudonymServiceClient
         );
     }
 
-    public async Task<string> GetOriginalValueFor(string pseudonym, string domain)
+    public async Task<string> GetOriginalValueFor(
+        string pseudonym,
+        string domain,
+        IReadOnlyDictionary<string, object> settings = null
+    )
     {
         TotalGPasRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
 
@@ -156,7 +164,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         var original = parameters.GetSingleValue<FhirString>(pseudonym);
         if (original == null)
         {
-            logger.LogWarning("Failed to de-pseudonymize. Returning original value.", pseudonym);
+            logger.LogWarning("Failed to de-pseudonymize. Returning original value.");
             return pseudonym;
         }
 

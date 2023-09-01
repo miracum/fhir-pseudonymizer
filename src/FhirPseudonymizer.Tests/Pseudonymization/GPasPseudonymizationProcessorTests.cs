@@ -1,15 +1,11 @@
-using System.Collections.Generic;
-using System.Linq;
-using FakeItEasy;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
-using Xunit;
 
-namespace FhirPseudonymizer.Tests;
+namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class GPasPseudonymizationProcessorTests
 {
@@ -85,7 +81,14 @@ public class GPasPseudonymizationProcessorTests
             }
         );
 
-        A.CallTo(() => psnClient.GetOrCreatePseudonymFor(A<string>._, expectedDomain))
+        A.CallTo(
+                () =>
+                    psnClient.GetOrCreatePseudonymFor(
+                        A<string>._,
+                        expectedDomain,
+                        A<IReadOnlyDictionary<string, object>>._
+                    )
+            )
             .MustHaveHappenedOnceExactly();
     }
 }

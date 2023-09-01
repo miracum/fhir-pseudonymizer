@@ -1,27 +1,23 @@
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using FluentAssertions;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
-using Xunit;
-using Task = System.Threading.Tasks.Task;
 
 namespace FhirPseudonymizer.Tests;
 
 public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startup>>
 {
-    private readonly HttpClient _client;
+    private readonly HttpClient client;
 
     public IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     {
-        _client = factory.CreateClient();
+        client = factory.CreateClient();
     }
 
     [Fact]
     public async Task GetMetadata_ReturnsSuccessAndFhirJsonContentType()
     {
-        var response = await _client.GetAsync("/fhir/metadata");
+        var response = await client.GetAsync("/fhir/metadata");
 
         response.EnsureSuccessStatusCode();
         response.Content.Headers.ContentType
@@ -35,9 +31,11 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
     [InlineData("/live")]
     public async Task ReadyAndLiveChecks_ReturnSuccess(string url)
     {
-        var response = await _client.GetAsync(url);
+        var response = await client.GetAsync(url);
 
-        response.EnsureSuccessStatusCode();
+        Action act = () => response.EnsureSuccessStatusCode();
+
+        act.Should().NotThrow();
     }
 
     [Theory]
@@ -49,7 +47,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         content.Headers.Add("x-api-key", "dev");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
-        var response = await _client.PostAsync(url, content);
+        var response = await client.PostAsync(url, content);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -65,7 +63,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
 
         var content = new StringContent(patient);
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await _client.PostAsync("/fhir/$de-identify", content);
+        var response = await client.PostAsync("/fhir/$de-identify", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -75,7 +73,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
     {
         var content = new StringContent("");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await _client.PostAsync("/fhir/$de-pseudonymize", content);
+        var response = await client.PostAsync("/fhir/$de-pseudonymize", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -86,7 +84,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var content = new StringContent("");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
         content.Headers.Add("x-api-key", "wrong-key");
-        var response = await _client.PostAsync("/fhir/$de-pseudonymize", content);
+        var response = await client.PostAsync("/fhir/$de-pseudonymize", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -117,7 +115,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
 
         var content = new StringContent(patient);
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await _client.PostAsync("/fhir/$de-identify", content);
+        var response = await client.PostAsync("/fhir/$de-identify", content);
 
         response.EnsureSuccessStatusCode();
 
@@ -155,7 +153,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var content = new StringContent(patient);
         content.Headers.Add("x-api-key", "dev");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await _client.PostAsync("/fhir/$de-pseudonymize", content);
+        var response = await client.PostAsync("/fhir/$de-pseudonymize", content);
 
         response.EnsureSuccessStatusCode();
 

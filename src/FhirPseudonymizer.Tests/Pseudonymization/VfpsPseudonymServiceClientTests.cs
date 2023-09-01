@@ -1,14 +1,9 @@
-using System.Threading;
-using System.Threading.Tasks;
-using FakeItEasy;
 using FhirPseudonymizer.Pseudonymization.Vfps;
-using FluentAssertions;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using Vfps.Protos;
-using Xunit;
 
-namespace FhirPseudonymizer.Tests;
+namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class VfpsPseudonymServiceClientTests
 {
