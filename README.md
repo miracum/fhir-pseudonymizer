@@ -15,7 +15,7 @@ Based on the brilliant [Tools for Health Data Anonymization](https://github.com/
 docker run --rm -i -p 8080:8080 \
   -e PseudonymizationService="None" \
   -e UseSystemTextJsonFhirSerializer="true" \
-  ghcr.io/miracum/fhir-pseudonymizer:v2.20.0
+  ghcr.io/miracum/fhir-pseudonymizer:v2.20.1
 
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
 ```
@@ -427,7 +427,7 @@ Prerequisites:
 All released container images are signed using [cosign](https://github.com/sigstore/cosign) and SLSA Level 3 provenance is available for verification.
 
 ```sh
-IMAGE=ghcr.io/miracum/fhir-pseudonymizer:v2.20.0
+IMAGE=ghcr.io/miracum/fhir-pseudonymizer:v2.20.1
 DIGEST=$(crane digest "${IMAGE}")
 IMAGE_DIGEST_PINNED="ghcr.io/miracum/fhir-pseudonymizer@${DIGEST}"
 IMAGE_TAG="${IMAGE#*:}"
