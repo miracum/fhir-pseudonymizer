@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload container image
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: container-image
           path: |
@@ -136,7 +136,10 @@ jobs:
   run-iter8-tests:
     name: run iter8 tests
     runs-on: ubuntu-22.04
-    if: ${{ github.event_name == 'pull_request' }}
+    # ${{ github.event_name == 'pull_request' }}
+    # disabled for now since iter8 action doesn't really work anymore
+    # TODO: migrate to <https://iter8.tools/0.18/tutorials/integrations/ghactions/> instead.
+    if: ${{ false }}
     needs:
       - build
     permissions:
@@ -221,7 +224,7 @@ jobs:
 
       - name: Upload report
         if: always()
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: iter8-report.html
           path: |
@@ -235,7 +238,7 @@ jobs:
 
       - name: Upload cluster dump
         if: always()
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
         with:
           name: kind-cluster-dump.txt
           path: |
@@ -277,7 +280,7 @@ jobs:
       - build
     permissions:
       actions: read # for detecting the Github Actions environment.
-      id-token: write # for creating OIDC tokens for signing.
+      id-token: write
       packages: write # for uploading attestations.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
     with:
@@ -306,7 +309,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@6e04d228eb30da1757ee4e1dd75a0ec73a653e06 # tag=v3.1.1
+        uses: sigstore/cosign-installer@11086d25041f77fe8fe7b9ea4e48e3b9192b8f19 # v3.1.2
 
       # via <https://github.com/actions/starter-workflows/blob/main/ci/docker-publish.yml>
       - name: Sign image

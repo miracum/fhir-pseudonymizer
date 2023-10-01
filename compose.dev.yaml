@@ -36,6 +36,7 @@ services:
       - "no-new-privileges:true"
     privileged: false
     environment:
+      # kics-scan ignore-line
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: vfps
 
@@ -62,6 +63,7 @@ services:
       ForceRunDatabaseMigrations: "true"
       ConnectionStrings__PostgreSQL: "Host=vfps-db:5432;Database=vfps;Timeout=60;Max Auto Prepare=5;Application Name=vfps;Maximum Pool Size=50;"
       PGUSER: postgres
+      # kics-scan ignore-line
       PGPASSWORD: postgres
       Tracing__IsEnabled: "true"
       Tracing__Jaeger__AgentHost: "jaeger"
@@ -98,6 +100,7 @@ services:
       - --import-realm
     environment:
       KEYCLOAK_ADMIN: admin
+      # kics-scan ignore-line
       KEYCLOAK_ADMIN_PASSWORD: admin
     volumes:
       - type: bind
