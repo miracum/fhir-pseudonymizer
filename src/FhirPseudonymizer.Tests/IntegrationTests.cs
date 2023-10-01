@@ -157,9 +157,8 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
 
         response.EnsureSuccessStatusCode();
 
-        var decryptedPatient = new FhirJsonParser().Parse<Patient>(
-            response.Content.ReadAsStringAsync().Result
-        );
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var decryptedPatient = await new FhirJsonParser().ParseAsync<Patient>(responseContent);
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");
     }

@@ -154,29 +154,29 @@
       },
       "OpenTelemetry.Instrumentation.AspNetCore": {
         "type": "Direct",
-        "requested": "[1.0.0-rc9.14, )",
-        "resolved": "1.0.0-rc9.14",
-        "contentHash": "1FEX8srCzGBrDWL5gdXwk0RoXkYWamj3ZnBjDbwqJd2XGvWCE4LwfwtPj8G8P1ox1tYaBEs5mWkb+h2t9KQyfQ==",
+        "requested": "[1.5.1-beta.1, )",
+        "resolved": "1.5.1-beta.1",
+        "contentHash": "szyjWK0GdA0hFfxjdBykYsgrXv6NVTu5HDxIgQOcZMqWu6hyikKDMcP+hYC3rD2mJbIdvjEdhEyZOb84sCevHA==",
         "dependencies": {
-          "OpenTelemetry": "1.4.0"
+          "OpenTelemetry": "1.5.1"
         }
       },
       "OpenTelemetry.Instrumentation.GrpcNetClient": {
         "type": "Direct",
-        "requested": "[1.0.0-rc9.14, )",
-        "resolved": "1.0.0-rc9.14",
-        "contentHash": "Myig2b/yt4VE4SDg9LEZePBLLBJ5U6PFfWlT0aIkcI+T+hRaSy2bMu6QCYD7dnHTAYmwu5cYT923smIWzuIIZA==",
+        "requested": "[1.5.1-beta.1, )",
+        "resolved": "1.5.1-beta.1",
+        "contentHash": "nEu3M1acq5Yjc0AxR+itzvY20+LUdeYjw5n7hpf0SE+tFry1v5xDZ2bR8FAMXQvTAKlwDk3LK7ra/1c7ODCJfA==",
         "dependencies": {
-          "OpenTelemetry": "1.4.0"
+          "OpenTelemetry": "1.5.1"
         }
       },
       "OpenTelemetry.Instrumentation.Http": {
         "type": "Direct",
-        "requested": "[1.0.0-rc9.14, )",
-        "resolved": "1.0.0-rc9.14",
-        "contentHash": "I9mxyIDsWbtk/ojxk/zCs1vUvGdjT0siYXkmVBpA6cSF7jdxdxDIKW9t2gArBDlsdz7yZZ3BdgJN64xhEHC7Cw==",
+        "requested": "[1.5.1-beta.1, )",
+        "resolved": "1.5.1-beta.1",
+        "contentHash": "Qyhp8nzfkGVIQdBJbgnJaFDQoH0AcMjkbCP6ddB04eSiWFS1e8FRsRMwnJSOQ3cafWowK3Y4S/V60xdB1rNX5A==",
         "dependencies": {
-          "OpenTelemetry": "1.4.0"
+          "OpenTelemetry": "1.5.1"
         }
       },
       "prometheus-net": {

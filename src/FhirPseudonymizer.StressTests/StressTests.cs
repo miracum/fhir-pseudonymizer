@@ -5,6 +5,8 @@ using Xunit.Abstractions;
 using Polly;
 using Polly.Retry;
 using Microsoft.FSharp.Core;
+using NBomber.Http;
+using Task = System.Threading.Tasks.Task;
 
 namespace FhirPseudonymizer.StressTests;
 
@@ -33,8 +35,8 @@ public class StressTests
                 retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
                 (exception, timeSpan, retryAttempt, context) =>
                 {
-                    var stepContext = context["stepContext"] as IStepContext<Unit, Unit>;
-                    stepContext.Logger.Warning(
+                    var stepContext = context["stepContext"] as IScenarioContext;
+                    stepContext?.Logger.Warning(
                         $"Request failed within retry context: {exception.GetType()}: {exception.Message}. Attempt {retryAttempt}."
                     );
                 }
@@ -54,59 +56,51 @@ public class StressTests
             : "./nbomber-reports";
     }
 
-    private IStep PseudonymizeResourceStep()
+    private async Task<Response<object>> RunPseudonymizeResource(IScenarioContext scenarioContext)
     {
-        return Step.Create(
-            "pseudonymize_resource",
-            execute: async context =>
+        return await Step.Run(
+            "pseudonymize resource",
+            scenarioContext,
+            run: async () =>
             {
+                var resource = new Patient()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Active = true,
+                    Name = new()
+                    {
+                        new()
+                        {
+                            Family = "Doe",
+                            Given = new List<string> { "John" },
+                        }
+                    },
+                    Identifier = new()
+                    {
+                        new("https://fhir.example.com/identifiers/mrn", Guid.NewGuid().ToString())
+                        {
+                            Type = new("http://terminology.hl7.org/CodeSystem/v2-0203", "MR"),
+                        }
+                    },
+                };
+
+                var parameters = new Parameters().Add("resource", resource);
+
                 try
                 {
-                    var resource = new Patient()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Active = true,
-                        Name = new()
-                        {
-                            new()
-                            {
-                                Family = "Doe",
-                                Given = new List<string> { "John" },
-                            }
-                        },
-                        Identifier = new()
-                        {
-                            new(
-                                "https://fhir.example.com/identifiers/mrn",
-                                Guid.NewGuid().ToString()
-                            )
-                            {
-                                Type = new("http://terminology.hl7.org/CodeSystem/v2-0203", "MR"),
-                            }
-                        },
-                    };
-
-                    var parameters = new Parameters().Add("resource", resource);
-
                     var response = await retryPolicy.ExecuteAsync(
-                        (ctx) =>
-                            fhirClient.WholeSystemOperationAsync(
-                                "de-identify",
-                                parameters,
-                                ct: context.CancellationToken
-                            ),
-                        new Dictionary<string, object> { ["stepContext"] = context }
+                        (ctx) => fhirClient.WholeSystemOperationAsync("de-identify", parameters),
+                        new Dictionary<string, object> { ["stepContext"] = scenarioContext }
                     );
 
-                    return Response.Ok(statusCode: 200);
+                    return Response.Ok(statusCode: "200");
                 }
                 catch (Exception exc)
                 {
-                    context.Logger.Error(exc, "Pseudonymization of resource failed");
+                    scenarioContext.Logger.Error(exc, "Pseudonymization of resource failed");
                     return Response.Fail();
                 }
-            },
-            timeout: TimeSpan.FromSeconds(60)
+            }
         );
     }
 
@@ -116,27 +110,34 @@ public class StressTests
         double failPercentageThreshold
     )
     {
-        var scenario = ScenarioBuilder
-            .CreateScenario("de-identify", PseudonymizeResourceStep())
+        var scenario = Scenario
+            .Create(
+                "de-identify",
+                async context =>
+                {
+                    return await RunPseudonymizeResource(context);
+                }
+            )
             .WithInit(async context =>
             {
-                await fhirClient.CapabilityStatementAsync(ct: context.CancellationToken);
+                await fhirClient.CapabilityStatementAsync();
                 context.Logger.Information("Completed scenario init.");
             })
             .WithWarmUpDuration(TimeSpan.FromSeconds(5))
             .WithLoadSimulations(
-                Simulation.RampConstant(copies: 10, during: TimeSpan.FromMinutes(5)),
+                Simulation.RampingConstant(copies: 10, during: TimeSpan.FromMinutes(5)),
                 Simulation.KeepConstant(copies: 100, during: TimeSpan.FromMinutes(5)),
-                Simulation.InjectPerSecRandom(
-                    minRate: 10,
-                    maxRate: 50,
-                    during: TimeSpan.FromMinutes(5)
+                Simulation.RampingInject(
+                    rate: 10,
+                    TimeSpan.FromMinutes(1),
+                    during: TimeSpan.FromMinutes(10)
                 )
             );
 
         var stats = NBomberRunner
             .RegisterScenarios(scenario)
             .WithReportFolder(reportFolder)
+            .WithWorkerPlugins(new HttpMetricsPlugin(new[] { HttpVersion.Version1 }))
             .WithReportFormats(
                 ReportFormat.Txt,
                 ReportFormat.Csv,
@@ -145,7 +146,7 @@ public class StressTests
             )
             .Run();
 
-        var failPercentage = stats.FailCount / (double)stats.RequestCount * 100.0;
+        var failPercentage = stats.AllFailCount / (double)stats.AllRequestCount * 100.0;
 
         output.WriteLine(
             $"Actual fail percentage: {failPercentage} %. Threshold: {failPercentageThreshold} %"
