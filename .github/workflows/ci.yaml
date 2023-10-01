@@ -149,7 +149,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
 
-      - uses: iter8-tools/iter8@9b867240dcaa77858d2458f52a3845e47ea2c657 # v0.13.17
+      - uses: iter8-tools/iter8@bf13530586a447220caccf71fae506350b47fd75 # v0.18.4
 
       - name: Create KinD cluster
         uses: helm/kind-action@dda0770415bac9fc20092cacbc54aa298604d140 # v1.8.0
