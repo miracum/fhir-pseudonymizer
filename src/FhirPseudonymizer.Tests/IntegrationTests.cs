@@ -11,7 +11,8 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
 {
     private readonly HttpClient client;
 
-    private readonly string fhirBundleJson = @"
+    private readonly string fhirBundleJson =
+        @"
         {
           ""resourceType"": ""Bundle"",
           ""type"": ""batch"",
@@ -201,7 +202,6 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
                 method: cryptoHash
         ";
 
-
         var factory = new CustomWebApplicationFactory<Startup>
         {
             CustomInMemorySettings = new Dictionary<string, string>
@@ -225,13 +225,15 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "fhir.json").UseDirectory("Snapshots");
+        await Verify(response.ToJson(new() { Pretty = true }), "fhir.json")
+            .UseDirectory("Snapshots");
     }
 
     [Fact]
     public async Task PostDeIdentify_WithShouldAddSecurityTagSetToFalse_ShouldNotAddSecurityMetaDataToResult()
     {
-        var inlineConfig = @"
+        var inlineConfig =
+            @"
             fhirVersion: R4
             fhirPathRules:
               - path: Resource.id
