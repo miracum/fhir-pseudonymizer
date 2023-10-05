@@ -36,6 +36,7 @@ public class Startup
         services.AddSingleton(_ => appConfig);
         services.AddSingleton(_ => appConfig.GPas);
         services.AddSingleton(_ => appConfig.Features);
+        services.AddSingleton(_ => appConfig.Anonymization);
 
         services.AddApiKeyAuth(appConfig.ApiKey);
 

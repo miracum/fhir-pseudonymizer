@@ -1,0 +1,17 @@
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "gender": "female",
+        "birthDate": "1985-10-14"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/8f46c4efd18605901786e3b736505654fd879f0b990f10605d346767022afeb9"
+      }
+    }
+  ]
+}

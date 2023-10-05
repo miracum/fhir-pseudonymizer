@@ -33,6 +33,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             _rules = rules;
             _processors = processors;
             _settings = settings;
+
+            if (settings is not null)
+            {
+                AddSecurityTag = _settings.ShouldAddSecurityTag;
+            }
         }
 
         public bool AddSecurityTag { get; set; } = true;

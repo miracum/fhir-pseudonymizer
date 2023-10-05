@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -42,12 +43,12 @@ namespace FhirPseudonymizer.Controllers
         );
 
         private readonly IAnonymizerEngine anonymizer;
-        private readonly IConfiguration config;
+        private readonly AnonymizationConfig config;
         private readonly IDePseudonymizerEngine dePseudonymizer;
         private readonly ILogger<FhirController> logger;
 
         public FhirController(
-            IConfiguration config,
+            AnonymizationConfig config,
             ILogger<FhirController> logger,
             IAnonymizerEngine anonymizer,
             IDePseudonymizerEngine dePseudonymizer
@@ -100,7 +101,11 @@ namespace FhirPseudonymizer.Controllers
                 resource.Id
             );
 
-            var settings = new AnonymizerSettings();
+            var settings = new AnonymizerSettings()
+            {
+                ShouldAddSecurityTag = config.ShouldAddSecurityTag,
+            };
+
             if (resource is Parameters param)
             {
                 // parse dynamic rule settings
@@ -116,12 +121,12 @@ namespace FhirPseudonymizer.Controllers
                 return Anonymize(param.GetSingle("resource").Resource, settings);
             }
 
-            return Anonymize(resource);
+            return Anonymize(resource, settings);
         }
 
         private ObjectResult Anonymize(
             Resource resource,
-            AnonymizerSettings anonymizerSettings = null
+            AnonymizerSettings anonymizerSettings
         )
         {
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
@@ -202,7 +207,6 @@ namespace FhirPseudonymizer.Controllers
                 Software = new CapabilityStatement.SoftwareComponent
                 {
                     Name = "FHIR Pseudonymizer",
-                    Version = config.GetValue<string>("App:Version")
                 },
                 FhirVersion = FHIRVersion.N4_0_1,
                 Format = new[] { "application/fhir+json" },
