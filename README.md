@@ -91,6 +91,8 @@ Additionally, there are some optional configuration values that can be set as en
 | `UseSystemTextJsonFhirSerializer` | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4> | `false`                     |
 | `PseudonymizationService`         | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `entici`, `None`                                                                                                                              | `"gPAS"`                    |
 | `MetricsPort`                     | The port where metrics in Prometheus format should be exposed at under the `/metrics` route.                                                                                                                             | `8081`                      |
+| `Anonymization__CryptoHashKey`    | Sets the key used by the HMAC SHA256 algorithm. This is an alternative to setting it inside the anonymization.yaml's `parameters` section and useful to more securely set sensitive information.                         | `""`                        |
+| `Anonymization__EncryptKey`       | Sets the AES encryption key. This is an alternative to setting it inside the anonymization.yaml's `parameters` section and useful to more securely set sensitive information.                                            | `""`                        |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
 

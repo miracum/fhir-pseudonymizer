@@ -1,10 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using Hl7.Fhir.Model;
+using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
 
 namespace FhirPseudonymizer.Tests;
 
+[UsesVerify]
 public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startup>>
 {
     private readonly HttpClient client;
@@ -161,5 +163,70 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var decryptedPatient = await new FhirJsonParser().ParseAsync<Patient>(responseContent);
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");
+    }
+
+    [Fact]
+    public async Task PostDeIdentify_WithCryptoHashKeySetViaAppSettingsConfig_ShouldCryptoHashValue()
+    {
+        var inlineConfig =
+            @"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Resource.id
+                method: cryptoHash
+              - path: Bundle.entry.fullUrl
+                method: cryptoHash
+              - path: Bundle.entry.request.url
+                method: cryptoHash
+        ";
+
+        var inputJson =
+            @"
+        {
+          ""resourceType"": ""Bundle"",
+          ""type"": ""batch"",
+          ""id"": ""test"",
+          ""entry"": [
+            {
+              ""request"": {
+                ""method"": ""PUT"",
+                ""url"": ""Patient/example0""
+              },
+              ""resource"": {
+                ""resourceType"": ""Patient"",
+                ""id"": ""example0"",
+                ""gender"": ""female"",
+                ""birthDate"": ""1985-10-14""
+              }
+            }
+          ]
+        }
+        ";
+
+        var factory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+                ["Anonymization:CryptoHashKey"] = "test",
+            }
+        };
+
+        var client = factory.CreateClient();
+
+        var fhirClient = new FhirClient(
+            "http://localhost/fhir",
+            client,
+            settings: new() { PreferredFormat = ResourceFormat.Json }
+        );
+
+        var fhirParser = new FhirJsonParser();
+        var input = await fhirParser.ParseAsync<Resource>(inputJson);
+        var parameters = new Parameters().Add("resource", input);
+        var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
+
+        await Verify(response.ToJson(new() { Pretty = true }), "fhir.json")
+            .UseDirectory("Snapshots");
     }
 }
