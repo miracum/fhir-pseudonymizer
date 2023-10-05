@@ -10,6 +10,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 
         public bool ValidateOutput { get; set; }
 
+        public bool ShouldAddSecurityTag { get; set; } = true;
+
         public Dictionary<string, object> DynamicRuleSettings { get; set; }
     }
 }

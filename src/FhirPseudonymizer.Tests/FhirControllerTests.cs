@@ -1,3 +1,4 @@
+using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Controllers;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Configuration;
@@ -21,7 +22,7 @@ public class FhirControllerTests
             .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings);
 
         var controller = new FhirController(
-            A.Fake<IConfiguration>(),
+            A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
             A.Fake<IDePseudonymizerEngine>()
@@ -44,7 +45,7 @@ public class FhirControllerTests
             .Throws(new Exception("something went wrong"));
 
         var controller = new FhirController(
-            A.Fake<IConfiguration>(),
+            A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
             A.Fake<IDePseudonymizerEngine>()
@@ -67,7 +68,7 @@ public class FhirControllerTests
             .Throws(new Exception("something went wrong"));
 
         var controller = new FhirController(
-            A.Fake<IConfiguration>(),
+            A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
             A.Fake<IAnonymizerEngine>(),
             dePseudonymizer
