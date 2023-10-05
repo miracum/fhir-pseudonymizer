@@ -19,13 +19,15 @@ public static class AnonymizerEngineExtensions
         if (!string.IsNullOrEmpty(appConfig.AnonymizationEngineConfigInline))
         {
             anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigString(
-                appConfig.AnonymizationEngineConfigInline
+                appConfig.AnonymizationEngineConfigInline,
+                appConfig.Anonymization
             );
         }
         else if (!string.IsNullOrEmpty(configFilePath))
         {
             anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigFile(
-                configFilePath
+                configFilePath,
+                appConfig.Anonymization
             );
         }
         else
