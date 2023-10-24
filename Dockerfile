@@ -24,7 +24,7 @@ RUN dotnet publish \
     -o /build/publish \
     src/FhirPseudonymizer/FhirPseudonymizer.csproj
 
-FROM build AS test
+FROM build AS build-test
 WORKDIR /build/src/FhirPseudonymizer.Tests
 RUN dotnet test \
     --configuration=Release \
@@ -32,6 +32,11 @@ RUN dotnet test \
     --results-directory=./coverage \
     -l "console;verbosity=detailed" \
     --settings=runsettings.xml
+
+FROM scratch AS test
+WORKDIR /build/src/FhirPseudonymizer.Tests/coverage
+COPY --from=build-test /build/src/FhirPseudonymizer.Tests/coverage .
+ENTRYPOINT [ "true" ]
 
 FROM build AS build-stress-test
 WORKDIR /build/src/FhirPseudonymizer.StressTests
