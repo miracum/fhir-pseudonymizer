@@ -22,12 +22,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Hl7.Fhir.R4" Version="5.3.0" />
-    <PackageReference Include="Hl7.Fhir.Base" Version="5.3.0" />
-    <PackageReference Include="prometheus-net.AspNetCore" Version="8.0.1" />
-    <PackageReference Include="prometheus-net" Version="8.0.1" />
-    <PackageReference Include="prometheus-net.AspNetCore.Grpc" Version="8.0.1" />
-    <PackageReference Include="prometheus-net.AspNetCore.HealthChecks" Version="8.0.1" />
+    <PackageReference Include="Hl7.Fhir.R4" Version="5.4.0" />
+    <PackageReference Include="Hl7.Fhir.Base" Version="5.4.0" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.1.0" />
+    <PackageReference Include="prometheus-net" Version="8.1.0" />
+    <PackageReference Include="prometheus-net.AspNetCore.Grpc" Version="8.1.0" />
+    <PackageReference Include="prometheus-net.AspNetCore.HealthChecks" Version="8.1.0" />
     <PackageReference Include="Semver" Version="3.0.0-beta.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.13" />

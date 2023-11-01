@@ -69,9 +69,9 @@
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
-        "requested": "[5.3.0, )",
-        "resolved": "5.3.0",
-        "contentHash": "qwkDPyNK1KGu+f55ZKYVaXJf3U91+2WuHlg4iN01anZxWzbhfg0f7/1e+QpcWBhTon68dQn17mqUm6UPOjSdjw==",
+        "requested": "[5.4.0, )",
+        "resolved": "5.4.0",
+        "contentHash": "eDqSjlNsuuwhmmSo2skT97Y5VYmR5SKTLD+jbfSaRFWXzN8v6nntfN8wi3WdjBeuaY0ycyw1XMExqlmRYmWdkQ==",
         "dependencies": {
           "Fhir.Metrics": "1.2.2",
           "Newtonsoft.Json": "13.0.3",
@@ -81,11 +81,11 @@
       },
       "Hl7.Fhir.R4": {
         "type": "Direct",
-        "requested": "[5.3.0, )",
-        "resolved": "5.3.0",
-        "contentHash": "ymmAyvWnduk8JnZt/l2toHB8NT1EM4AAktVI7G9cuB3E/IUuZmhW5uP8gEpi8MwzKzilO7iN+PRF0fkfnDnTJw==",
+        "requested": "[5.4.0, )",
+        "resolved": "5.4.0",
+        "contentHash": "ABkKzv6IBTJF9evQUHilwhulXi2T0+OHYAnd4jrnQsenDF8HSYCF5shUL6XR1uCOCfdmC0li0E73dsiNCwgQbw==",
         "dependencies": {
-          "Hl7.Fhir.Conformance": "5.3.0"
+          "Hl7.Fhir.Conformance": "5.4.0"
         }
       },
       "MathNet.Numerics": {
@@ -181,9 +181,9 @@
       },
       "prometheus-net": {
         "type": "Direct",
-        "requested": "[8.0.1, )",
-        "resolved": "8.0.1",
-        "contentHash": "A9sOtQB2gEhujBxPKw+KcGScBiPvBmy4lYVM5OlETMj4xjVD5r/ixIg52HHg2P0lcImJTpfeWnD0/9tpQsRQTA==",
+        "requested": "[8.1.0, )",
+        "resolved": "8.1.0",
+        "contentHash": "4prJfXFYmCPtuedjSjvtsI9BGjsH6hXrqz/yAOx07osiVwzRVyLP7Os+5rFJ5g2PLOoO3149RbEyp2/b223/CQ==",
         "dependencies": {
           "Microsoft.Extensions.Http": "3.1.0",
           "Microsoft.Extensions.ObjectPool": "7.0.0"
@@ -191,31 +191,31 @@
       },
       "prometheus-net.AspNetCore": {
         "type": "Direct",
-        "requested": "[8.0.1, )",
-        "resolved": "8.0.1",
-        "contentHash": "KYM1abaC+V4KwF+pdJOxNsrec7AIORqRYFC5idemIKyQWmmI7v+WMu45mTR2CZV2CPoUQXuAP4ufNBK6ce1v0w==",
+        "requested": "[8.1.0, )",
+        "resolved": "8.1.0",
+        "contentHash": "6M63K2a0mgUpT24di72I3LebCzY4V5uIaFDdsJpg+OLJdoLuhGqdKAdHPoWSQN9QnDxxAKuuEGYjNdIAFGk8ug==",
         "dependencies": {
-          "prometheus-net": "8.0.1"
+          "prometheus-net": "8.1.0"
         }
       },
       "prometheus-net.AspNetCore.Grpc": {
         "type": "Direct",
-        "requested": "[8.0.1, )",
-        "resolved": "8.0.1",
-        "contentHash": "VNoXKSI7HKCxh9qhHa7wCP+SkUJENn/7ywj3kgzAp6j6iLgNWuPvOcXh22r2TEkQUQVsK5j5v9edfCnuM4FA1g==",
+        "requested": "[8.1.0, )",
+        "resolved": "8.1.0",
+        "contentHash": "W+92YqvZBOln+nPmXy63pJKBClGa1je99b8gCuvM3MHZTzGRrHZBwHVH5tKVGvAQs4Z9qEqchMukg/+8MxYTLw==",
         "dependencies": {
           "Grpc.AspNetCore.Server": "2.48.0",
-          "prometheus-net.AspNetCore": "8.0.1"
+          "prometheus-net.AspNetCore": "8.1.0"
         }
       },
       "prometheus-net.AspNetCore.HealthChecks": {
         "type": "Direct",
-        "requested": "[8.0.1, )",
-        "resolved": "8.0.1",
-        "contentHash": "t8mJDBC6OwZ1/8t6Sp365YVTE2Fy2ebRO+9YV1DZPFOT2WjjP4kZAZ/DaR2KSfYgfRyDmq55BlI5wjDRQg24Pw==",
+        "requested": "[8.1.0, )",
+        "resolved": "8.1.0",
+        "contentHash": "80hTT/o7m7VNjeIkjt9BDTRF8AG1AJxQNferQpXGWWKuCrOqJZraO1TXyGqgNJ7XfB0Od+tr8VWaGA4sPYSzCg==",
         "dependencies": {
           "Microsoft.Extensions.Diagnostics.HealthChecks": "6.0.9",
-          "prometheus-net.AspNetCore": "8.0.1"
+          "prometheus-net.AspNetCore": "8.1.0"
         }
       },
       "Semver": {
@@ -273,10 +273,10 @@
       },
       "Hl7.Fhir.Conformance": {
         "type": "Transitive",
-        "resolved": "5.3.0",
-        "contentHash": "Svy12wO79Ciy/0sQkbnhluePXoOVCX2webk0ms2zqbyTD29p0BqBSbodWsyrTUzUuQZziThl3gapjxy83Kwn2Q==",
+        "resolved": "5.4.0",
+        "contentHash": "F6AvLULi5GO1x+8MNheyoLvMSzgSqUs4CXj0Pxv1orLGRAi99Dxst7PlF3juZUjii4MxiwDv1rEVhWmZ3+eejQ==",
         "dependencies": {
-          "Hl7.Fhir.Base": "5.3.0"
+          "Hl7.Fhir.Base": "5.4.0"
         }
       },
       "IdentityModel": {
