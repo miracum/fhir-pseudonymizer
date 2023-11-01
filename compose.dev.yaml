@@ -1,6 +1,6 @@
 services:
   jaeger:
-    image: docker.io/jaegertracing/all-in-one:1.48@sha256:667c849ae08d74cde03b1a4b0ba5ab3081f8a43c895325eb62ab5871a1dd764c
+    image: docker.io/jaegertracing/all-in-one:1.50@sha256:d589499a01e1e2f9d302db8e210af09688076fd8a93278fa024824a755c1a0f1
     restart: unless-stopped
     deploy:
       resources:
@@ -21,7 +21,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   vfps-db:
-    image: docker.io/library/postgres:15.4@sha256:a5e89e5f2679863bedef929c4a7ec5d1a2cb3c045f13b47680d86f8701144ed7
+    image: docker.io/library/postgres:15.4@sha256:3faff326de0fa3713424d44f3b85993459ac1917e0a4bfd35bab9e0a58e41900
     restart: unless-stopped
     deploy:
       resources:
@@ -77,7 +77,7 @@ services:
       - "127.0.0.1:8081:8081"
 
   keycloak:
-    image: quay.io/keycloak/keycloak:22.0.1@sha256:89b37fa67c6d48b08637f5b6fb891785bd679e0bc15ee6c68eaab479c1cef7b1
+    image: quay.io/keycloak/keycloak:22.0.5@sha256:bfa8852e52c279f0857fe8da239c0ad6bbd2cc07793a28a6770f7e24c1e25444
     restart: unless-stopped
     profiles:
       - keycloak
