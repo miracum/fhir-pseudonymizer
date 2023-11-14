@@ -11,7 +11,7 @@ insert_final_newline = true
 charset = utf-8
 
 [packages.lock.json]
-insert_final_newline = false
+insert_final_newline = unset
 
 [*.sh]
 end_of_line = lf
