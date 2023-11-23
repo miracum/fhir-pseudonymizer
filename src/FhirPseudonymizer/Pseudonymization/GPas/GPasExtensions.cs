@@ -4,6 +4,7 @@ using System.Text;
 using FhirPseudonymizer.Config;
 using Polly;
 using Polly.Extensions.Http;
+using Polly.Retry;
 using Prometheus;
 
 namespace FhirPseudonymizer.Pseudonymization.GPas;
@@ -28,7 +29,7 @@ public static class GPasExtensions
             services
                 .AddClientCredentialsTokenManagement()
                 .AddClient(
-                    "gPAS.oAuth.client",
+                    $"{GPasFhirClient.HttpClientName}.oAuth.client",
                     client =>
                     {
                         client.TokenEndpoint = oAuthConfig.TokenEndpoint.AbsoluteUri;
@@ -46,8 +47,8 @@ public static class GPasExtensions
         if (isOAuthEnabled)
         {
             clientBuilder = services.AddClientCredentialsHttpClient(
-                "gPAS",
-                "gPAS.oAuth.client",
+                GPasFhirClient.HttpClientName,
+                $"{GPasFhirClient.HttpClientName}.oAuth.client",
                 client =>
                 {
                     client.BaseAddress = gPasConfig.Url;
@@ -57,7 +58,7 @@ public static class GPasExtensions
         else
         {
             clientBuilder = services.AddHttpClient(
-                "gPAS",
+                GPasFhirClient.HttpClientName,
                 (client) =>
                 {
                     client.BaseAddress = gPasConfig.Url;
@@ -86,7 +87,7 @@ public static class GPasExtensions
         return services;
     }
 
-    private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(int retryCount = 3)
+    private static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy(int retryCount = 3)
     {
         return HttpPolicyExtensions
             .HandleTransientHttpError()

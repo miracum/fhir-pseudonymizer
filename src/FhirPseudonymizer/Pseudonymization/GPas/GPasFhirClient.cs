@@ -1,4 +1,3 @@
-using System.Text;
 using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
@@ -12,6 +11,8 @@ namespace FhirPseudonymizer.Pseudonymization.GPas;
 
 public class GPasFhirClient : IPseudonymServiceClient
 {
+    public static readonly string HttpClientName = "gPAS";
+
     private static readonly Counter TotalGPasRequests = Metrics.CreateCounter(
         "fhirpseudonymizer_gpas_requests_total",
         "Total number of requests against the gPas service.",
@@ -36,13 +37,7 @@ public class GPasFhirClient : IPseudonymServiceClient
     {
         this.logger = logger;
 
-        Client = clientFactory.CreateClient("gPAS");
-
-        FhirClient = new FhirClient(
-            Client.BaseAddress,
-            Client,
-            settings: new() { PreferredFormat = ResourceFormat.Json }
-        );
+        ClientFactory = clientFactory;
 
         PseudonymCache = pseudonymCache;
         OriginalValueCache = originalValueCache;
@@ -77,14 +72,13 @@ public class GPasFhirClient : IPseudonymServiceClient
 
     private IMemoryCache PseudonymCache { get; }
     private IMemoryCache OriginalValueCache { get; }
-    private HttpClient Client { get; }
+    private IHttpClientFactory ClientFactory { get; }
     private FhirJsonParser FhirParser { get; } = new();
     private FhirJsonSerializer FhirSerializer { get; } = new();
     private TimeSpan SlidingExpiration { get; }
     private TimeSpan AbsoluteExpiration { get; }
     private Func<string, string, Task<string>> GetOrCreatePseudonymForResolver { get; }
     private Func<string, string, Task<string>> GetOriginalValueForResolver { get; }
-    private FhirClient FhirClient { get; }
 
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
@@ -148,13 +142,15 @@ public class GPasFhirClient : IPseudonymServiceClient
 
     private async Task<string> GetOriginalValueForV1(string pseudonym, string domain)
     {
+        var client = ClientFactory.CreateClient(HttpClientName);
+
         var query = new Dictionary<string, string>
         {
             ["domain"] = domain,
             ["pseudonym"] = pseudonym
         };
 
-        var response = await Client.GetAsync(
+        var response = await client.GetAsync(
             QueryHelpers.AddQueryString("$de-pseudonymize", query)
         );
         response.EnsureSuccessStatusCode();
@@ -178,7 +174,7 @@ public class GPasFhirClient : IPseudonymServiceClient
             var responseParameters = await RequestGetOriginalValueForV2(
                 pseudonym,
                 domain,
-                "$de-pseudonymize"
+                "de-pseudonymize"
             );
 
             var pseudonymResultSet = responseParameters.Get("pseudonym-result-set").First();
@@ -202,7 +198,7 @@ public class GPasFhirClient : IPseudonymServiceClient
             var responseParameters = await RequestGetOriginalValueForV2(
                 pseudonym,
                 domain,
-                "$dePseudonymize"
+                "dePseudonymize"
             );
 
             var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
@@ -224,12 +220,14 @@ public class GPasFhirClient : IPseudonymServiceClient
 
     private async Task<string> GetOrCreatePseudonymForV1(string value, string domain)
     {
+        var client = ClientFactory.CreateClient(HttpClientName);
+
         var query = new Dictionary<string, string> { ["domain"] = domain, ["original"] = value };
 
         // this currently uses a HttpClient instead of the FhirClient to leverage
         // Polly, tracing, and metrics support. Once FhirClient allows for overriding the HttpClient,
         // we can simplify this code a lot: https://github.com/FirelyTeam/firely-net-sdk/issues/1483
-        var response = await Client.GetAsync(
+        var response = await client.GetAsync(
             QueryHelpers.AddQueryString("$pseudonymize-allow-create", query)
         );
         response.EnsureSuccessStatusCode();
@@ -280,11 +278,19 @@ public class GPasFhirClient : IPseudonymServiceClient
         string operation
     )
     {
+        var client = ClientFactory.CreateClient(HttpClientName);
+
+        using var fhirClient = new FhirClient(
+            client.BaseAddress,
+            client,
+            settings: new() { PreferredFormat = ResourceFormat.Json }
+        );
+
         var parameters = new Parameters()
             .Add("target", new FhirString(domain))
             .Add("original", new FhirString(value));
 
-        var response = await FhirClient.WholeSystemOperationAsync(operation, parameters);
+        var response = await fhirClient.WholeSystemOperationAsync(operation, parameters);
 
         return response as Parameters;
     }
@@ -295,21 +301,20 @@ public class GPasFhirClient : IPseudonymServiceClient
         string operation
     )
     {
+        var client = ClientFactory.CreateClient(HttpClientName);
+
+        using var fhirClient = new FhirClient(
+            client.BaseAddress,
+            client,
+            settings: new() { PreferredFormat = ResourceFormat.Json }
+        );
+
         var parameters = new Parameters()
             .Add("target", new FhirString(domain))
             .Add("pseudonym", new FhirString(pseudonym));
 
-        var parametersBody = await FhirSerializer.SerializeToStringAsync(parameters);
-        using var content = new StringContent(
-            parametersBody,
-            Encoding.UTF8,
-            "application/fhir+json"
-        );
+        var response = await fhirClient.WholeSystemOperationAsync(operation, parameters);
 
-        var response = await Client.PostAsync(operation, content);
-        response.EnsureSuccessStatusCode();
-
-        var responseContent = await response.Content.ReadAsStringAsync();
-        return FhirParser.Parse<Parameters>(responseContent);
+        return response as Parameters;
     }
 }
