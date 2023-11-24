@@ -4,6 +4,7 @@ using System.Text;
 using FhirPseudonymizer.Config;
 using Polly;
 using Polly.Extensions.Http;
+using Polly.Retry;
 using Prometheus;
 
 namespace FhirPseudonymizer.Pseudonymization.Entici;
@@ -30,7 +31,7 @@ public static class EnticiExtensions
             services
                 .AddClientCredentialsTokenManagement()
                 .AddClient(
-                    "Entici.oAuth.client",
+                    $"{EnticiFhirClient.HttpClientName}.oAuth.client",
                     client =>
                     {
                         client.TokenEndpoint = oAuthConfig.TokenEndpoint.AbsoluteUri;
@@ -48,8 +49,8 @@ public static class EnticiExtensions
         if (isOAuthEnabled)
         {
             clientBuilder = services.AddClientCredentialsHttpClient(
-                "Entici",
-                "Entici.oAuth.client",
+                EnticiFhirClient.HttpClientName,
+                $"{EnticiFhirClient.HttpClientName}.oAuth.client",
                 client =>
                 {
                     client.BaseAddress = enticiConfig.Url;
@@ -59,7 +60,7 @@ public static class EnticiExtensions
         else
         {
             clientBuilder = services.AddHttpClient(
-                "Entici",
+                EnticiFhirClient.HttpClientName,
                 (client) =>
                 {
                     client.BaseAddress = enticiConfig.Url;
@@ -88,7 +89,7 @@ public static class EnticiExtensions
         return services;
     }
 
-    private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(int retryCount = 3)
+    private static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy(int retryCount = 3)
     {
         return HttpPolicyExtensions
             .HandleTransientHttpError()

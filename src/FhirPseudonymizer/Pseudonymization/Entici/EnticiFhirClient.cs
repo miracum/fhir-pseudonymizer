@@ -5,22 +5,17 @@ namespace FhirPseudonymizer.Pseudonymization.Entici;
 
 public class EnticiFhirClient : IPseudonymServiceClient
 {
+    public static readonly string HttpClientName = "entici";
     private readonly ILogger<EnticiFhirClient> logger;
 
     public EnticiFhirClient(ILogger<EnticiFhirClient> logger, IHttpClientFactory clientFactory)
     {
         this.logger = logger;
 
-        var client = clientFactory.CreateClient("Entici");
-
-        FhirClient = new FhirClient(
-            client.BaseAddress,
-            client,
-            settings: new() { PreferredFormat = ResourceFormat.Json }
-        );
+        ClientFactory = clientFactory;
     }
 
-    private FhirClient FhirClient { get; }
+    private IHttpClientFactory ClientFactory { get; }
 
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
@@ -55,14 +50,23 @@ public class EnticiFhirClient : IPseudonymServiceClient
             request.Project = new FhirString(targetSystemObject.ToString());
         }
 
-        var response = await FhirClient.WholeSystemOperationAsync(
+        var client = ClientFactory.CreateClient(HttpClientName);
+
+        using var fhirClient = new FhirClient(
+            client.BaseAddress,
+            client,
+            settings: new() { PreferredFormat = ResourceFormat.Json }
+        );
+
+        var response = await fhirClient.WholeSystemOperationAsync(
             "pseudonymize",
             request.ToFhirParameters()
         );
+
         if (response is Parameters responseParameters)
         {
             var pseudonym = responseParameters.GetSingleValue<Identifier>("pseudonym");
-            ArgumentException.ThrowIfNullOrEmpty(pseudonym?.Value, nameof(pseudonym));
+            ArgumentException.ThrowIfNullOrEmpty(pseudonym?.Value);
             return pseudonym.Value;
         }
         else
