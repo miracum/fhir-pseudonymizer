@@ -132,25 +132,17 @@ jobs:
       - name: List images in cluster
         run: docker exec kind-control-plane crictl images
 
-      - name: Install the latest version of vfps as a pseudonymization service
-        run: |
-          helm repo add chgl https://chgl.github.io/charts
-          helm install \
-            --wait \
-            --timeout=10m \
-            vfps chgl/vfps
-
       - name: Install "fhir-pseudonymizer"
         env:
           IMAGE_TAG: ${{ needs.build.outputs.image-version }}
         run: |
-          helm repo add miracum https://miracum.github.io/charts
           helm install \
             --set="image.tag=${IMAGE_TAG}" \
             -f tests/iter8/values.yaml \
             --wait \
             --timeout=10m \
-            fhir-pseudonymizer miracum/fhir-pseudonymizer
+            fhir-pseudonymizer \
+            oci://ghcr.io/miracum/charts/fhir-pseudonymizer
 
       - name: Launch iter8 experiment
         run: kubectl apply -f tests/iter8/experiment.yaml

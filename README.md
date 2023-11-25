@@ -317,6 +317,12 @@ pre-commit install --hook-type commit-msg
 ### Run iter8 SLO experiments locally
 
 ```sh
+ITER8_CLI_URL="https://github.com/iter8-tools/iter8/releases/download/v0.13.18/iter8-linux-amd64.tar.gz"
+curl -LSs "${ITER8_CLI_URL}" | tar xz
+mv linux-amd64/iter8 /usr/local/bin/iter8
+chmod +x /usr/local/bin/iter8
+iter8 version
+
 kind create cluster
 
 export IMAGE_TAG="iter8-test"
@@ -324,11 +330,6 @@ export IMAGE_TAG="iter8-test"
 docker build -t ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG} .
 
 kind load docker-image ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG}
-
-helm install \
-  --wait \
-  --timeout=10m \
-  vfps oci://ghcr.io/miracum/charts/vfps
 
 helm upgrade --install \
   --set="image.tag=${IMAGE_TAG}" \

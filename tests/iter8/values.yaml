@@ -8,8 +8,10 @@ resources:
 
 pseudonymizationService: Vfps
 
-externalVfps:
-  address: "dns:///vfps:8081"
+# the namespaces are created by the iter8 test.
+# see ./experiment.yaml
+vfps:
+  enabled: true
 
 anonymizationConfig: |
   ---

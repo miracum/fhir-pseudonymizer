@@ -1,0 +1,24 @@
+[
+  {
+    "id": "gpas-pseudonymize",
+    "httpRequest": {
+      "method": "POST",
+      "path": "/ttp-fhir/fhir/gpas/$pseudonymizeAllowCreate"
+    },
+    "httpResponseTemplate": {
+      "templateType": "VELOCITY",
+      "template": "{\n  \"body\": {\n    \"resourceType\": \"Parameters\",\n    \"parameter\": [\n      {\n        \"name\": \"pseudonym\",\n        \"part\": [\n          {\n            \"name\": \"original\",\n            \"valueIdentifier\": {\n              \"system\": \"https://ths-greifswald.de/gpas\",\n              \"value\": \"test\"\n            }\n          },\n          {\n            \"name\": \"target\",\n            \"valueIdentifier\": {\n              \"system\": \"https://ths-greifswald.de/gpas\",\n              \"value\": \"benchmark\"\n            }\n          },\n          {\n            \"name\": \"pseudonym\",\n            \"valueIdentifier\": {\n              \"system\": \"https://ths-greifswald.de/gpas\",\n              #set($jsonBody = $json.parse($!request.body))\n              #set($originalValue = \"\")\n              #foreach($parameter in $jsonBody.parameter)\n                  #if($parameter.name == 'original')\n                      #set($originalValue = $parameter.valueString)\n                  #end\n              #end\n              \"value\": \"pseuded-$originalValue\"\n            }\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+    }
+  },
+  {
+    "id": "entici-pseudonymize",
+    "httpRequest": {
+      "method": "POST",
+      "path": "/entici/$pseudonymize"
+    },
+    "httpResponseTemplate": {
+      "templateType": "VELOCITY",
+      "template": "{\n  \"body\": {\n    \"resourceType\": \"Parameters\",\n    \"parameter\": [\n      {\n        \"name\": \"pseudonym\",\n        \"valueIdentifier\": {\n          \"use\": \"secondary\",\n          \"system\": \"urn:fdc:difuture.de:trustcenter.plain\",\n          #set($jsonBody = $json.parse($!request.body))\n            #set($originalValue = \"\")\n            #foreach($parameter in $jsonBody.parameter)\n              #if($parameter.name == 'identifier')\n                #set($originalValue = $parameter.valueIdentifier.value)\n              #end\n            #end\n          \"value\": \"pseuded-$originalValue\"\n        }\n      }\n    ]\n  }\n}\n"
+    }
+  }
+]

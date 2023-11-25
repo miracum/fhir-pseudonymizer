@@ -38,8 +38,8 @@ vfps:
             {
               "Name": "stress",
               "Description": "a namespace for stress testing",
-              "PseudonymGenerationMethod": "SecureRandomBase64UrlEncoded",
-              "PseudonymLength": 32,
+              "PseudonymGenerationMethod": "Sha256HexEncoded",
+              "PseudonymLength": 64,
               "PseudonymPrefix": "stress-"
             }
           ]
