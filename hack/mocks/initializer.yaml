@@ -1,0 +1,76 @@
+- id: gpas-pseudonymize
+  httpRequest:
+    method: POST
+    path: /ttp-fhir/fhir/gpas/$pseudonymizeAllowCreate
+  httpResponseTemplate:
+    templateType: VELOCITY
+    template: |
+      {
+        "body": {
+          "resourceType": "Parameters",
+          "parameter": [
+            {
+              "name": "pseudonym",
+              "part": [
+                {
+                  "name": "original",
+                  "valueIdentifier": {
+                    "system": "https://ths-greifswald.de/gpas",
+                    "value": "test"
+                  }
+                },
+                {
+                  "name": "target",
+                  "valueIdentifier": {
+                    "system": "https://ths-greifswald.de/gpas",
+                    "value": "benchmark"
+                  }
+                },
+                {
+                  "name": "pseudonym",
+                  "valueIdentifier": {
+                    "system": "https://ths-greifswald.de/gpas",
+                    #set($jsonBody = $json.parse($!request.body))
+                    #set($originalValue = "")
+                    #foreach($parameter in $jsonBody.parameter)
+                        #if($parameter.name == 'original')
+                            #set($originalValue = $parameter.valueString)
+                        #end
+                    #end
+                    "value": "pseuded-$originalValue"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+- id: entici-pseudonymize
+  httpRequest:
+    method: POST
+    path: /entici/$pseudonymize
+  httpResponseTemplate:
+    templateType: VELOCITY
+    template: |
+      {
+        "body": {
+          "resourceType": "Parameters",
+          "parameter": [
+            {
+              "name": "pseudonym",
+              "valueIdentifier": {
+                "use": "secondary",
+                "system": "urn:fdc:difuture.de:trustcenter.plain",
+                #set($jsonBody = $json.parse($!request.body))
+                  #set($originalValue = "")
+                  #foreach($parameter in $jsonBody.parameter)
+                    #if($parameter.name == 'identifier')
+                      #set($originalValue = $parameter.valueIdentifier.value)
+                    #end
+                  #end
+                "value": "pseuded-$originalValue"
+              }
+            }
+          ]
+        }
+      }

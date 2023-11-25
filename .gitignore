@@ -370,3 +370,5 @@ tests/chaos/argo
 *-iid.txt
 
 *.received.*
+
+.task/

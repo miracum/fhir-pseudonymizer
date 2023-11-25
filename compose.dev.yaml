@@ -76,6 +76,30 @@ services:
       # Http2-only for plaintext gRPC
       - "127.0.0.1:8081:8081"
 
+  gpas-entici-mock:
+    image: docker.io/mockserver/mockserver:5.15.0@sha256:0f9ef78c94894ac3e70135d156193b25e23872575d58e2228344964273b4af6b
+    ipc: none
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    privileged: false
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1"
+        reservations:
+          memory: 512m
+          cpus: "1"
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializer.json
+      MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+    ports:
+      - 127.0.0.1:1080:1080
+    volumes:
+      - ./hack/mocks:/config:ro
+
   keycloak:
     image: quay.io/keycloak/keycloak:22.0.5@sha256:bfa8852e52c279f0857fe8da239c0ad6bbd2cc07793a28a6770f7e24c1e25444
     restart: unless-stopped

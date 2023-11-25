@@ -1,27 +1,28 @@
+using System.Security.Cryptography;
+using System.Text;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using NBomber.Contracts.Stats;
-using Xunit.Abstractions;
+using NBomber.Http;
 using Polly;
 using Polly.Retry;
-using Microsoft.FSharp.Core;
-using NBomber.Http;
-using Task = System.Threading.Tasks.Task;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace FhirPseudonymizer.StressTests;
 
 public class StressTests
 {
     private readonly string reportFolder;
-    private readonly FhirClient fhirClient;
     private readonly ITestOutputHelper output;
     private readonly AsyncRetryPolicy retryPolicy;
+    private readonly Uri pseudonymizerBaseAddress;
 
     public StressTests(ITestOutputHelper output)
     {
         this.output = output;
 
-        var pseudonymizerBaseAddress = new Uri(
+        pseudonymizerBaseAddress = new Uri(
             Environment.GetEnvironmentVariable("FHIR_PSEUDONYMIZER_BASE_URL")
                 ?? "http://localhost:5000/fhir"
         );
@@ -36,16 +37,13 @@ public class StressTests
                 (exception, timeSpan, retryAttempt, context) =>
                 {
                     var stepContext = context["stepContext"] as IScenarioContext;
-                    stepContext?.Logger.Warning(
-                        $"Request failed within retry context: {exception.GetType()}: {exception.Message}. Attempt {retryAttempt}."
-                    );
+                    stepContext
+                        ?.Logger
+                        .Warning(
+                            $"Request failed within retry context: {exception.GetType()}: {exception.Message}. Attempt {retryAttempt}."
+                        );
                 }
             );
-
-        fhirClient = new FhirClient(
-            pseudonymizerBaseAddress,
-            settings: new() { PreferredFormat = ResourceFormat.Json, Timeout = 15_000 }
-        );
 
         _ = bool.TryParse(
             Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"),
@@ -56,13 +54,23 @@ public class StressTests
             : "./nbomber-reports";
     }
 
-    private async Task<Response<object>> RunPseudonymizeResource(IScenarioContext scenarioContext)
+    private async Task<Response<object>> RunPseudonymizeResource(
+        IScenarioContext scenarioContext,
+        HttpClient httpClient
+    )
     {
         return await Step.Run(
             "pseudonymize resource",
             scenarioContext,
             run: async () =>
             {
+                // this is basically just a copy-paste of what Vfps does when configured to
+                // use the `Sha256HexEncoded` pseudonymization method
+                var originalRecordNumber = Guid.NewGuid().ToString();
+                var inputAsBytes = Encoding.UTF8.GetBytes(originalRecordNumber);
+                var sha256Bytes = SHA256.HashData(inputAsBytes);
+                var expectedPseudonym = $"stress-{Convert.ToHexString(sha256Bytes)}";
+
                 var resource = new Patient()
                 {
                     Id = Guid.NewGuid().ToString(),
@@ -77,7 +85,7 @@ public class StressTests
                     },
                     Identifier = new()
                     {
-                        new("https://fhir.example.com/identifiers/mrn", Guid.NewGuid().ToString())
+                        new("https://fhir.example.com/identifiers/mrn", originalRecordNumber)
                         {
                             Type = new("http://terminology.hl7.org/CodeSystem/v2-0203", "MR"),
                         }
@@ -86,6 +94,12 @@ public class StressTests
 
                 var parameters = new Parameters().Add("resource", resource);
 
+                using var fhirClient = new FhirClient(
+                    pseudonymizerBaseAddress,
+                    httpClient,
+                    settings: new() { PreferredFormat = ResourceFormat.Json, Timeout = 15_000 }
+                );
+
                 try
                 {
                     var response = await retryPolicy.ExecuteAsync(
@@ -93,12 +107,31 @@ public class StressTests
                         new Dictionary<string, object> { ["stepContext"] = scenarioContext }
                     );
 
+                    var pseudonymizedPatient = response as Patient;
+
+                    pseudonymizedPatient?.Should().NotBeNull();
+                    pseudonymizedPatient!.Identifier.Should().HaveCount(1);
+                    pseudonymizedPatient!.Identifier.First().Value.Should().Be(expectedPseudonym);
+
                     return Response.Ok(statusCode: "200");
                 }
                 catch (Exception exc)
+                    when (exc is HttpRequestException
+                        || exc is FhirOperationException
+                        || exc is OperationCanceledException
+                    )
                 {
+                    // catch the retry-able exceptions related to transient errors. Any exceptions thrown by
+                    // the FluentAssertions (Should) will still create test-failing exceptions. Their invariants must
+                    // always hold.
                     scenarioContext.Logger.Error(exc, "Pseudonymization of resource failed");
                     return Response.Fail();
+                }
+                catch (XunitException exc)
+                {
+                    scenarioContext.Logger.Error(exc, "Stopping test due to invariant violation.");
+                    scenarioContext.StopCurrentTest(exc.Message);
+                    return Response.Fail("400", exc.Message, sizeBytes: 0);
                 }
             }
         );
@@ -110,20 +143,26 @@ public class StressTests
         double failPercentageThreshold
     )
     {
+        using var httpClient = new HttpClient();
         var scenario = Scenario
             .Create(
                 "de-identify",
                 async context =>
                 {
-                    return await RunPseudonymizeResource(context);
+                    return await RunPseudonymizeResource(context, httpClient);
                 }
             )
             .WithInit(async context =>
             {
+                using var fhirClient = new FhirClient(
+                    pseudonymizerBaseAddress,
+                    httpClient,
+                    settings: new() { PreferredFormat = ResourceFormat.Json }
+                );
                 await fhirClient.CapabilityStatementAsync();
                 context.Logger.Information("Completed scenario init.");
             })
-            .WithWarmUpDuration(TimeSpan.FromSeconds(5))
+            .WithWarmUpDuration(TimeSpan.FromSeconds(10))
             .WithLoadSimulations(
                 Simulation.RampingConstant(copies: 10, during: TimeSpan.FromMinutes(5)),
                 Simulation.KeepConstant(copies: 100, during: TimeSpan.FromMinutes(5)),
@@ -145,6 +184,15 @@ public class StressTests
                 ReportFormat.Md
             )
             .Run();
+
+        var deIdentifyStatusCodes = stats.GetScenarioStats("de-identify").Fail.StatusCodes;
+
+        deIdentifyStatusCodes
+            .Should()
+            .NotContain(
+                statusCodeStats => statusCodeStats.StatusCode == "400",
+                because: "it means that pseudonym validation failed."
+            );
 
         var failPercentage = stats.AllFailCount / (double)stats.AllRequestCount * 100.0;
 

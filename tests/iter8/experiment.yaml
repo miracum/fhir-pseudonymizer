@@ -13,7 +13,6 @@ metadata:
   annotations:
     iter8.tools/group: default
 stringData:
-  # TODO: could be put into kustomize
   experiment.yaml: |
     spec:
       - task: ready
@@ -34,14 +33,14 @@ stringData:
           timeout: 120s
       - task: ready
         with:
-          name: "vfps"
+          name: "fhir-pseudonymizer-vfps"
           version: v1
           resource: services
           namespace: default
           timeout: 120s
       - task: ready
         with:
-          name: "vfps"
+          name: "fhir-pseudonymizer-vfps"
           group: apps
           version: v1
           resource: deployments
@@ -52,7 +51,7 @@ stringData:
       - run: |
           # using curl since grpcurl isn't installed by default
           curl -X 'POST' \
-            'http://vfps:8080/v1/namespaces' \
+            'http://fhir-pseudonymizer-vfps:8080/v1/namespaces' \
             -H 'accept: application/json' \
             -H 'Content-Type: application/json' \
             -d '{
@@ -63,7 +62,7 @@ stringData:
                   "description": "namespace for MRs for iter8 benchmarking"
                 }' || true
           curl -X 'POST' \
-            'http://vfps:8080/v1/namespaces' \
+            'http://fhir-pseudonymizer-vfps:8080/v1/namespaces' \
             -H 'accept: application/json' \
             -H 'Content-Type: application/json' \
             -d '{
@@ -170,10 +169,10 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["services"]
-    resourceNames: ["vfps"]
+    resourceNames: ["fhir-pseudonymizer-vfps"]
     verbs: ["get"]
   - apiGroups: ["apps"]
-    resourceNames: ["vfps"]
+    resourceNames: ["fhir-pseudonymizer-vfps"]
     resources: ["deployments"]
     verbs: ["get"]
   - apiGroups: [""]
