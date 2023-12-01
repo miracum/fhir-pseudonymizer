@@ -56,7 +56,7 @@ WORKDIR /opt/fhir-pseudonymizer-stress
 
 # https://github.com/hadolint/hadolint/pull/815 isn't yet in mega-linter
 # hadolint ignore=DL3022
-COPY --from=docker.io/bitnami/kubectl:1.28.3@sha256:1364cda0798b2c44f327265397fbd34a32e66d80328d6e50a2d10377d7e2ff6d /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
+COPY --from=docker.io/bitnami/kubectl:1.28.3@sha256:0defec793112fa610a850a991ed4ad849c853c54fb2136b95bcdf41ff6f96c38 /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
 
 COPY tests/chaos/chaos.yaml /tmp/
 COPY --from=build-stress-test /build/publish .
