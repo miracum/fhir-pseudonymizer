@@ -15,7 +15,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
         private readonly AnonymizerConfigurationValidator _validator =
             new AnonymizerConfigurationValidator();
 
-        public AnonymizerConfigurationManager(AnonymizerConfiguration configuration, AnonymizationConfig anonymizationConfig = null)
+        public AnonymizerConfigurationManager(
+            AnonymizerConfiguration configuration,
+            AnonymizationConfig anonymizationConfig = null
+        )
         {
             _validator.Validate(configuration);
 
@@ -37,14 +40,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
             _configuration = configuration;
 
-            FhirPathRules = _configuration.FhirPathRules
+            FhirPathRules = _configuration
+                .FhirPathRules
                 .Select(AnonymizationFhirPathRule.CreateAnonymizationFhirPathRule)
                 .ToArray();
         }
 
         public AnonymizationFhirPathRule[] FhirPathRules { get; }
 
-        public static AnonymizerConfigurationManager CreateFromSettingsInJson(string settingsInJson, AnonymizationConfig anonymizationConfig = null)
+        public static AnonymizerConfigurationManager CreateFromSettingsInJson(
+            string settingsInJson,
+            AnonymizationConfig anonymizationConfig = null
+        )
         {
             try
             {
@@ -63,7 +70,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
         }
 
         public static AnonymizerConfigurationManager CreateFromConfigurationFile(
-            string configFilePath, AnonymizationConfig anonymizationConfig = null
+            string configFilePath,
+            AnonymizationConfig anonymizationConfig = null
         )
         {
             try
@@ -81,7 +89,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             }
         }
 
-        public static AnonymizerConfigurationManager CreateFromYamlConfigFile(string configFilePath, AnonymizationConfig anonymizationConfig = null)
+        public static AnonymizerConfigurationManager CreateFromYamlConfigFile(
+            string configFilePath,
+            AnonymizationConfig anonymizationConfig = null
+        )
         {
             try
             {
@@ -97,7 +108,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             }
         }
 
-        public static AnonymizerConfigurationManager CreateFromYamlConfigString(string yamlConfig, AnonymizationConfig anonymizationConfig = null)
+        public static AnonymizerConfigurationManager CreateFromYamlConfigString(
+            string yamlConfig,
+            AnonymizationConfig anonymizationConfig = null
+        )
         {
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)

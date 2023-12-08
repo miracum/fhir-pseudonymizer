@@ -44,7 +44,10 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var response = await client.GetAsync("/fhir/metadata");
 
         response.EnsureSuccessStatusCode();
-        response.Content.Headers.ContentType
+        response
+            .Content
+            .Headers
+            .ContentType
             .ToString()
             .Should()
             .Be("application/fhir+json; charset=utf-8");

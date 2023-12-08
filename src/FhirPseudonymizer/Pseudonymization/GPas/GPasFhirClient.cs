@@ -178,9 +178,9 @@ public class GPasFhirClient : IPseudonymServiceClient
             );
 
             var pseudonymResultSet = responseParameters.Get("pseudonym-result-set").First();
-            var originalPart = pseudonymResultSet.Part.Find(
-                component => component.Name == "original"
-            );
+            var originalPart = pseudonymResultSet
+                .Part
+                .Find(component => component.Name == "original");
 
             return originalPart.Value.ToString();
         }

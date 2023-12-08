@@ -64,9 +64,10 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
             IsConditionalReferencePseudonymizationEnabled && node.IsConditionalReferenceNode(input)
         )
         {
-            domain ??= ResourceTypeMatcher.Match(ReferenceUtility.GetReferencePrefix(input)).Groups[
-                "domain"
-            ].Value;
+            domain ??= ResourceTypeMatcher
+                .Match(ReferenceUtility.GetReferencePrefix(input))
+                .Groups["domain"]
+                .Value;
 
             node.Value = ReferenceUtility.TransformReferenceId(
                 input,

@@ -57,6 +57,17 @@
                 "hasChanged": true
               }
             ]
+          },
+          {
+            "files": ["Dockerfile"],
+            "from": "VERSION=.*",
+            "to": "VERSION=${nextRelease.version}",
+            "results": [
+              {
+                "file": "Dockerfile",
+                "hasChanged": true
+              }
+            ]
           }
         ]
       }
