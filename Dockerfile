@@ -1,6 +1,6 @@
 # kics false positive "Missing User Instruction": <https://docs.kics.io/latest/queries/dockerfile-queries/fd54f200-402c-4333-a5a4-36ef6709af2f/>
 # kics-scan ignore-line
-FROM mcr.microsoft.com/dotnet/nightly/aspnet:7.0-jammy-chiseled@sha256:69939a0d38045392ed57c79715c1ed63f1b3d5a0a552a153e5c538a5188b9547 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0.0-jammy-chiseled@sha256:2f9b3da0c3de6b0db88a0f53356dd7022ce983609a3255aeefaf617c5ed32fa7 AS runtime
 WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp 8081/tcp
 USER 65532:65532
@@ -8,9 +8,10 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy@sha256:6c413812cb79c6a7813129e810c324b2576623585c7fcfbc9784a51671b0eda8 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0.100-jammy@sha256:7aacf0debfa3c612176a76c7d0be817e588b7cb5ca8f74e20484bb66e6ef1f79 AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
+COPY src/Directory.Build.props .
 COPY src/FhirPseudonymizer/FhirPseudonymizer.csproj .
 COPY src/FhirPseudonymizer/packages.lock.json .
 RUN dotnet restore --locked-mode

@@ -68,7 +68,7 @@ public static class TracingConfigurationExtensions
                         };
                     });
 
-                services.Configure<AspNetCoreInstrumentationOptions>(
+                services.Configure<AspNetCoreTraceInstrumentationOptions>(
                     configuration.GetSection("Tracing:AspNetCoreInstrumentation")
                 );
 

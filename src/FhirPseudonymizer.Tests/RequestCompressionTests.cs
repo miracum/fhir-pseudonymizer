@@ -28,7 +28,7 @@ public class RequestCompressionTests
     )
     {
         var ctx = new DefaultHttpContext();
-        ctx.Request.Headers.Add("Content-Encoding", contentEncoding);
+        ctx.Request.Headers["Content-Encoding"] = contentEncoding;
 
         await sut.Invoke(ctx);
 
