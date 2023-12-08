@@ -438,7 +438,11 @@ IMAGE_TAG="${IMAGE#*:}"
 
 cosign verify \
    --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-   --certificate-identity="https://github.com/miracum/fhir-pseudonymizer/.github/workflows/ci.yaml@refs/tags/${IMAGE_TAG}" \
+   --certificate-identity-regexp="https://github.com/miracum/.github/.github/workflows/standard-build.yaml@.*" \
+   --certificate-github-workflow-name="ci" \
+   --certificate-github-workflow-repository="miracum/fhir-pseudonymizer" \
+   --certificate-github-workflow-trigger="release" \
+   --certificate-github-workflow-ref="refs/tags/${IMAGE_TAG}" \
    "${IMAGE_DIGEST_PINNED}"
 
 slsa-verifier verify-image \
