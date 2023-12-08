@@ -60,14 +60,16 @@ namespace FhirPseudonymizer.Controllers
             this.dePseudonymizer = dePseudonymizer;
 
             BadRequestOutcome = new();
-            BadRequestOutcome.Issue.Add(
-                new OperationOutcome.IssueComponent
-                {
-                    Severity = OperationOutcome.IssueSeverity.Error,
-                    Code = OperationOutcome.IssueType.Processing,
-                    Diagnostics = "Received malformed or missing resource"
-                }
-            );
+            BadRequestOutcome
+                .Issue
+                .Add(
+                    new OperationOutcome.IssueComponent
+                    {
+                        Severity = OperationOutcome.IssueSeverity.Error,
+                        Code = OperationOutcome.IssueType.Processing,
+                        Diagnostics = "Received malformed or missing resource"
+                    }
+                );
         }
 
         private OperationOutcome BadRequestOutcome { get; }
@@ -124,10 +126,7 @@ namespace FhirPseudonymizer.Controllers
             return Anonymize(resource, settings);
         }
 
-        private ObjectResult Anonymize(
-            Resource resource,
-            AnonymizerSettings anonymizerSettings
-        )
+        private ObjectResult Anonymize(Resource resource, AnonymizerSettings anonymizerSettings)
         {
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
             activity?.AddTag("resource.type", resource.TypeName);
@@ -220,15 +219,17 @@ namespace FhirPseudonymizer.Controllers
         private static OperationOutcome GetInternalErrorOutcome(Exception exc)
         {
             var outcome = new OperationOutcome();
-            outcome.Issue.Add(
-                new OperationOutcome.IssueComponent
-                {
-                    Severity = OperationOutcome.IssueSeverity.Fatal,
-                    Code = OperationOutcome.IssueType.Processing,
-                    Diagnostics =
-                        $"An internal error occurred when processing the request: {exc.Message}.\nAt: {exc.StackTrace}"
-                }
-            );
+            outcome
+                .Issue
+                .Add(
+                    new OperationOutcome.IssueComponent
+                    {
+                        Severity = OperationOutcome.IssueSeverity.Fatal,
+                        Code = OperationOutcome.IssueType.Processing,
+                        Diagnostics =
+                            $"An internal error occurred when processing the request: {exc.Message}.\nAt: {exc.StackTrace}"
+                    }
+                );
             return outcome;
         }
     }

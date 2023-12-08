@@ -69,9 +69,9 @@ public class Startup
 
         services.AddResponseCompression(options =>
         {
-            options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-                new[] { "application/fhir+json" }
-            );
+            options.MimeTypes = ResponseCompressionDefaults
+                .MimeTypes
+                .Concat(new[] { "application/fhir+json" });
         });
 
         services.AddRouting(options => options.LowercaseUrls = true);
@@ -82,14 +82,12 @@ public class Startup
                 "UseSystemTextJsonFhirSerializer",
                 false
             );
-            options.InputFormatters.Insert(
-                0,
-                new FhirInputFormatter(useSystemTextJsonFhirSerializer)
-            );
-            options.OutputFormatters.Insert(
-                0,
-                new FhirOutputFormatter(useSystemTextJsonFhirSerializer)
-            );
+            options
+                .InputFormatters
+                .Insert(0, new FhirInputFormatter(useSystemTextJsonFhirSerializer));
+            options
+                .OutputFormatters
+                .Insert(0, new FhirOutputFormatter(useSystemTextJsonFhirSerializer));
         });
 
         services.AddSwaggerGen(c =>
