@@ -1,5 +1,8 @@
 replicaCount: 3
 
+image:
+  tag: v2.21.3
+
 anonymizationConfig: |
   ---
   fhirVersion: R4
