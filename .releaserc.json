@@ -68,6 +68,17 @@
                 "hasChanged": true
               }
             ]
+          },
+          {
+            "files": ["tests/chaos/fhir-pseudonymizer-values.yaml"],
+            "from": "tag: .*",
+            "to": "tag: v${nextRelease.version}",
+            "results": [
+              {
+                "file": "tests/chaos/fhir-pseudonymizer-values.yaml",
+                "hasChanged": true
+              }
+            ]
           }
         ]
       }
@@ -75,7 +86,12 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["README.md", "compose/compose.yaml"]
+        "assets": [
+          "README.md",
+          "compose/compose.yaml",
+          "Dockerfile",
+          "tests/chaos/fhir-pseudonymizer-values.yaml"
+        ]
       }
     ]
   ]

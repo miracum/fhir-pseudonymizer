@@ -3,6 +3,8 @@ version: "3"
 tasks:
   build-stress-test-image:
     desc: build the container image used for stress testing
+    vars:
+      BUILDKIT_PROGRESS: plain
     cmds:
       - docker build -t ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1 --target=stress-test --iidfile=./stress-test-iid.txt .
     sources:
@@ -14,7 +16,7 @@ tasks:
     desc: download and install the argo workflows cli
     dir: tests/chaos
     cmds:
-      - curl -sL -o - https://github.com/argoproj/argo-workflows/releases/download/v3.4.9/argo-linux-amd64.gz | gunzip > argo
+      - curl -sL -o - https://github.com/argoproj/argo-workflows/releases/download/v3.5.2/argo-linux-amd64.gz | gunzip > argo
       - chmod +x ./argo
       - ./argo version
     status:

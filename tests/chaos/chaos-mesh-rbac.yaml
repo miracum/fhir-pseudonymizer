@@ -17,7 +17,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["pods", "namespaces"]
-    verbs: ["get", "watch", "list"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
   - apiGroups: ["chaos-mesh.org"]
     resources: ["*"]
     verbs: ["get", "list", "watch", "create", "delete", "patch", "update"]
@@ -34,6 +34,19 @@ subjects:
     name: chaos-mesh-cluster-manager
     namespace: fhir-pseudonymizer
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: role-chaos-mesh-cluster-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bind-chaos-mesh-cluster-manager-to-argo-workflow
+subjects:
+  - kind: ServiceAccount
+    name: chaos-mesh-cluster-manager
+    namespace: fhir-pseudonymizer
+roleRef:
   apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-workflows-admin
