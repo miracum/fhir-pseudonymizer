@@ -165,12 +165,7 @@ public class StressTests
             .WithWarmUpDuration(TimeSpan.FromSeconds(10))
             .WithLoadSimulations(
                 Simulation.RampingConstant(copies: 10, during: TimeSpan.FromMinutes(5)),
-                Simulation.KeepConstant(copies: 100, during: TimeSpan.FromMinutes(5)),
-                Simulation.RampingInject(
-                    rate: 10,
-                    TimeSpan.FromMinutes(1),
-                    during: TimeSpan.FromMinutes(10)
-                )
+                Simulation.KeepConstant(copies: 100, during: TimeSpan.FromMinutes(10))
             );
 
         var stats = NBomberRunner
