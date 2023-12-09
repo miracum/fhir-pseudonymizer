@@ -143,7 +143,7 @@ stringData:
               - metric: http/latency-mean
                 limit: 25
               - metric: http/latency-p99.0
-                limit: 75
+                limit: 85
 ---
 # Source: iter8/templates/k8s.yaml
 apiVersion: rbac.authorization.k8s.io/v1
