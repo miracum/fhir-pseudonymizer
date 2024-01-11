@@ -101,7 +101,7 @@ services:
       - ./hack/mocks:/config:ro
 
   keycloak:
-    image: quay.io/keycloak/keycloak:22.0.5@sha256:bfa8852e52c279f0857fe8da239c0ad6bbd2cc07793a28a6770f7e24c1e25444
+    image: quay.io/keycloak/keycloak:23.0.4@sha256:4281aa5007b370de736969d991e0b63b45c389319f08948e834418b950c07155
     restart: unless-stopped
     profiles:
       - keycloak
