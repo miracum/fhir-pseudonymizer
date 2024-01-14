@@ -60,8 +60,8 @@
           },
           {
             "files": ["Dockerfile"],
-            "from": "VERSION=.*",
-            "to": "VERSION=${nextRelease.version}",
+            "from": "ARG VERSION=.*",
+            "to": "ARG VERSION=${nextRelease.version}",
             "results": [
               {
                 "file": "Dockerfile",

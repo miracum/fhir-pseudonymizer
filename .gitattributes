@@ -3,4 +3,4 @@
 *.shellcheckrc text eol=lf
 *Dockerfile text eol=lf
 
-*.verified.fhir.json text eol=lf working-tree-encoding=UTF-8
+*.verified.json text eol=lf working-tree-encoding=UTF-8
