@@ -1,6 +1,6 @@
 services:
   jaeger:
-    image: docker.io/jaegertracing/all-in-one:1.50@sha256:d589499a01e1e2f9d302db8e210af09688076fd8a93278fa024824a755c1a0f1
+    image: docker.io/jaegertracing/all-in-one:1.53@sha256:60e65bfffe1f66aee96d6fc8b6bf65afd42016be5dcc09d2e15d8462f7d9409c
     restart: unless-stopped
     deploy:
       resources:
@@ -21,7 +21,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   vfps-db:
-    image: docker.io/library/postgres:15.4@sha256:d1168ad5397bf9c94cc417c530469805a8767ed585481d93f174461ac8557e3a
+    image: docker.io/library/postgres:16.1@sha256:49c276fa02e3d61bd9b8db81dfb4784fe814f50f778dce5980a03817438293e3
     restart: unless-stopped
     deploy:
       resources:
@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.3.0@sha256:16d723600764eeebb49c88c4bfdf2bd7f84e3d5f9602c25b307bf52cf50e7e37
+    image: ghcr.io/miracum/vfps:v1.3.2@sha256:3f53189024ab609b3b25f08b8270f9880a2d710d68e46d2d7a5e6258085de3d4
     restart: unless-stopped
     deploy:
       resources:
@@ -101,7 +101,7 @@ services:
       - ./hack/mocks:/config:ro
 
   keycloak:
-    image: quay.io/keycloak/keycloak:22.0.5@sha256:bfa8852e52c279f0857fe8da239c0ad6bbd2cc07793a28a6770f7e24c1e25444
+    image: quay.io/keycloak/keycloak:23.0.4@sha256:4281aa5007b370de736969d991e0b63b45c389319f08948e834418b950c07155
     restart: unless-stopped
     profiles:
       - keycloak

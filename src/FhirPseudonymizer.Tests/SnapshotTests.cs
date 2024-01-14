@@ -63,6 +63,6 @@ public class SnapshotTests
             $"{Path.GetFileNameWithoutExtension(anonymizationConfigFilePath)}-{Path.GetFileNameWithoutExtension(resourcePath)}"
         );
 
-        await Verify(json, "fhir.json", settings);
+        await Verify(json, "json", settings);
     }
 }

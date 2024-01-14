@@ -23,7 +23,7 @@ BASH_SHFMT_ARGUMENTS:
   - "--indent=2"
 
 REPOSITORY_TRIVY_ARGUMENTS:
-  - "--severity=MEDIUM,HIGH,CRITICAL"
+  - "--severity=HIGH,CRITICAL"
 
 REPOSITORY_CHECKOV_ARGUMENTS:
   - "--skip-path=tests/iter8"

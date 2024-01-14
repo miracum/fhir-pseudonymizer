@@ -228,7 +228,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "fhir.json")
+        await Verify(response.ToJson(new() { Pretty = true }), "json")
             .UseDirectory("Snapshots");
     }
 
@@ -271,7 +271,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "fhir.json")
+        await Verify(response.ToJson(new() { Pretty = true }), "json")
             .UseDirectory("Snapshots");
     }
 }
