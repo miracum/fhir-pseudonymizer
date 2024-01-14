@@ -1,6 +1,6 @@
 # kics false positive "Missing User Instruction": <https://docs.kics.io/latest/queries/dockerfile-queries/fd54f200-402c-4333-a5a4-36ef6709af2f/>
 # kics-scan ignore-line
-FROM mcr.microsoft.com/dotnet/aspnet:8.0.0-jammy-chiseled@sha256:2f9b3da0c3de6b0db88a0f53356dd7022ce983609a3255aeefaf617c5ed32fa7 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0.1-jammy-chiseled@sha256:fd65dd3a9fef62b12873e1f3db1d0cf4bffd3984c1656971a2bfcaab14224b67 AS runtime
 WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp 8081/tcp
 USER 65532:65532
@@ -8,7 +8,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0.100-jammy@sha256:7aacf0debfa3c612176a76c7d0be817e588b7cb5ca8f74e20484bb66e6ef1f79 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0.101-jammy@sha256:76ef2395f453da03a90be9a9643cf75da3365503c9cde7bde7a98bee8f61900f AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/Directory.Build.props .
@@ -57,7 +57,7 @@ WORKDIR /opt/fhir-pseudonymizer-stress
 
 # https://github.com/hadolint/hadolint/pull/815 isn't yet in mega-linter
 # hadolint ignore=DL3022
-COPY --from=docker.io/bitnami/kubectl:1.28.3@sha256:0defec793112fa610a850a991ed4ad849c853c54fb2136b95bcdf41ff6f96c38 /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
+COPY --from=docker.io/bitnami/kubectl:1.29.0@sha256:121fa926a1304f34439082df44b0bdbe6eee583760abd2ae67949a2987322fe9 /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
 
 COPY tests/chaos/chaos.yaml /tmp/
 COPY --from=build-stress-test /build/publish .
