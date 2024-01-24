@@ -69,9 +69,9 @@
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
-        "requested": "[5.5.0, )",
-        "resolved": "5.5.0",
-        "contentHash": "agirW3E95c4VZIqvH5hpE4GhGiXCy54Xp53OtGrOd3IOjDZaq43yBlSCWsmKwmm8802PHNvkJ1uBaH2eGz58WQ==",
+        "requested": "[5.5.1, )",
+        "resolved": "5.5.1",
+        "contentHash": "7ShV+LfauTexpjl5Oa2+CY1EC5ioRRz1+qrgLstUXCpYg3DhgKLLAZSfF3/Ta8oDTvrJRjsiAVXNdx4xqFQfAg==",
         "dependencies": {
           "Fhir.Metrics": "1.2.2",
           "Newtonsoft.Json": "13.0.3",
@@ -81,11 +81,11 @@
       },
       "Hl7.Fhir.R4": {
         "type": "Direct",
-        "requested": "[5.5.0, )",
-        "resolved": "5.5.0",
-        "contentHash": "GfaY43O548+r6qtYQXCojFwUUgfhf0AR6v0vS22tJ4cpxajbFeAKseX+YnaEFviRdqhK7A37iG8Ee9EmRMU2bg==",
+        "requested": "[5.5.1, )",
+        "resolved": "5.5.1",
+        "contentHash": "2lV1l6nyS6ybTH/o3MQwuWBGrFFaVBjnCsAMCjikQthKGMytvVww2GsoRigpgoTb4LrX3g0UEY4EsQfC13pt3A==",
         "dependencies": {
-          "Hl7.Fhir.Conformance": "5.5.0"
+          "Hl7.Fhir.Conformance": "5.5.1"
         }
       },
       "MathNet.Numerics": {
@@ -276,10 +276,10 @@
       },
       "Hl7.Fhir.Conformance": {
         "type": "Transitive",
-        "resolved": "5.5.0",
-        "contentHash": "hCmpckftpSZ2oK0tNauo41O4PUXCETn+pkeM+viDKnevkbod7Z0ibhu+kwbuER+B0WzOwT1uneBOa2liuwkMOQ==",
+        "resolved": "5.5.1",
+        "contentHash": "E1Qqkxx1nwvSGB/l3Yh5t9wH3+G69hh5KlLRxG6wZezRkWi1J6Oe/ovR49izkmB6f9EHOw/9hl+4tb9+qMTMBw==",
         "dependencies": {
-          "Hl7.Fhir.Base": "5.5.0"
+          "Hl7.Fhir.Base": "5.5.1"
         }
       },
       "IdentityModel": {
