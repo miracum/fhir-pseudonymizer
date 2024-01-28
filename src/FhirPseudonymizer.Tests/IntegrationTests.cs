@@ -6,7 +6,6 @@ using Hl7.Fhir.Serialization;
 
 namespace FhirPseudonymizer.Tests;
 
-[UsesVerify]
 public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startup>>
 {
     private readonly HttpClient client;
