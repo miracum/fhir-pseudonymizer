@@ -4,9 +4,9 @@
     "net8.0": {
       "AspNetCore.Authentication.ApiKey": {
         "type": "Direct",
-        "requested": "[8.0.0, )",
-        "resolved": "8.0.0",
-        "contentHash": "876uO9aeRquWaQQSJP0WFulmigM6qb1YFWNVWifJKGvcNPHiHjRxZFPNNBLO6eX7ucduTPLoDC5WhSLESHNjvQ=="
+        "requested": "[8.0.1, )",
+        "resolved": "8.0.1",
+        "contentHash": "u/WTgciHLgthMdBnOUsijh9HGxMW/6rLcEU/9DEAoS3L9DtqA8PVwmkD+XuZFVd8q3QkJapDaEkXe6fxHR6fcw=="
       },
       "Duende.AccessTokenManagement": {
         "type": "Direct",
