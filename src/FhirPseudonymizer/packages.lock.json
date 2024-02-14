@@ -69,9 +69,9 @@
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
-        "requested": "[5.5.1, )",
-        "resolved": "5.5.1",
-        "contentHash": "7ShV+LfauTexpjl5Oa2+CY1EC5ioRRz1+qrgLstUXCpYg3DhgKLLAZSfF3/Ta8oDTvrJRjsiAVXNdx4xqFQfAg==",
+        "requested": "[5.6.1, )",
+        "resolved": "5.6.1",
+        "contentHash": "vhtdt2hx/Jd6tarNF82Yi+ieSmm13YFXUx8kv02bq83dWOJ3uLCMDBeVTtcLI0pe7a9DqTP1PQgAIBfY2rQiFA==",
         "dependencies": {
           "Fhir.Metrics": "1.2.2",
           "Newtonsoft.Json": "13.0.3",
@@ -81,11 +81,11 @@
       },
       "Hl7.Fhir.R4": {
         "type": "Direct",
-        "requested": "[5.5.1, )",
-        "resolved": "5.5.1",
-        "contentHash": "2lV1l6nyS6ybTH/o3MQwuWBGrFFaVBjnCsAMCjikQthKGMytvVww2GsoRigpgoTb4LrX3g0UEY4EsQfC13pt3A==",
+        "requested": "[5.6.1, )",
+        "resolved": "5.6.1",
+        "contentHash": "t7CclUNoIJowULFwArxZzc7SVLkQzqMjL79b5bxQI57Ar3Dkh8iz7dTtQNs/KZlFHXhE44DXfuzNayExH269xA==",
         "dependencies": {
-          "Hl7.Fhir.Conformance": "5.5.1"
+          "Hl7.Fhir.Conformance": "5.6.1"
         }
       },
       "MathNet.Numerics": {
@@ -96,9 +96,9 @@
       },
       "Microsoft.Extensions.Http.Polly": {
         "type": "Direct",
-        "requested": "[8.0.1, )",
-        "resolved": "8.0.1",
-        "contentHash": "UOX9uZLKQsJ6COAHT65jXU2P7Az+6283DxvOO2/+JIjeX6HafgbO8b7U4Ms2bQi2ztp/gIQ1MnNlVWPdJlOOaw==",
+        "requested": "[8.0.2, )",
+        "resolved": "8.0.2",
+        "contentHash": "blVL0IanVAjc6u30U1eRVgvyGynvAuTTXONDzZYxYYbFJwuziptuxNFjsWe0Yw0L3ScC/SfvokVDdM+yKpZIQA==",
         "dependencies": {
           "Microsoft.Extensions.Http": "8.0.0",
           "Polly": "7.2.4",
@@ -276,10 +276,10 @@
       },
       "Hl7.Fhir.Conformance": {
         "type": "Transitive",
-        "resolved": "5.5.1",
-        "contentHash": "E1Qqkxx1nwvSGB/l3Yh5t9wH3+G69hh5KlLRxG6wZezRkWi1J6Oe/ovR49izkmB6f9EHOw/9hl+4tb9+qMTMBw==",
+        "resolved": "5.6.1",
+        "contentHash": "mQ//YjQrD+255TsYnVuC3qKFYagD8wHfNQLc5bd2tuSmpWbd8nQJJO/MZBMK98OsEO9uVg2b5rkYRMW3BD23Ug==",
         "dependencies": {
-          "Hl7.Fhir.Base": "5.5.1"
+          "Hl7.Fhir.Base": "5.6.1"
         }
       },
       "IdentityModel": {
