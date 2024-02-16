@@ -10,7 +10,7 @@
     <PackageReference Include="Duende.AccessTokenManagement" Version="2.1.0" />
     <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="8.0.1" />
     <PackageReference Include="FhirParametersGenerator" Version="0.5.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.25.2" />
+    <PackageReference Include="Google.Protobuf" Version="3.25.3" />
     <PackageReference Include="Grpc.Net.Client" Version="2.60.0" />
     <PackageReference Include="Grpc.Net.ClientFactory" Version="2.60.0" />
     <PackageReference Include="Grpc.Tools" Version="2.61.0">
