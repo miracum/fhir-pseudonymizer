@@ -37,11 +37,9 @@ public class StressTests
                 (exception, timeSpan, retryAttempt, context) =>
                 {
                     var stepContext = context["stepContext"] as IScenarioContext;
-                    stepContext
-                        ?.Logger
-                        .Warning(
-                            $"Request failed within retry context: {exception.GetType()}: {exception.Message}. Attempt {retryAttempt}."
-                        );
+                    stepContext?.Logger.Warning(
+                        $"Request failed within retry context: {exception.GetType()}: {exception.Message}. Attempt {retryAttempt}."
+                    );
                 }
             );
 

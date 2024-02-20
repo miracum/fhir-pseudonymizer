@@ -8,7 +8,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
     {
         public static List<ElementNode> GetEntryResourceChildren(this ElementNode node)
         {
-            return node?.Children(Constants.EntryNodeName)
+            return node
+                ?.Children(Constants.EntryNodeName)
                 .Select(entry => entry?.Children(Constants.EntryResourceNodeName).FirstOrDefault())
                 .Where(resource => resource != null)
                 .CastElementNodes()

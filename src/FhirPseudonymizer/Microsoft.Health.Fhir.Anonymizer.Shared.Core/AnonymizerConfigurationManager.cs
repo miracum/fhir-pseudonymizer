@@ -41,8 +41,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             _configuration = configuration;
 
             FhirPathRules = _configuration
-                .FhirPathRules
-                .Select(AnonymizationFhirPathRule.CreateAnonymizationFhirPathRule)
+                .FhirPathRules.Select(AnonymizationFhirPathRule.CreateAnonymizationFhirPathRule)
                 .ToArray();
         }
 

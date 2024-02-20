@@ -18,11 +18,9 @@ public class FhirOutputFormatter : TextOutputFormatter
         if (useSystemTextJsonFhirSerializer)
         {
             SerializeToJsonAsync = (resource) =>
-                System
-                    .Threading
-                    .Tasks
-                    .Task
-                    .FromResult(JsonSerializer.Serialize(resource, FhirJsonOptions));
+                System.Threading.Tasks.Task.FromResult(
+                    JsonSerializer.Serialize(resource, FhirJsonOptions)
+                );
         }
         else
         {
@@ -80,11 +78,9 @@ public class FhirInputFormatter : TextInputFormatter
         if (useSystemTextJsonFhirSerializer)
         {
             ParseJsonToFhirAsync = (json) =>
-                System
-                    .Threading
-                    .Tasks
-                    .Task
-                    .FromResult(JsonSerializer.Deserialize<Resource>(json, FhirJsonOptions));
+                System.Threading.Tasks.Task.FromResult(
+                    JsonSerializer.Deserialize<Resource>(json, FhirJsonOptions)
+                );
         }
         else
         {

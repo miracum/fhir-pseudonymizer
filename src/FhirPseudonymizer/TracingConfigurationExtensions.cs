@@ -86,8 +86,8 @@ public static class TracingConfigurationExtensions
                             configuration.GetValue<string>("Tracing:Otlp:Endpoint")
                             ?? throw new ArgumentException("Missing OTLP exporter endpoint URL");
 
-                        tracingBuilder.AddOtlpExporter(
-                            otlpOptions => otlpOptions.Endpoint = new Uri(endpoint)
+                        tracingBuilder.AddOtlpExporter(otlpOptions =>
+                            otlpOptions.Endpoint = new Uri(endpoint)
                         );
                         break;
                 }

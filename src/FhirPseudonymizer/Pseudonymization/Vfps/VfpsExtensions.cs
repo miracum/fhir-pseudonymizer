@@ -35,8 +35,8 @@ public static class VfpsExtensions
         };
 
         services
-            .AddGrpcClient<PseudonymService.PseudonymServiceClient>(
-                o => o.Address = vfpsConfig.Address
+            .AddGrpcClient<PseudonymService.PseudonymServiceClient>(o =>
+                o.Address = vfpsConfig.Address
             )
             .ConfigureChannel(o =>
             {

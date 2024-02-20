@@ -44,10 +44,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
 
         response.EnsureSuccessStatusCode();
         response
-            .Content
-            .Headers
-            .ContentType
-            .ToString()
+            .Content.Headers.ContentType.ToString()
             .Should()
             .Be("application/fhir+json; charset=utf-8");
     }
@@ -227,8 +224,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "json")
-            .UseDirectory("Snapshots");
+        await Verify(response.ToJson(new() { Pretty = true }), "json").UseDirectory("Snapshots");
     }
 
     [Fact]
@@ -270,7 +266,6 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "json")
-            .UseDirectory("Snapshots");
+        await Verify(response.ToJson(new() { Pretty = true }), "json").UseDirectory("Snapshots");
     }
 }
