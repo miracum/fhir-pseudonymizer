@@ -27,6 +27,8 @@ REPOSITORY_TRIVY_ARGUMENTS:
 
 REPOSITORY_CHECKOV_ARGUMENTS:
   - "--skip-path=tests/iter8"
+  - "--skip-path=src/FhirPseudonymizer.Tests/Fixtures/Data/Resources/"
+  - "--skip-path=src/FhirPseudonymizer.Tests/Snapshots/"
 
 IGNORE_GITIGNORED_FILES: true
 

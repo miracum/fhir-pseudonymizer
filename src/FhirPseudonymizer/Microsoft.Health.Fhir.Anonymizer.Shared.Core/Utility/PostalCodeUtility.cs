@@ -29,8 +29,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             {
                 if (
                     restrictedZipCodeTabulationAreas != null
-                    && restrictedZipCodeTabulationAreas.Any(
-                        x => node.Value.ToString().StartsWith(x)
+                    && restrictedZipCodeTabulationAreas.Any(x =>
+                        node.Value.ToString().StartsWith(x)
                     )
                 )
                 {

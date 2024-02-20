@@ -37,28 +37,28 @@ public class GPasFhirClientTests
     private static readonly Uri testBaseAddress = new("http://gpas");
 
     private const string ResponseContent = $$"""
-    {
-        "resourceType": "Parameters",
-        "parameter": [
-            {
-                "name": "pseudonym",
-                "part": [
-                    {
-                        "name": "pseudonym",
-                        "valueIdentifier": {
-                            "system": "https://ths-greifswald.de/gpas",
-                            "value": "24"
+        {
+            "resourceType": "Parameters",
+            "parameter": [
+                {
+                    "name": "pseudonym",
+                    "part": [
+                        {
+                            "name": "pseudonym",
+                            "valueIdentifier": {
+                                "system": "https://ths-greifswald.de/gpas",
+                                "value": "24"
+                            }
                         }
-                    }
-                ]
-            },
-            {
-                "name": "42",
-                "valueString": "24"
-            }
-        ]
-    }
-    """;
+                    ]
+                },
+                {
+                    "name": "42",
+                    "valueString": "24"
+                }
+            ]
+        }
+        """;
 
     private readonly HttpMessageHandler messageHandler;
     private readonly IHttpClientFactory clientFactory;

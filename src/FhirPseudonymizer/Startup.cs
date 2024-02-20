@@ -46,12 +46,9 @@ public class Startup
         switch (appConfig.PseudonymizationService)
         {
             case PseudonymizationServiceType.gPAS:
-                services.AddSingleton<IMemoryCache>(
-                    _ =>
-                        new MemoryCache(
-                            new MemoryCacheOptions { SizeLimit = appConfig.GPas.Cache.SizeLimit }
-                        )
-                );
+                services.AddSingleton<IMemoryCache>(_ => new MemoryCache(
+                    new MemoryCacheOptions { SizeLimit = appConfig.GPas.Cache.SizeLimit }
+                ));
                 services.AddGPasClient(appConfig.GPas);
                 break;
             case PseudonymizationServiceType.Vfps:
@@ -69,9 +66,9 @@ public class Startup
 
         services.AddResponseCompression(options =>
         {
-            options.MimeTypes = ResponseCompressionDefaults
-                .MimeTypes
-                .Concat(new[] { "application/fhir+json" });
+            options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+                new[] { "application/fhir+json" }
+            );
         });
 
         services.AddRouting(options => options.LowercaseUrls = true);
@@ -82,12 +79,14 @@ public class Startup
                 "UseSystemTextJsonFhirSerializer",
                 false
             );
-            options
-                .InputFormatters
-                .Insert(0, new FhirInputFormatter(useSystemTextJsonFhirSerializer));
-            options
-                .OutputFormatters
-                .Insert(0, new FhirOutputFormatter(useSystemTextJsonFhirSerializer));
+            options.InputFormatters.Insert(
+                0,
+                new FhirInputFormatter(useSystemTextJsonFhirSerializer)
+            );
+            options.OutputFormatters.Insert(
+                0,
+                new FhirOutputFormatter(useSystemTextJsonFhirSerializer)
+            );
         });
 
         services.AddSwaggerGen(c =>
@@ -125,8 +124,8 @@ public class Startup
         app.UseResponseCompression();
 
         app.UseSwagger();
-        app.UseSwaggerUI(
-            c => c.SwaggerEndpoint("/swagger/v2/swagger.json", "FhirPseudonymizer v2")
+        app.UseSwaggerUI(c =>
+            c.SwaggerEndpoint("/swagger/v2/swagger.json", "FhirPseudonymizer v2")
         );
 
         app.UseRouting();

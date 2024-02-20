@@ -171,12 +171,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 
         private IEnumerable<AnonymizationFhirPathRule> GetRulesByType(string typeString)
         {
-            return _rules.Where(
-                r =>
-                    r.ResourceType.Equals(typeString)
-                    || string.IsNullOrEmpty(r.ResourceType)
-                    || string.Equals(Constants.GeneralResourceType, r.ResourceType)
-                    || string.Equals(Constants.GeneralDomainResourceType, r.ResourceType)
+            return _rules.Where(r =>
+                r.ResourceType.Equals(typeString)
+                || string.IsNullOrEmpty(r.ResourceType)
+                || string.Equals(Constants.GeneralResourceType, r.ResourceType)
+                || string.Equals(Constants.GeneralDomainResourceType, r.ResourceType)
             );
         }
 

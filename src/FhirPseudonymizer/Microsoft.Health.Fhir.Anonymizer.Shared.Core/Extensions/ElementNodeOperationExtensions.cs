@@ -75,13 +75,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (
                 result.IsRedacted
-                && !meta.Security.Any(
-                    x =>
-                        string.Equals(
-                            x.Code,
-                            SecurityLabels.REDACT.Code,
-                            StringComparison.InvariantCultureIgnoreCase
-                        )
+                && !meta.Security.Any(x =>
+                    string.Equals(
+                        x.Code,
+                        SecurityLabels.REDACT.Code,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
                 )
             )
             {
@@ -90,13 +89,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (
                 result.IsAbstracted
-                && !meta.Security.Any(
-                    x =>
-                        string.Equals(
-                            x.Code,
-                            SecurityLabels.ABSTRED.Code,
-                            StringComparison.InvariantCultureIgnoreCase
-                        )
+                && !meta.Security.Any(x =>
+                    string.Equals(
+                        x.Code,
+                        SecurityLabels.ABSTRED.Code,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
                 )
             )
             {
@@ -105,13 +103,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (
                 result.IsCryptoHashed
-                && !meta.Security.Any(
-                    x =>
-                        string.Equals(
-                            x.Code,
-                            SecurityLabels.CRYTOHASH.Code,
-                            StringComparison.InvariantCultureIgnoreCase
-                        )
+                && !meta.Security.Any(x =>
+                    string.Equals(
+                        x.Code,
+                        SecurityLabels.CRYTOHASH.Code,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
                 )
             )
             {
@@ -120,13 +117,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (
                 result.IsEncrypted
-                && !meta.Security.Any(
-                    x =>
-                        string.Equals(
-                            x.Code,
-                            SecurityLabels.ENCRYPT.Code,
-                            StringComparison.InvariantCultureIgnoreCase
-                        )
+                && !meta.Security.Any(x =>
+                    string.Equals(
+                        x.Code,
+                        SecurityLabels.ENCRYPT.Code,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
                 )
             )
             {
@@ -135,13 +131,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (
                 result.IsPerturbed
-                && !meta.Security.Any(
-                    x =>
-                        string.Equals(
-                            x.Code,
-                            SecurityLabels.PERTURBED.Code,
-                            StringComparison.InvariantCultureIgnoreCase
-                        )
+                && !meta.Security.Any(x =>
+                    string.Equals(
+                        x.Code,
+                        SecurityLabels.PERTURBED.Code,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
                 )
             )
             {
@@ -150,13 +145,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (
                 result.IsSubstituted
-                && !meta.Security.Any(
-                    x =>
-                        string.Equals(
-                            x.Code,
-                            SecurityLabels.SUBSTITUTED.Code,
-                            StringComparison.InvariantCultureIgnoreCase
-                        )
+                && !meta.Security.Any(x =>
+                    string.Equals(
+                        x.Code,
+                        SecurityLabels.SUBSTITUTED.Code,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
                 )
             )
             {
@@ -165,13 +159,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (
                 result.IsGeneralized
-                && !meta.Security.Any(
-                    x =>
-                        string.Equals(
-                            x.Code,
-                            SecurityLabels.GENERALIZED.Code,
-                            StringComparison.InvariantCultureIgnoreCase
-                        )
+                && !meta.Security.Any(x =>
+                    string.Equals(
+                        x.Code,
+                        SecurityLabels.GENERALIZED.Code,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
                 )
             )
             {
@@ -180,13 +173,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (
                 result.IsPseudonymized
-                && !meta.Security.Any(
-                    x =>
-                        string.Equals(
-                            x.Code,
-                            SecurityLabels.PSEUDED.Code,
-                            StringComparison.InvariantCultureIgnoreCase
-                        )
+                && !meta.Security.Any(x =>
+                    string.Equals(
+                        x.Code,
+                        SecurityLabels.PSEUDED.Code,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
                 )
             )
             {

@@ -17,8 +17,8 @@ namespace FhirPseudonymizer.Tests
             builder.ConfigureTestServices(services =>
             {
                 // remove the existing context configuration
-                var descriptor = services.SingleOrDefault(
-                    d => d.ServiceType == typeof(IPseudonymServiceClient)
+                var descriptor = services.SingleOrDefault(d =>
+                    d.ServiceType == typeof(IPseudonymServiceClient)
                 );
                 if (descriptor != null)
                 {

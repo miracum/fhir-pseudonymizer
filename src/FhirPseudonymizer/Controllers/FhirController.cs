@@ -60,16 +60,14 @@ namespace FhirPseudonymizer.Controllers
             this.dePseudonymizer = dePseudonymizer;
 
             BadRequestOutcome = new();
-            BadRequestOutcome
-                .Issue
-                .Add(
-                    new OperationOutcome.IssueComponent
-                    {
-                        Severity = OperationOutcome.IssueSeverity.Error,
-                        Code = OperationOutcome.IssueType.Processing,
-                        Diagnostics = "Received malformed or missing resource"
-                    }
-                );
+            BadRequestOutcome.Issue.Add(
+                new OperationOutcome.IssueComponent
+                {
+                    Severity = OperationOutcome.IssueSeverity.Error,
+                    Code = OperationOutcome.IssueType.Processing,
+                    Diagnostics = "Received malformed or missing resource"
+                }
+            );
         }
 
         private OperationOutcome BadRequestOutcome { get; }
@@ -219,17 +217,15 @@ namespace FhirPseudonymizer.Controllers
         private static OperationOutcome GetInternalErrorOutcome(Exception exc)
         {
             var outcome = new OperationOutcome();
-            outcome
-                .Issue
-                .Add(
-                    new OperationOutcome.IssueComponent
-                    {
-                        Severity = OperationOutcome.IssueSeverity.Fatal,
-                        Code = OperationOutcome.IssueType.Processing,
-                        Diagnostics =
-                            $"An internal error occurred when processing the request: {exc.Message}.\nAt: {exc.StackTrace}"
-                    }
-                );
+            outcome.Issue.Add(
+                new OperationOutcome.IssueComponent
+                {
+                    Severity = OperationOutcome.IssueSeverity.Fatal,
+                    Code = OperationOutcome.IssueType.Processing,
+                    Diagnostics =
+                        $"An internal error occurred when processing the request: {exc.Message}.\nAt: {exc.StackTrace}"
+                }
+            );
             return outcome;
         }
     }

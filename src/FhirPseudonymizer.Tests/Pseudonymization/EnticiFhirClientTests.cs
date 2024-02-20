@@ -13,20 +13,20 @@ public class EnticiFhirClientTests
     private readonly IHttpClientFactory clientFactory;
 
     private const string ResponseContent = $$"""
-    {
-        "resourceType": "Parameters",
-        "parameter": [
-            {
-                "name": "pseudonym",
-                "valueIdentifier": {
-                    "use": "secondary",
-                    "system": "urn:fdc:difuture.de:trustcenter.plain",
-                    "value": "a-test-pseudonym"
+        {
+            "resourceType": "Parameters",
+            "parameter": [
+                {
+                    "name": "pseudonym",
+                    "valueIdentifier": {
+                        "use": "secondary",
+                        "system": "urn:fdc:difuture.de:trustcenter.plain",
+                        "value": "a-test-pseudonym"
+                    }
                 }
-            }
-        ]
-    }
-    """;
+            ]
+        }
+        """;
 
     public EnticiFhirClientTests()
     {
