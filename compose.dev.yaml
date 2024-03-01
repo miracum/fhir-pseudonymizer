@@ -21,7 +21,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   vfps-db:
-    image: docker.io/library/postgres:16.2@sha256:1bd17d36d605b63fd62f03800a932bae292250659ffc417cf8c29836cc353b5f
+    image: docker.io/library/postgres:16.2@sha256:f58300ac8d393b2e3b09d36ea12d7d24ee9440440e421472a300e929ddb63460
     restart: unless-stopped
     deploy:
       resources:
@@ -101,7 +101,7 @@ services:
       - ./hack/mocks:/config:ro
 
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.6@sha256:14e21c6f73e61adb75d268e85028485b3f92beae7c1278213ba12868f3e54599
+    image: quay.io/keycloak/keycloak:23.0.7@sha256:14e99d6f5dd0516a5bdc82537b732cb85469ecdb15ad7fe5f11ff67521544db8
     restart: unless-stopped
     profiles:
       - keycloak

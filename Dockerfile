@@ -8,7 +8,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0.201-jammy@sha256:dc273e23006f85ef4bf154844a3147325c50adc4b5dac9191238bed4931743ac AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0.201-jammy@sha256:9aacef90e2773ff7d13a2f2687739778ed39312678b3669de06ec5fbeb0e86af AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/Directory.Build.props .
@@ -57,7 +57,7 @@ WORKDIR /opt/fhir-pseudonymizer-stress
 
 # https://github.com/hadolint/hadolint/pull/815 isn't yet in mega-linter
 # hadolint ignore=DL3022
-COPY --from=docker.io/bitnami/kubectl:1.29.2@sha256:7c0e68bec75264d0ce466a30f9fbb62b9d9f37308b6a947f272c0aa2d84465ad /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
+COPY --from=docker.io/bitnami/kubectl:1.29.2@sha256:fed3fcb0bf89b6c10c273c3f97e0f7e72287890e3ee02d14f66b0b42c0e03ebb /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
 
 COPY tests/chaos/chaos.yaml /tmp/
 COPY --from=build-stress-test /build/publish .
