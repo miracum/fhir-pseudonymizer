@@ -12,7 +12,7 @@ permissions: read-all
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@f9d64a7dbe928557fde9f96defa3e372bc0eaf21 # v1.6.1
+    uses: miracum/.github/.github/workflows/standard-build.yaml@cc6fa0f9913128e1b27770bcd43df2c19e547a25 # v1.6.2
     permissions:
       contents: read
       id-token: write
@@ -200,7 +200,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@f9d64a7dbe928557fde9f96defa3e372bc0eaf21 # v1.6.1
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@cc6fa0f9913128e1b27770bcd43df2c19e547a25 # v1.6.2
     permissions:
       contents: read
       pull-requests: write
@@ -216,7 +216,7 @@ jobs:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    uses: miracum/.github/.github/workflows/standard-release.yaml@f9d64a7dbe928557fde9f96defa3e372bc0eaf21 # v1.6.1
+    uses: miracum/.github/.github/workflows/standard-release.yaml@cc6fa0f9913128e1b27770bcd43df2c19e547a25 # v1.6.2
     needs:
       - build
       - test
