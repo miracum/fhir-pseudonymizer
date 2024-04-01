@@ -1,6 +1,6 @@
 services:
   jaeger:
-    image: docker.io/jaegertracing/all-in-one:1.54@sha256:f4044964505c81bf12131c2dfd1f4ddf1d1421bbbd9d79f691221cac077599a8
+    image: docker.io/jaegertracing/all-in-one:1.55@sha256:f6b5d09073f14f76873d300f565a6691d815e81bea8e07e1dc3ff67e0596dd4e
     restart: unless-stopped
     deploy:
       resources:
@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.3.3@sha256:63f37d0541dc9742538cd65292abe314f668ff71308c3a68c8cc15f1281cc903
+    image: ghcr.io/miracum/vfps:v1.3.4@sha256:b37c6341053e0e59d2e8eb56a7423562c47d5669a4a552a99d1169a7865ac191
     restart: unless-stopped
     deploy:
       resources:
