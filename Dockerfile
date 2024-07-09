@@ -21,7 +21,6 @@ ARG VERSION=2.21.11
 RUN dotnet publish \
     -c Release \
     -p:Version=${VERSION} \
-    -p:UseAppHost=false \
     -o /build/publish \
     src/FhirPseudonymizer/FhirPseudonymizer.csproj
 
