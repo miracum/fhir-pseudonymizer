@@ -1,6 +1,6 @@
 # kics false positive "Missing User Instruction": <https://docs.kics.io/latest/queries/dockerfile-queries/fd54f200-402c-4333-a5a4-36ef6709af2f/>
 # kics-scan ignore-line
-FROM mcr.microsoft.com/dotnet/aspnet:8.0.6-noble-chiseled@sha256:9cbc7b75f997eceb0d4e1d7b27dcbba99319b8f32a815e6f473b16e5e8ccd095 AS runtime
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0.6-noble-chiseled@sha256:9cbc7b75f997eceb0d4e1d7b27dcbba99319b8f32a815e6f473b16e5e8ccd095 AS runtime
 WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp 8081/tcp
 USER 65532:65532
@@ -8,7 +8,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0.302-noble@sha256:bd836d1c4a19860ee61d1202b82561f0c750edb7a635443cb001042b71d79569 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0.302-noble@sha256:bd836d1c4a19860ee61d1202b82561f0c750edb7a635443cb001042b71d79569 AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/Directory.Build.props .
@@ -21,7 +21,6 @@ ARG VERSION=2.21.11
 RUN dotnet publish \
     -c Release \
     -p:Version=${VERSION} \
-    -p:UseAppHost=false \
     -o /build/publish \
     src/FhirPseudonymizer/FhirPseudonymizer.csproj
 
