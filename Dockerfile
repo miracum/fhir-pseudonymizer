@@ -14,7 +14,7 @@ WORKDIR /build
 COPY src/Directory.Build.props .
 COPY src/FhirPseudonymizer/FhirPseudonymizer.csproj .
 COPY src/FhirPseudonymizer/packages.lock.json .
-RUN dotnet restore --locked-mode
+RUN dotnet restore
 COPY . .
 
 ARG VERSION=2.21.11
