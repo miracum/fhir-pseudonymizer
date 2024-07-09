@@ -12,7 +12,7 @@ permissions: read-all
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@db8574b42e0c528f9cddc1ce84a40a837283cee0 # v1.10.2
+    uses: miracum/.github/.github/workflows/standard-build.yaml@6486774ea526dc545d5e8875fe78e2fecd79526d # v1.11.0
     permissions:
       contents: read
       id-token: write
@@ -23,6 +23,7 @@ jobs:
     with:
       enable-build-test-layer: true
       enable-upload-test-image: true
+      platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -200,7 +201,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@db8574b42e0c528f9cddc1ce84a40a837283cee0 # v1.10.2
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@6486774ea526dc545d5e8875fe78e2fecd79526d # v1.11.0
     permissions:
       contents: read
       pull-requests: write
@@ -216,7 +217,7 @@ jobs:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    uses: miracum/.github/.github/workflows/standard-release.yaml@db8574b42e0c528f9cddc1ce84a40a837283cee0 # v1.10.2
+    uses: miracum/.github/.github/workflows/standard-release.yaml@6486774ea526dc545d5e8875fe78e2fecd79526d # v1.11.0
     needs:
       - build
       - test
