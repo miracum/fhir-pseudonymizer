@@ -12,7 +12,7 @@ permissions: read-all
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@6486774ea526dc545d5e8875fe78e2fecd79526d # v1.11.0
+    uses: miracum/.github/.github/workflows/standard-build.yaml@028aedc2d5806bb362562560f5e871d9364902cd # v1.11.2
     permissions:
       contents: read
       id-token: write
@@ -23,7 +23,9 @@ jobs:
     with:
       enable-build-test-layer: true
       enable-upload-test-image: true
-      platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+      platforms: |
+        linux/amd64
+        linux/arm64
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -35,6 +37,18 @@ jobs:
       # for add Coverage PR Comment
       pull-requests: write
     steps:
+      # <https://docs.docker.com/storage/containerd/>
+      # via <https://github.com/docker/setup-buildx-action/issues/257>
+      - name: Set up containerd image store
+        shell: bash
+        run: |
+          jq '. | .+{"features": {"containerd-snapshotter": true}}' /etc/docker/daemon.json > /tmp/docker-daemon-with-containerd.json
+          sudo mv /tmp/docker-daemon-with-containerd.json /etc/docker/daemon.json
+          cat /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+          docker info -f '{{ .DriverStatus }}'
+
       - name: "Checkout code"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
@@ -103,6 +117,18 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      # <https://docs.docker.com/storage/containerd/>
+      # via <https://github.com/docker/setup-buildx-action/issues/257>
+      - name: Set up containerd image store
+        shell: bash
+        run: |
+          jq '. | .+{"features": {"containerd-snapshotter": true}}' /etc/docker/daemon.json > /tmp/docker-daemon-with-containerd.json
+          sudo mv /tmp/docker-daemon-with-containerd.json /etc/docker/daemon.json
+          cat /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+          docker info -f '{{ .DriverStatus }}'
+
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
@@ -201,7 +227,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@6486774ea526dc545d5e8875fe78e2fecd79526d # v1.11.0
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@028aedc2d5806bb362562560f5e871d9364902cd # v1.11.2
     permissions:
       contents: read
       pull-requests: write
@@ -217,7 +243,7 @@ jobs:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    uses: miracum/.github/.github/workflows/standard-release.yaml@6486774ea526dc545d5e8875fe78e2fecd79526d # v1.11.0
+    uses: miracum/.github/.github/workflows/standard-release.yaml@028aedc2d5806bb362562560f5e871d9364902cd # v1.11.2
     needs:
       - build
       - test
