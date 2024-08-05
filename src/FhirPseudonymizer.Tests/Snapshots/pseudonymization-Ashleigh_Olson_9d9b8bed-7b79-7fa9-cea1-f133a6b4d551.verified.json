@@ -44,7 +44,6 @@
         },
         "extension": [
           {
-            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
             "extension": [
               {
                 "url": "ombCategory",
@@ -58,10 +57,10 @@
                 "url": "text",
                 "valueString": "White"
               }
-            ]
+            ],
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"
           },
           {
-            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity",
             "extension": [
               {
                 "url": "ombCategory",
@@ -75,7 +74,8 @@
                 "url": "text",
                 "valueString": "Hispanic or Latino"
               }
-            ]
+            ],
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity"
           },
           {
             "url": "http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName",
@@ -149,7 +149,6 @@
           {
             "extension": [
               {
-                "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
                 "extension": [
                   {
                     "url": "latitude",
@@ -159,7 +158,8 @@
                     "url": "longitude",
                     "valueDecimal": -72.57767766656119
                   }
-                ]
+                ],
+                "url": "http://hl7.org/fhir/StructureDefinition/geolocation"
               }
             ],
             "line": [
