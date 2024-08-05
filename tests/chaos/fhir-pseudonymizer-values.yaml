@@ -1,7 +1,7 @@
 replicaCount: 3
 
 image:
-  tag: v2.21.13
+  tag: v2.21.14
 
 anonymizationConfig: |
   ---
