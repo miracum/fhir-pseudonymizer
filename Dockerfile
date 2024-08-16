@@ -17,7 +17,7 @@ COPY src/FhirPseudonymizer/packages.lock.json .
 RUN dotnet restore --locked-mode
 COPY . .
 
-ARG VERSION=2.21.14
+ARG VERSION=2.21.15
 RUN dotnet publish \
     -c Release \
     -p:Version=${VERSION} \
