@@ -1,0 +1,16 @@
+fhirVersion: R4
+fhirPathRules:
+  - path: Resource.id
+    method: cryptoHash
+    truncateToMaxLength: 16
+  - path: nodesByType('Reference').reference
+    method: cryptoHash
+    truncateToMaxLength: 16
+  - path: Bundle.entry.fullUrl
+    method: cryptoHash
+    truncateToMaxLength: 16
+  - path: Bundle.entry.request.where(method = 'PUT').url
+    method: cryptoHash
+    truncateToMaxLength: 16
+parameters:
+  cryptoHashKey: fhir-pseudonymizer

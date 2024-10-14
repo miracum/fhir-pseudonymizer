@@ -170,6 +170,27 @@ fhirPathRules:
 | `entici__Auth__OAuth__Scope`         | The scope                         | `""`    |
 | `entici__Auth__OAuth__Resource`      | The resource                      | `""`    |
 
+### Truncating Crypto-hash Length
+
+When using the `cryptoHash` method on a value, the result is a hex-encoded string of 64 characters length.
+You can truncate this to a specific maximum length using the `truncateToMaxLength` setting. For example:
+
+```yaml
+fhirPathRules:
+  - path: Resource.id
+    method: cryptoHash
+    truncateToMaxLength: 32
+```
+
+Will truncate the usually 64-character-long hash to the following:
+
+```json
+{
+  "resourceType": "Patient",
+  "id": "b43a73c44e6d5b57644b63d89ee90cbf"
+}
+```
+
 ## Dynamic rule settings
 
 Anonymization and pseudonymization rules in the `anonymization.yaml` config file can be overridden and/or extended on a per request basis.
