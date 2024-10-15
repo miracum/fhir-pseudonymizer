@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using Hl7.Fhir.ElementModel;
-using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
@@ -33,23 +30,38 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 return processResult;
             }
 
+            var cryptoHashFunction = _cryptoHashFunction;
+
+            if (
+                settings?.TryGetValue("truncateToMaxLength", out var truncateToMaxLengthObject)
+                == true
+            )
+            {
+                var truncateToMaxLength = Convert.ToInt32(truncateToMaxLengthObject);
+                cryptoHashFunction = (input) =>
+                {
+                    var fullHash = CryptoHashUtility.ComputeHmacSHA256Hash(input, _cryptoHashKey);
+                    return fullHash[..Math.Min(truncateToMaxLength, fullHash.Length)];
+                };
+            }
+
             var input = node.Value.ToString();
             // Hash the id part for "reference" and "uri" nodes and hash whole input for other node types
             if (node.IsReferenceStringNode() || node.IsReferenceUriNode(input))
             {
-                var newReference = ReferenceUtility.TransformReferenceId(
-                    input,
-                    _cryptoHashFunction
-                );
+                var newReference = ReferenceUtility.TransformReferenceId(input, cryptoHashFunction);
                 node.Value = newReference;
             }
             else
             {
-                node.Value = _cryptoHashFunction(input);
+                node.Value = cryptoHashFunction(input);
             }
 
             _logger.LogDebug(
-                $"Fhir value '{input}' at '{node.Location}' is hashed to '{node.Value}'."
+                "Fhir value '{Input}' at '{NodeLocation}' is hashed to '{NodeValue}'.",
+                input,
+                node.Location,
+                node.Value
             );
 
             processResult.AddProcessRecord(AnonymizationOperations.CryptoHash, node);
