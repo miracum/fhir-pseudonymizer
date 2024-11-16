@@ -12,7 +12,7 @@ permissions: read-all
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@1748b6a3730192d63e21629d6d84dafd495fe567 # v1.12.5
+    uses: miracum/.github/.github/workflows/standard-build.yaml@0549971ecda7c7415b7e885117576981b4b54ed2 # v1.12.8
     permissions:
       contents: write
       id-token: write
@@ -51,7 +51,7 @@ jobs:
           docker info -f '{{ .DriverStatus }}'
 
       - name: "Checkout code"
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
 
@@ -132,7 +132,7 @@ jobs:
           docker info -f '{{ .DriverStatus }}'
 
       - name: Checkout
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: install iter8 cli
         env:
@@ -229,7 +229,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@1748b6a3730192d63e21629d6d84dafd495fe567 # v1.12.5
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@0549971ecda7c7415b7e885117576981b4b54ed2 # v1.12.8
     permissions:
       contents: read
       pull-requests: write
@@ -245,7 +245,7 @@ jobs:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    uses: miracum/.github/.github/workflows/standard-release.yaml@1748b6a3730192d63e21629d6d84dafd495fe567 # v1.12.5
+    uses: miracum/.github/.github/workflows/standard-release.yaml@0549971ecda7c7415b7e885117576981b4b54ed2 # v1.12.8
     needs:
       - build
       - test
