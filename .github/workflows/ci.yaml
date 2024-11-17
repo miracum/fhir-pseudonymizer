@@ -241,6 +241,7 @@ jobs:
       codeql-languages: '["csharp"]'
       enable-codeql: true
       enable-verify-base-image-signature: false
+      dotnet-version: "9.0.x"
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
