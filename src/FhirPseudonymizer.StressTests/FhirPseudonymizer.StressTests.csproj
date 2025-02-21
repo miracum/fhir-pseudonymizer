@@ -15,7 +15,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NBomber" Version="5.8.2" />
-    <PackageReference Include="FluentAssertions" Version="7.1.0" />
+    <PackageReference Include="FluentAssertions" Version="8.1.1" />
   </ItemGroup>
 
   <ItemGroup>
