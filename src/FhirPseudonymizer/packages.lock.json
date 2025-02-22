@@ -10,9 +10,9 @@
       },
       "Duende.AccessTokenManagement": {
         "type": "Direct",
-        "requested": "[3.1.1, )",
-        "resolved": "3.1.1",
-        "contentHash": "iEyyshO3OyH9+KJr70eyiwUGcuYHwFolTykImbsF8F+8JhGiIGf88ZRpHyUNFNQRPrywMHk2sPJL2vsffRnGqw==",
+        "requested": "[3.2.0, )",
+        "resolved": "3.2.0",
+        "contentHash": "Ksk81vhnlrFu9EhbSWhkxTgfRx2n+5bm1CCmT+rRZBM+M2vgDJWNvMvO38GrTq3qqgJRB1RJQ73Q/yfpDQ8DIA==",
         "dependencies": {
           "Duende.IdentityModel": "7.0.0",
           "Microsoft.Extensions.Caching.Abstractions": "9.0.0",
