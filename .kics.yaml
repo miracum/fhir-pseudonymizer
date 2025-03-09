@@ -1,2 +1,8 @@
 exclude-paths:
   - "tests/"
+exclude-queries:
+  # <https://docs.kics.io/latest/queries/dockerfile-queries/b16e8501-ef3c-44e1-a543-a093238099c9/>
+  # informational, doesn't work any other way with .NET for now.
+  # <https://github.com/dotnet/dotnet-docker/issues/4225>
+  # <https://devblogs.microsoft.com/dotnet/improving-multiplatform-container-support/>
+  - b16e8501-ef3c-44e1-a543-a093238099c9

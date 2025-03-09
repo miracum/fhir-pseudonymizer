@@ -22,6 +22,7 @@ RUN dotnet publish \
     -c Release \
     -p:Version=${VERSION} \
     -o /build/publish \
+    -a "$TARGETARCH" \
     src/FhirPseudonymizer/FhirPseudonymizer.csproj
 
 FROM build AS build-test
@@ -48,6 +49,7 @@ dotnet publish \
     --no-restore \
     --no-build \
     --configuration=Release \
+    -a "$TARGETARCH" \
     -o /build/publish
 EOF
 
