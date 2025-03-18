@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@061614f984847163156095116168d113da0c88d9 # v1.16.2
+    uses: miracum/.github/.github/workflows/standard-build.yaml@77ecd274fb963ff83397cc88a3b179b2010c7031 # v1.16.4
     permissions:
       contents: write
       id-token: write
@@ -57,7 +57,7 @@ jobs:
           persist-credentials: false
 
       - name: Download image
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        uses: actions/download-artifact@b14cf4c92620c250e1c074ab0a5800e37df86765 # v4.2.0
         if: ${{ github.event_name == 'pull_request' }}
         with:
           name: ${{ needs.build.outputs.image-slug }}
@@ -71,7 +71,7 @@ jobs:
           docker image ls
 
       - name: Download test image
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        uses: actions/download-artifact@b14cf4c92620c250e1c074ab0a5800e37df86765 # v4.2.0
         with:
           name: ${{ needs.build.outputs.image-slug }}-test
           path: /tmp
@@ -152,7 +152,7 @@ jobs:
           cluster_name: kind
 
       - name: Download image
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        uses: actions/download-artifact@b14cf4c92620c250e1c074ab0a5800e37df86765 # v4.2.0
         with:
           name: ${{ needs.build.outputs.image-slug }}
           path: /tmp
@@ -232,7 +232,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@061614f984847163156095116168d113da0c88d9 # v1.16.2
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@77ecd274fb963ff83397cc88a3b179b2010c7031 # v1.16.4
     permissions:
       contents: read
       pull-requests: write
@@ -249,7 +249,7 @@ jobs:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    uses: miracum/.github/.github/workflows/standard-release.yaml@061614f984847163156095116168d113da0c88d9 # v1.16.2
+    uses: miracum/.github/.github/workflows/standard-release.yaml@77ecd274fb963ff83397cc88a3b179b2010c7031 # v1.16.4
     needs:
       - build
       - test
