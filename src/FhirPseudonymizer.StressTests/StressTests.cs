@@ -178,7 +178,7 @@ public class StressTests
             )
             .Run();
 
-        var deIdentifyStatusCodes = stats.GetScenarioStats("de-identify").Fail.StatusCodes;
+        var deIdentifyStatusCodes = stats.ScenarioStats.Get("de-identify").Fail.StatusCodes;
 
         deIdentifyStatusCodes
             .Should()
