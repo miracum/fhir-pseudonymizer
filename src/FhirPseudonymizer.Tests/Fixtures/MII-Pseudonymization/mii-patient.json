@@ -1,0 +1,127 @@
+{
+  "resourceType": "Patient",
+  "id": "mii-exa-person-patient-full",
+  "meta": {
+    "security": [
+      {
+        "code": "HTEST",
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+        "display": "test health data"
+      }
+    ],
+    "profile": [
+      "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient|2025.0.1"
+    ]
+  },
+  "name": [
+    {
+      "use": "official",
+      "family": "Van-der-Dussen",
+      "_family": {
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/humanname-own-name",
+            "valueString": "Van-der-Dussen"
+          }
+        ]
+      },
+      "given": ["Maja", "Julia"],
+      "prefix": ["Prof. Dr. med."],
+      "_prefix": [
+        {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/iso21090-EN-qualifier",
+              "valueCode": "AC"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "use": "maiden",
+      "family": "Haffer"
+    }
+  ],
+  "identifier": [
+    {
+      "use": "usual",
+      "type": {
+        "coding": [
+          {
+            "code": "MR",
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203"
+          }
+        ]
+      },
+      "system": "https://www.charite.de/fhir/sid/patienten",
+      "value": "42285243",
+      "assigner": {
+        "display": "Charité - Universitätsmedizin Berlin",
+        "identifier": {
+          "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/core-location-identifier",
+          "value": "Charité"
+        }
+      }
+    },
+    {
+      "use": "official",
+      "type": {
+        "coding": [
+          {
+            "code": "KVZ10",
+            "system": "http://fhir.de/CodeSystem/identifier-type-de-basis"
+          }
+        ]
+      },
+      "system": "http://fhir.de/sid/gkv/kvid-10",
+      "value": "Z234567890",
+      "assigner": {
+        "identifier": {
+          "use": "official",
+          "value": "109519005",
+          "system": "http://fhir.de/sid/arge-ik/iknr"
+        }
+      }
+    }
+  ],
+  "gender": "other",
+  "_gender": {
+    "extension": [
+      {
+        "url": "http://fhir.de/StructureDefinition/gender-amtlich-de",
+        "valueCoding": {
+          "code": "D",
+          "system": "http://fhir.de/CodeSystem/gender-amtlich-de",
+          "display": "divers"
+        }
+      }
+    ]
+  },
+  "birthDate": "1998-09-19",
+  "deceasedBoolean": false,
+  "address": [
+    {
+      "type": "both",
+      "line": ["Anna-Louisa-Karsch Str. 2"],
+      "city": "Berlin",
+      "_city": {
+        "extension": [
+          {
+            "url": "http://fhir.de/StructureDefinition/destatis/ags",
+            "valueCoding": {
+              "code": "11000000",
+              "system": "http://fhir.de/sid/destatis/ags"
+            }
+          }
+        ]
+      },
+      "state": "DE-BE",
+      "postalCode": "10178",
+      "country": "DE"
+    }
+  ],
+  "managingOrganization": {
+    "reference": "Organization/Charite-Universitaetsmedizin-Berlin"
+  }
+}

@@ -6,7 +6,7 @@ namespace FhirPseudonymizer.Tests;
 
 public class SnapshotTests
 {
-    private static FhirJsonParser FhirJsonParser = new FhirJsonParser();
+    private static readonly FhirJsonParser FhirJsonParser = new();
 
     public class SnapshotTestData : TheoryData<string, string>
     {
@@ -39,7 +39,7 @@ public class SnapshotTests
             {
                 ["AnonymizationEngineConfigPath"] = anonymizationConfigFilePath,
                 ["EnableMetrics"] = "false",
-            }
+            },
         };
 
         var client = factory.CreateClient();
@@ -63,5 +63,21 @@ public class SnapshotTests
         );
 
         await Verify(json, "json", settings);
+    }
+
+    [Theory]
+    [InlineData(
+        "../../../Fixtures/MII-Pseudonymization/patient-to-pseuded.yaml",
+        "../../../Fixtures/MII-Pseudonymization/mii-patient.json"
+    )]
+    public async Task DeIdentify_WithGivenMIIPatient_ShouldReturnMIIPseudonymizedPatient(
+        string anonymizationConfigFilePath,
+        string resourcePath
+    )
+    {
+        await DeIdentify_WithGivenConfigAndResource_ShouldReturnResponseMatchingSnapshot(
+            anonymizationConfigFilePath,
+            resourcePath
+        );
     }
 }
