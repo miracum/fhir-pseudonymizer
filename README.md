@@ -1,6 +1,6 @@
 # FHIR® Pseudonymizer
 
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/miracum/fhir-pseudonymizer/badge)](https://scorecard.dev/viewer/?uri=github.com/miracum/fhir-pseudonymizer)
+[![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/miracum/fhir-pseudonymizer?label=openssf%20scorecard&style=flat)](https://scorecard.dev/viewer/?uri=github.com/miracum/fhir-pseudonymizer)
 [![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
 <p align="center"><img width="100" src="docs/img/logo.png" alt="FHIR® Pseudonymizer Logo"></p>
@@ -15,7 +15,7 @@ Based on the brilliant [Tools for Health Data Anonymization](https://github.com/
 docker run --rm -i -p 8080:8080 \
   -e PseudonymizationService="None" \
   -e UseSystemTextJsonFhirSerializer="true" \
-  ghcr.io/miracum/fhir-pseudonymizer:v2.22.8
+  ghcr.io/miracum/fhir-pseudonymizer:v2.22.9
 
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
 ```
@@ -452,7 +452,7 @@ Prerequisites:
 All released container images are signed using [cosign](https://github.com/sigstore/cosign) and SLSA Level 3 provenance is available for verification.
 
 ```sh
-IMAGE=ghcr.io/miracum/fhir-pseudonymizer:v2.22.8
+IMAGE=ghcr.io/miracum/fhir-pseudonymizer:v2.22.9
 DIGEST=$(crane digest "${IMAGE}")
 IMAGE_DIGEST_PINNED="ghcr.io/miracum/fhir-pseudonymizer@${DIGEST}"
 IMAGE_TAG="${IMAGE#*:}"

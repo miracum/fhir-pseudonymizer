@@ -1,6 +1,6 @@
 services:
   fhir-pseudonymizer:
-    image: ghcr.io/miracum/fhir-pseudonymizer:v2.22.8
+    image: ghcr.io/miracum/fhir-pseudonymizer:v2.22.9
     restart: unless-stopped
     cap_drop:
       - ALL
