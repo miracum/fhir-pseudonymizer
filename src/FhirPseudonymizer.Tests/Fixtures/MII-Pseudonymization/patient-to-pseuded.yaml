@@ -46,6 +46,8 @@ fhirPathRules:
     method: keep
   - path: Patient.gender
     method: keep
+  - path: Patient.deceased
+    method: keep
   - path: Resource
     method: redact
 parameters:
