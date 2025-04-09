@@ -1,0 +1,52 @@
+fhirVersion: R4
+fhirPathRules:
+  - path: Patient.id
+    method: cryptoHash
+  - path: Patient.meta.profile.where($this='https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient|2025.0.1')
+    method: substitute
+    replaceWith: "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/PatientPseudonymisiert|2025.0.1"
+  - path: nodesByType('Identifier').where(type.coding.system='http://terminology.hl7.org/CodeSystem/v2-0203' and type.coding.code='MR').system
+    method: substitute
+    replaceWith: https://www.charite.de/fhir/sid/patienten-pseudonymisiert
+  - path: nodesByType('Identifier').where(type.coding.system='http://terminology.hl7.org/CodeSystem/v2-0203' and type.coding.code='MR').assigner
+    method: keep
+  - path: nodesByType('Identifier').where(type.coding.where(system='http://terminology.hl7.org/CodeSystem/v2-0203' and code='MR').exists()).value
+    method: pseudonymize
+    domain: patient-identifiers
+  - path: nodesByType('Identifier').type.where(coding.system='http://terminology.hl7.org/CodeSystem/v2-0203' and coding.code='MR')
+    method: substitute
+    replaceWith: |
+      {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "MR",
+            "display": "Medical Record Number"
+          },
+          {
+            "code": "PSEUDED",
+            "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+            "display": "pseudonymized"
+          }
+        ],
+        "text": "Pseudonymized Medical Record Number"
+      }
+  - path: Patient.birthDate
+    method: generalize
+    # currently, only generalizes to the year and avoids introducing possibly misleading rounded quarter dates.
+    cases:
+      "$this": "$this.toString().replaceMatches('(?<year>\\\\d{2,4})-(?<month>\\\\d{2})-(?<day>\\\\d{2})\\\\b', '${year}')"
+    otherValues: redact
+  - path: Patient.address.postalCode
+    method: generalize
+    cases:
+      "$this": "$this.toString().substring(0,2)"
+    otherValues: redact
+  - path: Patient.address.country
+    method: keep
+  - path: Patient.gender
+    method: keep
+  - path: Resource
+    method: redact
+parameters:
+  cryptoHashKey: fhir-pseudonymizer
