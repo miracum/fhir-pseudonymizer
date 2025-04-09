@@ -39,7 +39,7 @@ public class SnapshotTests
             {
                 ["AnonymizationEngineConfigPath"] = anonymizationConfigFilePath,
                 ["EnableMetrics"] = "false",
-            }
+            },
         };
 
         var client = factory.CreateClient();
@@ -66,11 +66,18 @@ public class SnapshotTests
     }
 
     [Theory]
-    [InlineData("../../../Fixtures/MII-Pseudonymization/patient-to-pseuded.yaml", "../../../Fixtures/MII-Pseudonymization/mii-patient.json")]
+    [InlineData(
+        "../../../Fixtures/MII-Pseudonymization/patient-to-pseuded.yaml",
+        "../../../Fixtures/MII-Pseudonymization/mii-patient.json"
+    )]
     public async Task DeIdentify_WithGivenMIIPatient_ShouldReturnMIIPseudonymizedPatient(
         string anonymizationConfigFilePath,
-        string resourcePath)
+        string resourcePath
+    )
     {
-        await DeIdentify_WithGivenConfigAndResource_ShouldReturnResponseMatchingSnapshot(anonymizationConfigFilePath, resourcePath);
+        await DeIdentify_WithGivenConfigAndResource_ShouldReturnResponseMatchingSnapshot(
+            anonymizationConfigFilePath,
+            resourcePath
+        );
     }
 }
