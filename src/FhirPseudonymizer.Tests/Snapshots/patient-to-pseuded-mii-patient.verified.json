@@ -73,6 +73,7 @@
     ]
   },
   "birthDate": "1998",
+  "deceasedBoolean": false,
   "address": [
     {
       "postalCode": "10",
