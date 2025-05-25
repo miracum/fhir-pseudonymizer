@@ -46,7 +46,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings
             {
                 Span = span,
                 RangeType = rangeType,
-                RoundTo = roundTo
+                RoundTo = roundTo,
             };
         }
 

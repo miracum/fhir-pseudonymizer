@@ -15,7 +15,7 @@ public class VfpsPseudonymServiceClientTests
 
         var fakeResponse = new PseudonymServiceCreateResponse
         {
-            Pseudonym = new() { PseudonymValue = "not test", },
+            Pseudonym = new() { PseudonymValue = "not test" },
         };
 
         A.CallTo(() => client.CreateAsync(A<PseudonymServiceCreateRequest>._, null, null, default))
@@ -49,7 +49,7 @@ public class VfpsPseudonymServiceClientTests
 
         var fakeResponse = new PseudonymServiceGetResponse
         {
-            Pseudonym = new() { PseudonymValue = "not test", OriginalValue = "test", },
+            Pseudonym = new() { PseudonymValue = "not test", OriginalValue = "test" },
         };
 
         A.CallTo(() => client.GetAsync(A<PseudonymServiceGetRequest>._, null, null, default))

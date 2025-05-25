@@ -49,7 +49,7 @@ public class EnticiFhirClientTests
     {
         var client = new EnticiFhirClient(A.Fake<ILogger<EnticiFhirClient>>(), clientFactory);
 
-        var settings = new Dictionary<string, object> { ["not-entici"] = new object(), };
+        var settings = new Dictionary<string, object> { ["not-entici"] = new object() };
 
         Func<Task> act = async () => await client.GetOrCreatePseudonymFor("42", "domain", settings);
 
@@ -61,7 +61,7 @@ public class EnticiFhirClientTests
     {
         var client = new EnticiFhirClient(A.Fake<ILogger<EnticiFhirClient>>(), clientFactory);
 
-        var settings = new Dictionary<string, object> { ["entici"] = null, };
+        var settings = new Dictionary<string, object> { ["entici"] = null };
 
         Func<Task> act = async () => await client.GetOrCreatePseudonymFor("42", "domain", settings);
 
@@ -75,7 +75,7 @@ public class EnticiFhirClientTests
 
         var settings = new Dictionary<string, object>
         {
-            ["entici"] = new Dictionary<object, object> { ["resourceType"] = "Encounter", },
+            ["entici"] = new Dictionary<object, object> { ["resourceType"] = "Encounter" },
         };
 
         var response = await client.GetOrCreatePseudonymFor("42", "domain", settings);

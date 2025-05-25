@@ -56,7 +56,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             {
                 var settings = new JsonLoadSettings
                 {
-                    DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error
+                    DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error,
                 };
                 var token = JToken.Parse(settingsInJson, settings);
                 var configuration = token.ToObject<AnonymizerConfiguration>();

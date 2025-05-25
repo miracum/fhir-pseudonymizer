@@ -10,6 +10,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
         Perturb,
         Keep,
         Generalize,
-        Pseudonymize
+        Pseudonymize,
     }
 }

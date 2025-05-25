@@ -62,8 +62,8 @@ public class FhirControllerTests
     public void DePseudonymize_WithExceptionThrownInDePseudonymizer_ShouldReturnInternalError()
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
-        A.CallTo(
-                () => dePseudonymizer.DePseudonymizeResource(A<Resource>._, A<AnonymizerSettings>._)
+        A.CallTo(() =>
+                dePseudonymizer.DePseudonymizeResource(A<Resource>._, A<AnonymizerSettings>._)
             )
             .Throws(new Exception("something went wrong"));
 

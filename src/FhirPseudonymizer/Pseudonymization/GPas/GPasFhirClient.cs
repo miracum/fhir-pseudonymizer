@@ -16,13 +16,13 @@ public class GPasFhirClient : IPseudonymServiceClient
     private static readonly Counter TotalGPasRequests = Metrics.CreateCounter(
         "fhirpseudonymizer_gpas_requests_total",
         "Total number of requests against the gPas service.",
-        new CounterConfiguration() { LabelNames = new[] { "operation" }, }
+        new CounterConfiguration() { LabelNames = new[] { "operation" } }
     );
 
     private static readonly Counter TotalGPasRequestCacheMisses = Metrics.CreateCounter(
         "fhirpseudonymizer_gpas_requests_cache_misses_total",
         "Total number of requests against gPas that could not be resolved via the internal cache.",
-        new CounterConfiguration() { LabelNames = new[] { "operation" }, }
+        new CounterConfiguration() { LabelNames = new[] { "operation" } }
     );
 
     private readonly ILogger<GPasFhirClient> logger;
@@ -147,7 +147,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         var query = new Dictionary<string, string>
         {
             ["domain"] = domain,
-            ["pseudonym"] = pseudonym
+            ["pseudonym"] = pseudonym,
         };
 
         var response = await client.GetAsync(

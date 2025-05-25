@@ -18,14 +18,14 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             FHIRAllTypes.Decimal.ToString(),
             FHIRAllTypes.Integer.ToString(),
             FHIRAllTypes.PositiveInt.ToString(),
-            FHIRAllTypes.UnsignedInt.ToString()
+            FHIRAllTypes.UnsignedInt.ToString(),
         };
 
         private static readonly HashSet<string> s_integerValueTypeNames = new HashSet<string>
         {
             FHIRAllTypes.Integer.ToString(),
             FHIRAllTypes.PositiveInt.ToString(),
-            FHIRAllTypes.UnsignedInt.ToString()
+            FHIRAllTypes.UnsignedInt.ToString(),
         };
 
         public ProcessResult Process(

@@ -208,7 +208,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
                 ["EnableMetrics"] = "false",
                 ["Anonymization:CryptoHashKey"] = "test",
-            }
+            },
         };
 
         var client = factory.CreateClient();
@@ -250,7 +250,7 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
                 ["EnableMetrics"] = "false",
                 ["Anonymization:CryptoHashKey"] = "test",
                 ["Anonymization:ShouldAddSecurityTag"] = "false",
-            }
+            },
         };
 
         var client = factory.CreateClient();

@@ -14,6 +14,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
         File,
 
         [EnumMember(Value = "folder")]
-        Folder
+        Folder,
     }
 }

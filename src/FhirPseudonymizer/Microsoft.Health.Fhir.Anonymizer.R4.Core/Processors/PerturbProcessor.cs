@@ -14,7 +14,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             FHIRAllTypes.Money.ToString(),
             FHIRAllTypes.MoneyQuantity.ToString(),
             FHIRAllTypes.Quantity.ToString(),
-            FHIRAllTypes.SimpleQuantity.ToString()
+            FHIRAllTypes.SimpleQuantity.ToString(),
         };
     }
 }

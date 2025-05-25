@@ -8,8 +8,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
     public class AnonymizerConfiguration
     {
         // Static default crypto hash key to provide a same default key for all engine instances
-        private static readonly Lazy<string> s_defaultCryptoKey = new Lazy<string>(
-            () => Guid.NewGuid().ToString("N")
+        private static readonly Lazy<string> s_defaultCryptoKey = new Lazy<string>(() =>
+            Guid.NewGuid().ToString("N")
         );
 
         [DataMember(Name = "fhirVersion")]
@@ -32,7 +32,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
                 {
                     DateShiftKey = Guid.NewGuid().ToString("N"),
                     CryptoHashKey = s_defaultCryptoKey.Value,
-                    EncryptKey = s_defaultCryptoKey.Value
+                    EncryptKey = s_defaultCryptoKey.Value,
                 };
                 return;
             }
