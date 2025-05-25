@@ -19,7 +19,7 @@ public class GPasPseudonymizationProcessorTests
                 "bar",
                 new FhirString("12345"),
                 "foo-bar",
-                enableConditionalReferencePseudonymization
+                enableConditionalReferencePseudonymization,
             };
             yield return new object[]
             {
@@ -27,7 +27,7 @@ public class GPasPseudonymizationProcessorTests
                 "bar",
                 new FhirString("12345"),
                 "bar",
-                enableConditionalReferencePseudonymization
+                enableConditionalReferencePseudonymization,
             };
             yield return new object[]
             {
@@ -35,7 +35,7 @@ public class GPasPseudonymizationProcessorTests
                 null,
                 new ResourceReference("Patient/12345"),
                 "foo-Patient",
-                enableConditionalReferencePseudonymization
+                enableConditionalReferencePseudonymization,
             };
             yield return new object[]
             {
@@ -43,7 +43,7 @@ public class GPasPseudonymizationProcessorTests
                 null,
                 new ResourceReference("Patient/12345"),
                 "Patient",
-                enableConditionalReferencePseudonymization
+                enableConditionalReferencePseudonymization,
             };
         }
     }
@@ -77,17 +77,16 @@ public class GPasPseudonymizationProcessorTests
             new Dictionary<string, object>
             {
                 { "domain", domainName },
-                { "domain-prefix", domainPrefix }
+                { "domain-prefix", domainPrefix },
             }
         );
 
-        A.CallTo(
-                () =>
-                    psnClient.GetOrCreatePseudonymFor(
-                        A<string>._,
-                        expectedDomain,
-                        A<IReadOnlyDictionary<string, object>>._
-                    )
+        A.CallTo(() =>
+                psnClient.GetOrCreatePseudonymFor(
+                    A<string>._,
+                    expectedDomain,
+                    A<IReadOnlyDictionary<string, object>>._
+                )
             )
             .MustHaveHappenedOnceExactly();
     }

@@ -1,21 +1,22 @@
 <Project>
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <LangVersion>latest</LangVersion>
-        <!-- <Nullable>enable</Nullable> -->
-        <ImplicitUsings>enable</ImplicitUsings>
-        <AnalysisLevel>latest</AnalysisLevel>
-        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-        <Company>miracum.org</Company>
-        <Description>A REST service to pseudonymize and anonymize FHIR resources.</Description>
-        <Copyright>© miracum.org. All rights reserved.</Copyright>
-        <NeutralLanguage>en-US</NeutralLanguage>
-        <Authors>miracum.org</Authors>
-        <Version>2.22.9</Version> <!-- x-release-please-version -->
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
-        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <!-- <Nullable>enable</Nullable> -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Company>miracum.org</Company>
+    <Description>A REST service to pseudonymize and anonymize FHIR resources.</Description>
+    <Copyright>© miracum.org. All rights reserved.</Copyright>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <Authors>miracum.org</Authors>
+    <!-- x-release-please-start-version -->
+    <Version>2.22.9</Version>
+    <!-- x-release-please-end-version -->
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
 </Project>

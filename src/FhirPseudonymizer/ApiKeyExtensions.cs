@@ -33,7 +33,7 @@ public static class ApiKeyExtensions
 
                         var claims = new[]
                         {
-                            new Claim("ApiAccess", "Access to FHIR Pseudonymizer API")
+                            new Claim("ApiAccess", "Access to FHIR Pseudonymizer API"),
                         };
 
                         ctx.Principal = new ClaimsPrincipal(
@@ -41,7 +41,7 @@ public static class ApiKeyExtensions
                         );
                         ctx.Success();
                         return Task.CompletedTask;
-                    }
+                    },
                 };
             });
 

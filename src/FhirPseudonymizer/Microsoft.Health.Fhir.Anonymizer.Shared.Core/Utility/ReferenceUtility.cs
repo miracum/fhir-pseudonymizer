@@ -20,25 +20,24 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
 
         private const string InternalReferencePrefix = "#";
 
-        private static readonly List<Regex> _resourceReferenceRegexes =
-            new()
-            {
-                // Regex for absolute or relative literal url reference, https://www.hl7.org/fhir/references.html#literal
-                new Regex(
-                    @"^(?<prefix>((http|https)://([A-Za-z0-9\\\/\.\:\%\$])*)?("
-                        + string.Join("|", ModelInfo.SupportedResources)
-                        + @")\/)(?<id>[A-Za-z0-9\-\.]{1,64})(?<suffix>\/_history\/[A-Za-z0-9\-\.]{1,64})?$"
-                ),
-                // Regex for conditional references (https://www.hl7.org/fhir/http.html#trules) or search parameters with identifier
-                new Regex(
-                    "^(?<prefix>(("
-                        + string.Join("|", ModelInfo.SupportedResources)
-                        + @")\?)?identifier=((http|https)://([A-Za-z0-9\\\/\.\:\%\$\-])*\|)?)(?<id>[A-Za-z0-9\-\.]{1,64})$"
-                )
-            };
+        private static readonly List<Regex> _resourceReferenceRegexes = new()
+        {
+            // Regex for absolute or relative literal url reference, https://www.hl7.org/fhir/references.html#literal
+            new Regex(
+                @"^(?<prefix>((http|https)://([A-Za-z0-9\\\/\.\:\%\$])*)?("
+                    + string.Join("|", ModelInfo.SupportedResources)
+                    + @")\/)(?<id>[A-Za-z0-9\-\.]{1,64})(?<suffix>\/_history\/[A-Za-z0-9\-\.]{1,64})?$"
+            ),
+            // Regex for conditional references (https://www.hl7.org/fhir/http.html#trules) or search parameters with identifier
+            new Regex(
+                "^(?<prefix>(("
+                    + string.Join("|", ModelInfo.SupportedResources)
+                    + @")\?)?identifier=((http|https)://([A-Za-z0-9\\\/\.\:\%\$\-])*\|)?)(?<id>[A-Za-z0-9\-\.]{1,64})$"
+            ),
+        };
 
         private static readonly List<Regex> _referenceRegexes = _resourceReferenceRegexes
-            .Concat(new List<Regex> { OidReferenceRegex(), UuidReferenceRegex(), })
+            .Concat(new List<Regex> { OidReferenceRegex(), UuidReferenceRegex() })
             .ToList();
 
         public static string GetReferencePrefix(string reference)

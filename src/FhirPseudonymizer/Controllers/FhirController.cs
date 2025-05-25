@@ -65,7 +65,7 @@ namespace FhirPseudonymizer.Controllers
                 {
                     Severity = OperationOutcome.IssueSeverity.Error,
                     Code = OperationOutcome.IssueType.Processing,
-                    Diagnostics = "Received malformed or missing resource"
+                    Diagnostics = "Received malformed or missing resource",
                 }
             );
         }
@@ -209,8 +209,8 @@ namespace FhirPseudonymizer.Controllers
                 Format = new[] { "application/fhir+json" },
                 Rest = new List<CapabilityStatement.RestComponent>
                 {
-                    new() { Mode = CapabilityStatement.RestfulCapabilityMode.Server }
-                }
+                    new() { Mode = CapabilityStatement.RestfulCapabilityMode.Server },
+                },
             };
         }
 
@@ -223,7 +223,7 @@ namespace FhirPseudonymizer.Controllers
                     Severity = OperationOutcome.IssueSeverity.Fatal,
                     Code = OperationOutcome.IssueType.Processing,
                     Diagnostics =
-                        $"An internal error occurred when processing the request: {exc.Message}.\nAt: {exc.StackTrace}"
+                        $"An internal error occurred when processing the request: {exc.Message}.\nAt: {exc.StackTrace}",
                 }
             );
             return outcome;

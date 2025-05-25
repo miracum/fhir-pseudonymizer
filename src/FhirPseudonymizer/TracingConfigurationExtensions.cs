@@ -60,7 +60,7 @@ public static class TracingConfigurationExtensions
                                 "/healthz",
                                 "/readyz",
                                 "/livez",
-                                "/fhir/metadata"
+                                "/fhir/metadata",
                             };
 
                             var path = r.Request.Path.Value!;

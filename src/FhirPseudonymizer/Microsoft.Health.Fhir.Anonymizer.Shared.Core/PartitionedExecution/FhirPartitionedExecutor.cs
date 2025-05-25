@@ -136,7 +136,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
                     var batchAnonymizeProgressDetail = new BatchAnonymizeProgressDetail
                     {
-                        CurrentThreadId = Thread.CurrentThread.ManagedThreadId
+                        CurrentThreadId = Thread.CurrentThread.ManagedThreadId,
                     };
 
                     foreach (var content in batchData)
@@ -188,7 +188,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
                         new BatchAnonymizeProgressDetail
                         {
                             ConsumeCompleted = consumeCount,
-                            CurrentThreadId = Thread.CurrentThread.ManagedThreadId
+                            CurrentThreadId = Thread.CurrentThread.ManagedThreadId,
                         }
                     );
                 }
@@ -213,7 +213,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
                                 new BatchAnonymizeProgressDetail
                                 {
                                     ConsumeCompleted = consumeCount,
-                                    CurrentThreadId = Thread.CurrentThread.ManagedThreadId
+                                    CurrentThreadId = Thread.CurrentThread.ManagedThreadId,
                                 }
                             );
                         }

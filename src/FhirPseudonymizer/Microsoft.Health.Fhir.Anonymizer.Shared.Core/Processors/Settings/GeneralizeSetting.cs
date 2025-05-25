@@ -46,7 +46,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings
             return new GeneralizeSetting
             {
                 OtherValues = otherValues,
-                Cases = cases.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value.ToString())
+                Cases = cases.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value.ToString()),
             };
         }
 

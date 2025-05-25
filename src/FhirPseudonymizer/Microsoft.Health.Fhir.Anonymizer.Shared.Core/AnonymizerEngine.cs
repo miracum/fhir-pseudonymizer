@@ -100,7 +100,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
             var serializationSettings = new FhirJsonSerializationSettings
             {
-                Pretty = settings != null && settings.IsPrettyOutput
+                Pretty = settings != null && settings.IsPrettyOutput,
             };
             return anonymizedResource.ToJson(serializationSettings);
         }

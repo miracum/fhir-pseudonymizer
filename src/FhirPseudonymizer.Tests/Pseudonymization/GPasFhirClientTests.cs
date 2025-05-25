@@ -16,7 +16,7 @@ public class GPasFhirClientTests
         {
             "1.10.1",
             HttpMethod.Get,
-            "$pseudonymize-allow-create?domain=domain&original=42"
+            "$pseudonymize-allow-create?domain=domain&original=42",
         };
         yield return new object[] { "1.10.2", HttpMethod.Post, "$pseudonymize-allow-create" };
         yield return new object[] { "1.10.3", HttpMethod.Post, "$pseudonymizeAllowCreate" };
@@ -28,7 +28,7 @@ public class GPasFhirClientTests
         {
             "1.10.1",
             HttpMethod.Get,
-            "$de-pseudonymize?domain=domain&pseudonym=42"
+            "$de-pseudonymize?domain=domain&pseudonym=42",
         };
         yield return new object[] { "1.10.2", HttpMethod.Post, "$de-pseudonymize" };
         yield return new object[] { "1.10.3", HttpMethod.Post, "$dePseudonymize" };
@@ -136,7 +136,7 @@ public class GPasFhirClientTests
                 AbsoluteExpirationMinutes = 1,
                 SizeLimit = 1,
                 SlidingExpirationMinutes = 1,
-            }
+            },
         };
 
         var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 1 });

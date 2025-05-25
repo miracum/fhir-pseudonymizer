@@ -79,14 +79,14 @@ public class StressTests
                         {
                             Family = "Doe",
                             Given = new List<string> { "John" },
-                        }
+                        },
                     },
                     Identifier = new()
                     {
                         new("https://fhir.example.com/identifiers/mrn", originalRecordNumber)
                         {
                             Type = new("http://terminology.hl7.org/CodeSystem/v2-0203", "MR"),
-                        }
+                        },
                     },
                 };
 

@@ -26,13 +26,12 @@ namespace FhirPseudonymizer.Tests
                 }
 
                 var psnClient = A.Fake<IPseudonymServiceClient>();
-                A.CallTo(
-                        () =>
-                            psnClient.GetOrCreatePseudonymFor(
-                                A<string>._,
-                                A<string>._,
-                                A<IReadOnlyDictionary<string, object>>._
-                            )
+                A.CallTo(() =>
+                        psnClient.GetOrCreatePseudonymFor(
+                            A<string>._,
+                            A<string>._,
+                            A<IReadOnlyDictionary<string, object>>._
+                        )
                     )
                     .ReturnsLazily(
                         (
@@ -41,13 +40,12 @@ namespace FhirPseudonymizer.Tests
                             IReadOnlyDictionary<string, object> settings
                         ) => $"pseuded-{original}@{domain}"
                     );
-                A.CallTo(
-                        () =>
-                            psnClient.GetOriginalValueFor(
-                                A<string>._,
-                                A<string>._,
-                                A<IReadOnlyDictionary<string, object>>._
-                            )
+                A.CallTo(() =>
+                        psnClient.GetOriginalValueFor(
+                            A<string>._,
+                            A<string>._,
+                            A<IReadOnlyDictionary<string, object>>._
+                        )
                     )
                     .ReturnsLazily(
                         (
