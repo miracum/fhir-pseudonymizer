@@ -247,15 +247,3 @@ jobs:
       dotnet-version: "9.0.x"
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
-
-  release:
-    uses: miracum/.github/.github/workflows/standard-release.yaml@563959ec1b63f91b8d12a170152b4537f1b43ba8 # v1.16.14
-    needs:
-      - build
-      - test
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-    secrets:
-      semantic-release-token: ${{ secrets.MIRACUM_BOT_SEMANTIC_RELEASE_TOKEN }}

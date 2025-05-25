@@ -12,6 +12,7 @@
         <Copyright>© miracum.org. All rights reserved.</Copyright>
         <NeutralLanguage>en-US</NeutralLanguage>
         <Authors>miracum.org</Authors>
+        <Version>2.22.9</Version> <!-- x-release-please-version -->
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
