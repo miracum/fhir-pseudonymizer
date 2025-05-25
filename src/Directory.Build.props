@@ -13,7 +13,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <Authors>miracum.org</Authors>
     <!-- x-release-please-start-version -->
-    <Version>2.22.9</Version>
+    <Version>2.22.10</Version>
     <!-- x-release-please-end-version -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
