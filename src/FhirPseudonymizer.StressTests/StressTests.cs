@@ -129,7 +129,7 @@ public class StressTests
                 {
                     scenarioContext.Logger.Error(exc, "Stopping test due to invariant violation.");
                     scenarioContext.StopCurrentTest(exc.Message);
-                    return Response.Fail("400", exc.Message, sizeBytes: 0);
+                    return Response.Fail("400", exc.Message, sizeBytes: 0, customLatencyMs: 0);
                 }
             }
         );
