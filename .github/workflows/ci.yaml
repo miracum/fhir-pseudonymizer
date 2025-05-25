@@ -7,6 +7,9 @@ on:
     types: [created]
   pull_request:
     branches: [master]
+  merge_group:
+    types:
+      - checks_requested
 
 permissions:
   contents: read
