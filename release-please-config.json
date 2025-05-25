@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/refs/heads/main/schemas/config.json",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "include-v-in-tag": true,
+  "separate-pull-requests": true,
+  "extra-label": "release-please",
+  "release-type": "simple",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "perf", "section": "Performance Improvements" },
+        { "type": "docs", "section": "Documentation", "hidden": false },
+        {
+          "type": "chore",
+          "section": "Miscellaneous Chores",
+          "hidden": false
+        },
+        { "type": "build", "section": "Build", "hidden": false },
+        { "type": "ci", "section": "CI/CD", "hidden": false }
+      ],
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/Directory.Build.props"
+        },
+        {
+          "type": "generic",
+          "path": "compose/compose.yaml"
+        },
+        {
+          "type": "generic",
+          "path": "README.md"
+        },
+        {
+          "type": "generic",
+          "path": "tests/chaos/fhir-pseudonymizer-values.yaml"
+        }
+      ]
+    }
+  }
+}

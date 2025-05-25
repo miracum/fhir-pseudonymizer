@@ -11,6 +11,8 @@ Based on the brilliant [Tools for Health Data Anonymization](https://github.com/
 
 ## Usage
 
+<!-- x-release-please-start-version -->
+
 ```sh
 docker run --rm -i -p 8080:8080 \
   -e PseudonymizationService="None" \
@@ -19,6 +21,8 @@ docker run --rm -i -p 8080:8080 \
 
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
 ```
+
+<!-- x-release-please-end-version -->
 
 This uses the [default anonymization config](./src/FhirPseudonymizer/anonymization.yaml) which only changes the sample Observation's `id`.
 
@@ -451,6 +455,8 @@ Prerequisites:
 
 All released container images are signed using [cosign](https://github.com/sigstore/cosign) and SLSA Level 3 provenance is available for verification.
 
+<!-- x-release-please-start-version -->
+
 ```sh
 IMAGE=ghcr.io/miracum/fhir-pseudonymizer:v2.22.9
 DIGEST=$(crane digest "${IMAGE}")
@@ -472,6 +478,8 @@ slsa-verifier verify-image \
     --source-branch master \
     "${IMAGE_DIGEST_PINNED}"
 ```
+
+<!-- x-release-please-end-version -->
 
 ## Semantic versioning exclusion policies
 
