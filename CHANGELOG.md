@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.22.11](https://github.com/miracum/fhir-pseudonymizer/compare/v2.22.10...v2.22.11) (2025-06-04)
+
+
+### Miscellaneous Chores
+
+* **deps:** update ghcr.io/miracum/vfps:v1.3.6 docker digest to 21f45ea ([#259](https://github.com/miracum/fhir-pseudonymizer/issues/259)) ([a957d75](https://github.com/miracum/fhir-pseudonymizer/commit/a957d756de69f47934597aba4ec5a85fea400805))
+* **deps:** update github-actions ([#261](https://github.com/miracum/fhir-pseudonymizer/issues/261)) ([83ab36c](https://github.com/miracum/fhir-pseudonymizer/commit/83ab36c7f2fe4add39cf7fb7e706a4a32227b3e3))
+
 ## [2.22.10](https://github.com/miracum/fhir-pseudonymizer/compare/v2.22.9...v2.22.10) (2025-05-25)
 
 
