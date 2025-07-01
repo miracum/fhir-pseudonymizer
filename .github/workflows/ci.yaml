@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@ea119ab4361974cc57f38719dd14ede3a289724a # v1.16.17
+    uses: miracum/.github/.github/workflows/standard-build.yaml@ca714dd2f958a70aa44fd62a7711321bf88b0236 # v1.16.19
     permissions:
       contents: write
       id-token: write
@@ -106,7 +106,7 @@ jobs:
           thresholds: "50 50"
 
       - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
+        uses: marocchino/sticky-pull-request-comment@d2ad0de260ae8b0235ce059e63f2949ba9e05943 # v2.9.3
         if: ${{ github.event_name == 'pull_request' }}
         with:
           recreate: true
@@ -206,7 +206,7 @@ jobs:
           } >> iter8-output.md
 
       - name: Append sticky comment with iter8 report
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
+        uses: marocchino/sticky-pull-request-comment@d2ad0de260ae8b0235ce059e63f2949ba9e05943 # v2.9.3
         if: ${{ github.event_name == 'pull_request' }}
         with:
           append: true
@@ -235,7 +235,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@ea119ab4361974cc57f38719dd14ede3a289724a # v1.16.17
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@ca714dd2f958a70aa44fd62a7711321bf88b0236 # v1.16.19
     permissions:
       contents: read
       pull-requests: write
