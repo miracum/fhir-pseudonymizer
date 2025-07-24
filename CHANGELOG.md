@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.22.11](https://github.com/miracum/fhir-pseudonymizer/compare/v2.22.10...v2.22.11) (2025-07-24)
+
+
+### Miscellaneous Chores
+
+* **deps:** update all digest updates ([#263](https://github.com/miracum/fhir-pseudonymizer/issues/263)) ([a05a955](https://github.com/miracum/fhir-pseudonymizer/commit/a05a95579e83f04e948c5d1f9ca17e593eea659e))
+* **deps:** update all digest updates ([#267](https://github.com/miracum/fhir-pseudonymizer/issues/267)) ([1ad6a3e](https://github.com/miracum/fhir-pseudonymizer/commit/1ad6a3eb1ed1b8f7fbfd32a285cc837b061937e8))
+* **deps:** update all non-major dependencies ([#264](https://github.com/miracum/fhir-pseudonymizer/issues/264)) ([d09b5d5](https://github.com/miracum/fhir-pseudonymizer/commit/d09b5d57c6235638e8a2c817214595aa7365882e))
+* **deps:** update all non-major dependencies ([#268](https://github.com/miracum/fhir-pseudonymizer/issues/268)) ([9b2ac47](https://github.com/miracum/fhir-pseudonymizer/commit/9b2ac47cb8393279adb8979eecdf60fa79c64bb4))
+* **deps:** update dependency swashbuckle.aspnetcore to v9 ([#266](https://github.com/miracum/fhir-pseudonymizer/issues/266)) ([3f4f166](https://github.com/miracum/fhir-pseudonymizer/commit/3f4f16672e5eeda05fb359ebe4422b74f0304d06))
+* **deps:** update ghcr.io/miracum/vfps:v1.3.6 docker digest to 21f45ea ([#259](https://github.com/miracum/fhir-pseudonymizer/issues/259)) ([a957d75](https://github.com/miracum/fhir-pseudonymizer/commit/a957d756de69f47934597aba4ec5a85fea400805))
+* **deps:** update github-actions ([#261](https://github.com/miracum/fhir-pseudonymizer/issues/261)) ([83ab36c](https://github.com/miracum/fhir-pseudonymizer/commit/83ab36c7f2fe4add39cf7fb7e706a4a32227b3e3))
+* **deps:** update github-actions ([#265](https://github.com/miracum/fhir-pseudonymizer/issues/265)) ([63bbc37](https://github.com/miracum/fhir-pseudonymizer/commit/63bbc37ffe70bc24d8c76b99eee1c8121dc33225))
+* **deps:** update github-actions ([#269](https://github.com/miracum/fhir-pseudonymizer/issues/269)) ([5612bda](https://github.com/miracum/fhir-pseudonymizer/commit/5612bda5e8a5a98186cb6ba30dfbf384070bd80e))
+
 ## [2.22.10](https://github.com/miracum/fhir-pseudonymizer/compare/v2.22.9...v2.22.10) (2025-05-25)
 
 
