@@ -38,17 +38,14 @@ COPY --from=build-test /build/src/FhirPseudonymizer.Tests/coverage .
 ENTRYPOINT [ "true" ]
 
 FROM build AS build-stress-test
-WORKDIR /build/src/FhirPseudonymizer.StressTests
-RUN <<EOF
-dotnet build \
-    --configuration=Release
+WORKDIR /build
 
+RUN <<EOF
 dotnet publish \
-    --no-restore \
-    --no-build \
     --configuration=Release \
     -a "$TARGETARCH" \
-    -o /build/publish
+    -o /build/publish \
+    src/FhirPseudonymizer.StressTests/FhirPseudonymizer.StressTests.csproj
 EOF
 
 FROM build AS stress-test
@@ -56,7 +53,7 @@ WORKDIR /opt/fhir-pseudonymizer-stress
 
 # https://github.com/hadolint/hadolint/pull/815 isn't yet in mega-linter
 # hadolint ignore=DL3022
-COPY --from=docker.io/bitnami/kubectl:1.33.3@sha256:cd354d5b25562b195b277125439c23e4046902d7f1abc0dc3c75aad04d298c17 /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
+COPY --from=docker.io/rancher/kubectl:v1.34.0@sha256:ff3cdadeac7eae628b59debe73302bb41337098dc3f15dfb3f3c5a59b046d23c /bin/kubectl /usr/bin/kubectl
 
 COPY tests/chaos/chaos.yaml /tmp/
 COPY --from=build-stress-test /build/publish .
