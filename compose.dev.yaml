@@ -21,7 +21,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   vfps-db:
-    image: docker.io/library/postgres:17.6@sha256:5250e6187084ddf4ba407027d07eed2419d4656e30821afef43825c6c0d127df
+    image: docker.io/library/postgres:18.0@sha256:1d288494853e244e7a78d87b3526e650e5221c622f9768ecac9313d0874a9c39
     restart: unless-stopped
     deploy:
       resources:
