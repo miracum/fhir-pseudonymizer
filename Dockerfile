@@ -8,7 +8,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0.305-noble@sha256:8a26226e58ec52c5defb37b876584df99f94bec70f1081c4014fdf25c994d51e AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0.305-noble@sha256:9ae2f68485dc3385e76e38524806fd159988b6e525ea5f27a4870bdf8bc0fe72 AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/Directory.Build.props .
