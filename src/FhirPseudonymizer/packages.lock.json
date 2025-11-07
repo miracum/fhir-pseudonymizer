@@ -69,9 +69,9 @@
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
-        "requested": "[5.13.0, )",
-        "resolved": "5.13.0",
-        "contentHash": "zFBzSr/jBEygovQy9PiWDJQs4WEArxgI8MFiMhqe1EDPZ2+EcMcQ2J7WYFGlyzPBw/ScYImxI8Nx4066huan9Q==",
+        "requested": "[6.0.1, )",
+        "resolved": "6.0.1",
+        "contentHash": "+QhqkGS/Y3t0ObJ19nY6SJBt0i13ZMEJ2Dv8TGU4eXeJuc2MACdqtF1dOuApuhpnsHT1O7BCx0iOcXCUyVGiOQ==",
         "dependencies": {
           "Fhir.Metrics": "1.3.1",
           "Newtonsoft.Json": "13.0.3",
