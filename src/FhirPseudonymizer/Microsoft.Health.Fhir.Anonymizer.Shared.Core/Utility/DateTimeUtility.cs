@@ -131,7 +131,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             ElementNode node,
             string dateShiftKey,
             string dateShiftKeyPrefix,
-            bool enablePartialDatesForRedact = false
+            bool enablePartialDatesForRedact = false,
+            int? fixedOffsetInDays = null
         )
         {
             var processResult = new ProcessResult();
@@ -145,7 +146,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 matchedGroups[s_dayIndex].Captures.Any() && !IndicateAgeOverThreshold(matchedGroups)
             )
             {
-                var offset = GetDateShiftValue(node, dateShiftKey, dateShiftKeyPrefix);
+                var offset = GetDateShiftValue(node, dateShiftKey, dateShiftKeyPrefix, fixedOffsetInDays);
                 node.Value = DateTime
                     .Parse(node.Value.ToString())
                     .AddDays(offset)
@@ -164,7 +165,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             ElementNode node,
             string dateShiftKey,
             string dateShiftKeyPrefix,
-            bool enablePartialDatesForRedact = false
+            bool enablePartialDatesForRedact = false,
+            int? fixedOffsetInDays = null
         )
         {
             var processResult = new ProcessResult();
@@ -181,7 +183,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 matchedGroups[s_dayIndex].Captures.Any() && !IndicateAgeOverThreshold(matchedGroups)
             )
             {
-                var offset = GetDateShiftValue(node, dateShiftKey, dateShiftKeyPrefix);
+                var offset = GetDateShiftValue(node, dateShiftKey, dateShiftKeyPrefix, fixedOffsetInDays);
                 if (matchedGroups[s_timeIndex].Captures.Any())
                 {
                     var newDate = DateTimeOffset
@@ -240,9 +242,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         private static int GetDateShiftValue(
             ElementNode node,
             string dateShiftKey,
-            string dateShiftKeyPrefix
+            string dateShiftKeyPrefix,
+            int? fixedOffsetInDays = null
         )
         {
+            if (fixedOffsetInDays.HasValue)
+            {
+                return fixedOffsetInDays.Value;
+            }
+
             if (string.IsNullOrEmpty(dateShiftKeyPrefix))
             {
                 dateShiftKeyPrefix = TryGetResourceId(node);
