@@ -38,6 +38,33 @@ public class FhirControllerTests
     }
 
     [Fact]
+    public void DeIdentify_ParsesDateShiftFixedOffsetInDaysSetting()
+    {
+        const string settingKey = "dateShiftFixedOffsetInDays";
+        var settingValue = new Integer(30);
+        Dictionary<string, object> ruleSettings = null;
+
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
+            .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings);
+
+        var controller = new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            anonymizer,
+            A.Fake<IDePseudonymizerEngine>()
+        );
+
+        var parameters = new Parameters()
+            .Add("settings", new[] { Tuple.Create<string, Base>(settingKey, settingValue) })
+            .Add("resource", new Patient());
+
+        controller.DeIdentify(parameters);
+
+        ruleSettings.Should().ContainKey(settingKey).WhoseValue.Should().Be(settingValue);
+    }
+
+    [Fact]
     public void DeIdentify_WithExceptionThrownInAnonymizer_ShouldReturnInternalError()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
