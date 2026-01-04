@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.23.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.23.0...v2.23.1) (2026-01-04)
+
+
+### Miscellaneous Chores
+
+* **deps:** update all non-major dependencies ([#300](https://github.com/miracum/fhir-pseudonymizer/issues/300)) ([0cbc535](https://github.com/miracum/fhir-pseudonymizer/commit/0cbc535eac84808e3bf6efc4f54d83eedb3781c9))
+* **deps:** update docker.io/library/postgres:18.1 docker digest to bfe50b2 ([#299](https://github.com/miracum/fhir-pseudonymizer/issues/299)) ([a70925c](https://github.com/miracum/fhir-pseudonymizer/commit/a70925c66a03278f46e1bb2fcf99c8abff6d0895))
+* **deps:** update github-actions ([#301](https://github.com/miracum/fhir-pseudonymizer/issues/301)) ([91b3e42](https://github.com/miracum/fhir-pseudonymizer/commit/91b3e42c09562a1495a50d07fb3c404f484b85a5))
+* **deps:** update github-actions ([#302](https://github.com/miracum/fhir-pseudonymizer/issues/302)) ([55de055](https://github.com/miracum/fhir-pseudonymizer/commit/55de0550d3d14630fcc3a44a3a0c68800594a3c6))
+
 ## [2.23.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.22.10...v2.23.0) (2025-12-10)
 
 
