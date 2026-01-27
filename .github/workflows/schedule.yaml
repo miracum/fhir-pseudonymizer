@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   schedule:
-    uses: miracum/.github/.github/workflows/standard-schedule.yaml@4a5ed0cb8f87fe5197b33c2619b3431786e9b6a5 # v1.19.2
+    uses: miracum/.github/.github/workflows/standard-schedule.yaml@8d3203b6598feaa0c20f26351cc118bd4a158197 # v1.20.0
     permissions:
       contents: read
       issues: write

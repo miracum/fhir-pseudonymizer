@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@4a5ed0cb8f87fe5197b33c2619b3431786e9b6a5 # v1.19.2
+    uses: miracum/.github/.github/workflows/standard-build.yaml@8d3203b6598feaa0c20f26351cc118bd4a158197 # v1.20.0
     permissions:
       contents: write
       id-token: write
@@ -56,7 +56,7 @@ jobs:
           docker info -f '{{ .DriverStatus }}'
 
       - name: "Checkout code"
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
@@ -138,7 +138,7 @@ jobs:
           docker info -f '{{ .DriverStatus }}'
 
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
@@ -238,7 +238,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@4a5ed0cb8f87fe5197b33c2619b3431786e9b6a5 # v1.19.2
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@8d3203b6598feaa0c20f26351cc118bd4a158197 # v1.20.0
     permissions:
       contents: read
       pull-requests: write
