@@ -64,6 +64,8 @@ public class Startup
 
         services.AddAnonymizerEngine(appConfig);
 
+        services.AddRequestDecompression();
+
         services.AddResponseCompression(options =>
         {
             options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
@@ -120,7 +122,8 @@ public class Startup
             app.UseDeveloperExceptionPage();
         }
 
-        app.UseMiddleware<RequestCompression>();
+        app.UseRequestDecompression();
+
         app.UseResponseCompression();
 
         app.UseSwagger();
