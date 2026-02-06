@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.24.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.23.0...v2.24.0) (2026-02-06)
+
+
+### Features
+
+* added request decompression support ([#308](https://github.com/miracum/fhir-pseudonymizer/issues/308)) ([99e06b0](https://github.com/miracum/fhir-pseudonymizer/commit/99e06b08616254e120b5143ba30c0336fa816e37))
+
+
+### Miscellaneous Chores
+
+* **deps:** update all non-major dependencies ([#300](https://github.com/miracum/fhir-pseudonymizer/issues/300)) ([0cbc535](https://github.com/miracum/fhir-pseudonymizer/commit/0cbc535eac84808e3bf6efc4f54d83eedb3781c9))
+* **deps:** update all non-major dependencies ([#305](https://github.com/miracum/fhir-pseudonymizer/issues/305)) ([9affa87](https://github.com/miracum/fhir-pseudonymizer/commit/9affa872476e23de93ef59d57c07330dd175e0a4))
+* **deps:** update dependency fakeiteasy to v9 ([#307](https://github.com/miracum/fhir-pseudonymizer/issues/307)) ([17e50d7](https://github.com/miracum/fhir-pseudonymizer/commit/17e50d7692e0a637cb803cf2a69e0e92af8138b2))
+* **deps:** update docker.io/library/postgres:18.1 docker digest to 5773fe7 ([#304](https://github.com/miracum/fhir-pseudonymizer/issues/304)) ([b054205](https://github.com/miracum/fhir-pseudonymizer/commit/b054205197023c68db0ed9c06e3ee46a1494debe))
+* **deps:** update docker.io/library/postgres:18.1 docker digest to bfe50b2 ([#299](https://github.com/miracum/fhir-pseudonymizer/issues/299)) ([a70925c](https://github.com/miracum/fhir-pseudonymizer/commit/a70925c66a03278f46e1bb2fcf99c8abff6d0895))
+* **deps:** update github-actions ([#301](https://github.com/miracum/fhir-pseudonymizer/issues/301)) ([91b3e42](https://github.com/miracum/fhir-pseudonymizer/commit/91b3e42c09562a1495a50d07fb3c404f484b85a5))
+* **deps:** update github-actions ([#302](https://github.com/miracum/fhir-pseudonymizer/issues/302)) ([55de055](https://github.com/miracum/fhir-pseudonymizer/commit/55de0550d3d14630fcc3a44a3a0c68800594a3c6))
+* **deps:** update github-actions ([#306](https://github.com/miracum/fhir-pseudonymizer/issues/306)) ([c368ce5](https://github.com/miracum/fhir-pseudonymizer/commit/c368ce5c3140e720a53baecb6904f86e34ccabb0))
+
 ## [2.23.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.22.10...v2.23.0) (2025-12-10)
 
 
