@@ -16,7 +16,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Hl7.Fhir.R4" Version="5.13.2" />
-    <PackageReference Include="Hl7.Fhir.Base" Version="5.13.2" />
+    <PackageReference Include="Hl7.Fhir.Base" Version="6.0.2" />
     <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
     <PackageReference Include="prometheus-net" Version="8.2.1" />
     <PackageReference Include="prometheus-net.AspNetCore.Grpc" Version="8.2.1" />
