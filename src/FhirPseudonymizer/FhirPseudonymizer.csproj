@@ -5,7 +5,7 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Duende.AccessTokenManagement" Version="3.3.0" />
+    <PackageReference Include="Duende.AccessTokenManagement" Version="4.1.1" />
     <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="9.0.0" />
     <PackageReference Include="FhirParametersGenerator" Version="0.5.0" />
     <PackageReference Include="Google.Protobuf" Version="3.33.4" />
