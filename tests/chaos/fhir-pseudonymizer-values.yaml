@@ -1,7 +1,7 @@
 replicaCount: 3
 
 image:
-  tag: v2.23.0 # x-release-please-version
+  tag: v2.24.0 # x-release-please-version
 
 anonymizationConfig: |
   ---
