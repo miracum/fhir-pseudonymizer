@@ -14,7 +14,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NBomber" Version="6.2.0" />
-    <PackageReference Include="AwesomeAssertions" Version="8.2.0" />
+    <PackageReference Include="AwesomeAssertions" Version="9.4.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FhirPseudonymizer\FhirPseudonymizer.csproj" />

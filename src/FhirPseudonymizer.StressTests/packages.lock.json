@@ -4,9 +4,9 @@
     "net9.0": {
       "AwesomeAssertions": {
         "type": "Direct",
-        "requested": "[8.2.0, )",
-        "resolved": "8.2.0",
-        "contentHash": "L7TH34LqLwc5IGOGvhA8j04RoJRSyL8JuqJDxzFZ8iCyIG5Qy8kjsSdbEFejZPJ5WlUv2XH0z8nG7Y5ueBfMxQ=="
+        "requested": "[9.4.0, )",
+        "resolved": "9.4.0",
+        "contentHash": "dJxkWiQ8D+xT6Gr2sSL83+Mar+Vpy2JTcUPxFcckpPJ8VYBfSgnk+zqpS6t7kcGnjz8NLyF14qfuoL4bKzzoew=="
       },
       "Microsoft.AspNetCore.Mvc.Testing": {
         "type": "Direct",
