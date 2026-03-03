@@ -1,6 +1,6 @@
 # kics false positive "Missing User Instruction": <https://docs.kics.io/latest/queries/dockerfile-queries/fd54f200-402c-4333-a5a4-36ef6709af2f/>
 # kics-scan ignore-line
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/aspnet:9.0.12-noble-chiseled@sha256:5618d5a4dc7f6158e7db1f5893be1648fb5bbeecc09155e1b8dd9f629b46a9ef AS runtime
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/aspnet:9.0.12-noble-chiseled@sha256:87993d336a329a19b178e56d2f79fafcb1115f32bafa7175cfe844f186e4749e AS runtime
 WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp 8081/tcp
 USER 65532:65532
@@ -8,7 +8,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0.310-noble@sha256:d5cc2329eb3a4dc07cb37405605d9905cd2d2dc0bea94905c53b646a77c5339e AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0.310-noble@sha256:e8cb34dc611775780096acdfd5f4dea08f6c33cee563a3422ec56aa2033c0e90 AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/Directory.Build.props .
