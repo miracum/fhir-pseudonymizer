@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@8d3203b6598feaa0c20f26351cc118bd4a158197 # v1.20.0
+    uses: miracum/.github/.github/workflows/standard-build.yaml@e80245abb031a27f87d0e07eeb6f5f54a82a46b8 # v1.20.4
     permissions:
       contents: write
       id-token: write
@@ -61,7 +61,7 @@ jobs:
           persist-credentials: false
 
       - name: Download image
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         if: ${{ github.event_name == 'pull_request' }}
         with:
           name: ${{ needs.build.outputs.image-slug }}
@@ -75,7 +75,7 @@ jobs:
           docker image ls
 
       - name: Download test image
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         with:
           name: ${{ needs.build.outputs.image-slug }}-test
           path: /tmp
@@ -152,12 +152,12 @@ jobs:
           iter8 version
 
       - name: Create KinD cluster
-        uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
           cluster_name: kind
 
       - name: Download image
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
         with:
           name: ${{ needs.build.outputs.image-slug }}
           path: /tmp
@@ -217,7 +217,7 @@ jobs:
 
       - name: Upload report
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: iter8-report.html
           path: |
@@ -231,14 +231,14 @@ jobs:
 
       - name: Upload cluster dump
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: kind-cluster-dump.txt
           path: |
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@8d3203b6598feaa0c20f26351cc118bd4a158197 # v1.20.0
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@e80245abb031a27f87d0e07eeb6f5f54a82a46b8 # v1.20.4
     permissions:
       contents: read
       pull-requests: write

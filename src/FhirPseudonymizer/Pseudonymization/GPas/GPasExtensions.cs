@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Headers;
 using System.Text;
+using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
 using Polly;
 using Polly.Extensions.Http;
@@ -32,13 +33,28 @@ public static class GPasExtensions
                     $"{GPasFhirClient.HttpClientName}.oAuth.client",
                     client =>
                     {
-                        client.TokenEndpoint = oAuthConfig.TokenEndpoint.AbsoluteUri;
+                        if (
+                            oAuthConfig.TokenEndpoint is null
+                            || oAuthConfig.ClientId is null
+                            || oAuthConfig.ClientSecret is null
+                        )
+                        {
+                            return;
+                        }
 
-                        client.ClientId = oAuthConfig.ClientId;
-                        client.ClientSecret = oAuthConfig.ClientSecret;
+                        client.TokenEndpoint = oAuthConfig.TokenEndpoint;
+                        client.ClientId = ClientId.Parse(oAuthConfig.ClientId);
+                        client.ClientSecret = ClientSecret.Parse(oAuthConfig.ClientSecret);
 
-                        client.Scope = oAuthConfig.Scope;
-                        client.Resource = oAuthConfig.Resource;
+                        if (oAuthConfig.Scope is not null)
+                        {
+                            client.Scope = Scope.Parse(oAuthConfig.Scope);
+                        }
+
+                        if (oAuthConfig.Resource is not null)
+                        {
+                            client.Resource = Resource.Parse(oAuthConfig.Resource);
+                        }
                     }
                 );
         }
@@ -48,7 +64,7 @@ public static class GPasExtensions
         {
             clientBuilder = services.AddClientCredentialsHttpClient(
                 GPasFhirClient.HttpClientName,
-                $"{GPasFhirClient.HttpClientName}.oAuth.client",
+                ClientCredentialsClientName.Parse($"{GPasFhirClient.HttpClientName}.oAuth.client"),
                 client =>
                 {
                     client.BaseAddress = gPasConfig.Url;
