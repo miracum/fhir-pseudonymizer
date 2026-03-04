@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.24.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.24.0...v2.24.1) (2026-03-04)
+
+
+### Miscellaneous Chores
+
+* **deps:** all renovations ([#315](https://github.com/miracum/fhir-pseudonymizer/issues/315)) ([c990823](https://github.com/miracum/fhir-pseudonymizer/commit/c9908232b1a08c551ed84529efcf1039590f1b5c))
+* **deps:** update dependency swashbuckle.aspnetcore to v10 ([#292](https://github.com/miracum/fhir-pseudonymizer/issues/292)) ([0c4eccb](https://github.com/miracum/fhir-pseudonymizer/commit/0c4eccb79b3ff211b46eb4cb931437dc35ab00ce))
+* **deps:** update dotnet monorepo to v10 ([#293](https://github.com/miracum/fhir-pseudonymizer/issues/293)) ([fcce14f](https://github.com/miracum/fhir-pseudonymizer/commit/fcce14fd8eb9e109c69b0fbb49c35176b01782f7))
+
 ## [2.24.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.23.0...v2.24.0) (2026-02-06)
 
 
