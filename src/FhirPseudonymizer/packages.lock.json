@@ -38,9 +38,9 @@
       },
       "Google.Protobuf": {
         "type": "Direct",
-        "requested": "[3.33.4, )",
-        "resolved": "3.33.4",
-        "contentHash": "8uRKKkDp+0Clqz1GqH6aTQtQsDJJyWhw9Owo1jsplIdNR7SIPehLVq4+5zccXkjOVbR6OcjEvL4MlrVSTme2IA=="
+        "requested": "[3.34.0, )",
+        "resolved": "3.34.0",
+        "contentHash": "a5US9akiNczS5kC7qBqYqJmnxHVQDITZD6GRRbwGHk/oa17EwOGE3PHIWFVeHTqCctq8mVjLSelwsxCkYYBinA=="
       },
       "Grpc.Net.Client": {
         "type": "Direct",
@@ -64,9 +64,9 @@
       },
       "Grpc.Tools": {
         "type": "Direct",
-        "requested": "[2.76.0, )",
-        "resolved": "2.76.0",
-        "contentHash": "goRzYZVMgQtyLvkWdgTnPycg49hlNxnMkqGGgR3l7nCOm0bUh0YeAneiJ9JFk3XLgF4suQUdETYkl2Mg/TBr0w=="
+        "requested": "[2.78.0, )",
+        "resolved": "2.78.0",
+        "contentHash": "6jPG2gHon+w2PczW8jjrCRnW/g9eEfCdd7aK6mDooptWtuPsV3ZxAwKKEx7LGEDVoT4c2SViRl8Yu3L1XiWIIg=="
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
@@ -97,11 +97,11 @@
       },
       "Microsoft.Extensions.Http.Polly": {
         "type": "Direct",
-        "requested": "[9.0.12, )",
-        "resolved": "9.0.12",
-        "contentHash": "9SmQha3zWSK23OwJzUMxdJPwrfK6thBPNBFa5MB1NI+jiCSPkR+EeZhV3FqE0VARSLdsFffRbrSchZna7JSTDQ==",
+        "requested": "[9.0.13, )",
+        "resolved": "9.0.13",
+        "contentHash": "lfT9mqBUoRygt8zOwTS95SyLtQ5BhcExdXgl902xytsl1Yq1eDQXorA9tyweQ/YIwMyZbC3oZtbVxyB9w1925A==",
         "dependencies": {
-          "Microsoft.Extensions.Http": "9.0.12",
+          "Microsoft.Extensions.Http": "9.0.13",
           "Polly": "7.2.4",
           "Polly.Extensions.Http": "3.0.0"
         }
