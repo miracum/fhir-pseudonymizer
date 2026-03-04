@@ -4,7 +4,7 @@
     <CodeAnalysisRuleSet>..\..\stylecop.ruleset.xml</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="coverlet.msbuild" Version="6.0.4" />
+    <PackageReference Include="coverlet.msbuild" Version="8.0.0" />
     <PackageReference Include="FakeItEasy" Version="9.0.1" />
     <PackageReference Include="AwesomeAssertions" Version="9.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.13" />
