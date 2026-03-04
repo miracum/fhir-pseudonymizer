@@ -119,10 +119,7 @@ public class DateShiftProcessorTests
         );
 
         // Use Condition.recordedDate which is a non-polymorphic dateTime field
-        var condition = new Condition
-        {
-            RecordedDate = "2020-06-15T10:30:00+02:00",
-        };
+        var condition = new Condition { RecordedDate = "2020-06-15T10:30:00+02:00" };
         var node = ElementNode.FromElement(condition.ToTypedElement());
         var recordedDateNode = node.Children("recordedDate").CastElementNodes().First();
 
@@ -151,7 +148,7 @@ public class DateShiftProcessorTests
         var birthDateNode = node.Children("birthDate").CastElementNodes().First();
 
         // Using raw int instead of FHIR Integer
-        var settings = new Dictionary<string, object> { { "dateShiftFixedOffsetInDays", 30 }, };
+        var settings = new Dictionary<string, object> { { "dateShiftFixedOffsetInDays", 30 } };
 
         processor.Process(birthDateNode, settings: settings);
 

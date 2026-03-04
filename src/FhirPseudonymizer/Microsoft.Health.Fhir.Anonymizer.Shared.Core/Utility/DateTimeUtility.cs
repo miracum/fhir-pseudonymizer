@@ -146,7 +146,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 matchedGroups[s_dayIndex].Captures.Any() && !IndicateAgeOverThreshold(matchedGroups)
             )
             {
-                var offset = GetDateShiftValue(node, dateShiftKey, dateShiftKeyPrefix, fixedOffsetInDays);
+                var offset = GetDateShiftValue(
+                    node,
+                    dateShiftKey,
+                    dateShiftKeyPrefix,
+                    fixedOffsetInDays
+                );
                 node.Value = DateTime
                     .Parse(node.Value.ToString())
                     .AddDays(offset)
@@ -183,7 +188,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 matchedGroups[s_dayIndex].Captures.Any() && !IndicateAgeOverThreshold(matchedGroups)
             )
             {
-                var offset = GetDateShiftValue(node, dateShiftKey, dateShiftKeyPrefix, fixedOffsetInDays);
+                var offset = GetDateShiftValue(
+                    node,
+                    dateShiftKey,
+                    dateShiftKeyPrefix,
+                    fixedOffsetInDays
+                );
                 if (matchedGroups[s_timeIndex].Captures.Any())
                 {
                     var newDate = DateTimeOffset
