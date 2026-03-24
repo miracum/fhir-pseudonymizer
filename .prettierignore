@@ -1,2 +1,2 @@
-src/FhirPseudonymizer.Tests/Snapshots
+src/FhirPseudonymizer.Tests/Snapshots/*
 packages.lock.json

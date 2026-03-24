@@ -1,0 +1,265 @@
+{
+  "resourceType": "Bundle",
+  "meta": {
+    "security": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "REDACTED",
+        "display": "redacted"
+      },
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "ABSTRED",
+        "display": "abstracted"
+      },
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "CRYTOHASH",
+        "display": "cryptographic hash function"
+      },
+      {
+        "code": "PERTURBED",
+        "display": "exact value is replaced with another exact value"
+      }
+    ]
+  },
+  "type": "batch",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "16d9c09730b9ba1c0b8d5c33a990de915c078f35898cd2f6d6f74e79202d4070",
+        "meta": {
+          "source": "#p21",
+          "security": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "REDACTED",
+              "display": "redacted"
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "ABSTRED",
+              "display": "abstracted"
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "CRYTOHASH",
+              "display": "cryptographic hash function"
+            },
+            {
+              "code": "PERTURBED",
+              "display": "exact value is replaced with another exact value"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "use": "usual",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203"
+                }
+              ]
+            },
+            "system": "https://miracum.org/fhir/NamingSystem/identifier/PatientId"
+          },
+          {
+            "use": "official",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://fhir.de/CodeSystem/identifier-type-de-basis"
+                }
+              ]
+            },
+            "system": "http://fhir.de/NamingSystem/gkv/kvid-10",
+            "assigner": {
+              "identifier": {
+                "use": "official",
+                "system": "http://fhir.de/NamingSystem/arge-ik/iknr"
+              }
+            }
+          }
+        ],
+        "gender": "unknown",
+        "birthDate": "1941-01-24",
+        "deceasedDateTime": "2018-08-28T00:00:00+02:00",
+        "address": [
+          {
+            "postalCode": "12300"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "751c28c3f6689d5cbdafa0379fedbe6d2cc8e0b2753f6f22d23ce24a2fd65d37",
+        "meta": {
+          "source": "#p21",
+          "security": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "REDACTED",
+              "display": "redacted"
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "CRYTOHASH",
+              "display": "cryptographic hash function"
+            },
+            {
+              "code": "PERTURBED",
+              "display": "exact value is replaced with another exact value"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "use": "usual",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203"
+                }
+              ]
+            },
+            "system": "https://miracum.org/fhir/NamingSystem/identifier/EncounterId"
+          }
+        ],
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+        },
+        "subject": {
+          "reference": "Patient/16d9c09730b9ba1c0b8d5c33a990de915c078f35898cd2f6d6f74e79202d4070"
+        },
+        "period": {
+          "start": "2018-08-23T00:00:00+02:00",
+          "end": "2018-08-28T00:00:00+02:00"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Aufnahmeanlass"
+              },
+              {
+                "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmeanlass"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/admit-source"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmegrundPrefix"
+              },
+              {
+                "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Aufnahmegrund"
+              }
+            ]
+          }
+        ],
+        "hospitalization": {
+          "admitSource": {
+            "coding": [
+              {
+                "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Aufnahmeanlass"
+              },
+              {
+                "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmeanlass"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/admit-source"
+              }
+            ]
+          },
+          "dischargeDisposition": {
+            "coding": [
+              {
+                "system": "https://fhir.miracum.org/core/CodeSystem/entlassgrundPrefix",
+                "version": "0.3.0"
+              },
+              {
+                "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Entlassungsgrund",
+                "version": "0.9"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/discharge-disposition"
+              }
+            ]
+          }
+        }
+      },
+      "request": {
+        "method": "PUT"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Task",
+        "id": "6fad2be7a1c80b3535424bfae63217e0366adaf14e410583714fca9ea3b46495",
+        "meta": {
+          "security": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "REDACTED",
+              "display": "redacted"
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "CRYTOHASH",
+              "display": "cryptographic hash function"
+            },
+            {
+              "code": "PERTURBED",
+              "display": "exact value is replaced with another exact value"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "use": "official",
+            "system": "http:/happyvalley.com/task"
+          }
+        ],
+        "status": "requested",
+        "intent": "order",
+        "priority": "stat",
+        "code": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/financialtaskcode"
+            }
+          ]
+        },
+        "focus": {
+          "identifier": {
+            "system": "http://happyvalley.com/claim"
+          }
+        },
+        "authoredOn": "2018-10-27T00:00:00+10:00",
+        "lastModified": "2018-10-27T00:00:00+10:00",
+        "requester": {
+          "reference": "Organization/a43d05b5c2dce2cef9e716ae2812722c49f5ec93f75c0f3b2a21c35f39c072ed"
+        },
+        "owner": {
+          "identifier": {
+            "system": "http://nationalinsurers.com/identifiers"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT"
+      }
+    }
+  ]
+}

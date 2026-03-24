@@ -1,0 +1,19 @@
+fhirVersion: R4
+fhirPathRules:
+  - path: Bundle.entry.where(request.url.startsWith('Task/')).request.url
+    method: keep
+  - path: Bundle.entry.where(request.url.startsWith('Task/')).fullUrl
+    method: keep
+  - path: Bundle.entry.where(request.url.startsWith('Task/')).resource.id
+    method: keep
+  - path: Bundle.entry.request.where(method = 'PUT' or method = 'DELETE').url
+    method: cryptoHash
+    truncateToMaxLength: 32
+  - path: Bundle.entry.fullUrl
+    method: cryptoHash
+    truncateToMaxLength: 32
+  - path: Resource.id
+    method: cryptoHash
+    truncateToMaxLength: 32
+parameters:
+  cryptoHashKey: "fhir-pseudonymizer"
