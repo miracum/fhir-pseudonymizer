@@ -15,3 +15,5 @@ fhirPathRules:
   - path: Resource.id
     method: cryptoHash
     truncateToMaxLength: 32
+parameters:
+  cryptoHashKey: "fhir-pseudonymizer"
