@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.25.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.24.1...v2.25.0) (2026-03-24)
+
+
+### Features
+
+* add MII pseudonymization interface as backend service ([#317](https://github.com/miracum/fhir-pseudonymizer/issues/317)) ([945d18c](https://github.com/miracum/fhir-pseudonymizer/commit/945d18c5f4a821e19c85bf091bde85cd4ca792c0))
+
+
+### Miscellaneous Chores
+
+* **deps:** update all non-major dependencies ([#324](https://github.com/miracum/fhir-pseudonymizer/issues/324)) ([c669fc0](https://github.com/miracum/fhir-pseudonymizer/commit/c669fc0ddbb47e11eee38cfae7f0be60e731eefb))
+* **deps:** update docker.io/library/postgres:18.3 docker digest to a9abf42 ([#322](https://github.com/miracum/fhir-pseudonymizer/issues/322)) ([a70069a](https://github.com/miracum/fhir-pseudonymizer/commit/a70069ab56213a03289930679c93d8482e02f4ad))
+* **deps:** update github-actions ([#319](https://github.com/miracum/fhir-pseudonymizer/issues/319)) ([153772c](https://github.com/miracum/fhir-pseudonymizer/commit/153772c3f4717144d7b9edbf86ba59b901118eb4))
+* **deps:** update github-actions ([#320](https://github.com/miracum/fhir-pseudonymizer/issues/320)) ([36eff8c](https://github.com/miracum/fhir-pseudonymizer/commit/36eff8c23d650183f8f3528ae876867996cad663))
+* **deps:** update miracum/.github action to v1.20.7 ([#323](https://github.com/miracum/fhir-pseudonymizer/issues/323)) ([3884c52](https://github.com/miracum/fhir-pseudonymizer/commit/3884c5277705a521df98f0914a5ffa2adf3ffbfd))
+
 ## [2.24.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.24.0...v2.24.1) (2026-03-04)
 
 
