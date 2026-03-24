@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.3.6@sha256:21f45ea0c6f9b08d672b3e8529720b65340183c21609e13f056be25325d50be8
+    image: ghcr.io/miracum/vfps:v1.3.7@sha256:7e9392f57499ed5b50aacdf3960f2ca126d3b5bfb5a35989d28ba21ccb3b52c0
     restart: unless-stopped
     deploy:
       resources:
@@ -101,7 +101,7 @@ services:
       - ./hack/mocks:/config:ro
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.5.4@sha256:ae8efb0d218d8921334b03a2dbee7069a0b868240691c50a3ffc9f42fabba8b4
+    image: quay.io/keycloak/keycloak:26.5.6@sha256:8d44614c74798322c4e07fbe0ecb15cfbb5879d69b484628555f58ade06f0d8c
     restart: unless-stopped
     profiles:
       - keycloak
