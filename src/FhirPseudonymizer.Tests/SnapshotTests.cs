@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
@@ -7,6 +8,9 @@ namespace FhirPseudonymizer.Tests;
 public class SnapshotTests
 {
     private static readonly FhirJsonParser FhirJsonParser = new();
+
+    [ModuleInitializer]
+    internal static void Init() => VerifierSettings.UseUtf8NoBom();
 
     public class SnapshotTestData : TheoryData<string, string>
     {

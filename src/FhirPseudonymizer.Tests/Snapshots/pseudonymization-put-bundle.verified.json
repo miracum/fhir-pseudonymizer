@@ -1,0 +1,329 @@
+{
+  "resourceType": "Bundle",
+  "meta": {
+    "security": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "REDACTED",
+        "display": "redacted"
+      },
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "PSEUDED",
+        "display": "pseudonymized"
+      }
+    ]
+  },
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "Patient/pid.999",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "pid.999",
+        "meta": {
+          "source": "#p21",
+          "security": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "REDACTED",
+              "display": "redacted"
+            },
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "PSEUDED",
+              "display": "pseudonymized"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "use": "usual",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "MR"
+                }
+              ]
+            },
+            "system": "https://miracum.org/fhir/NamingSystem/identifier/PatientId",
+            "value": "pseuded-pid.999@patient-identifiers"
+          },
+          {
+            "use": "official",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://fhir.de/CodeSystem/identifier-type-de-basis",
+                  "code": "GKV"
+                }
+              ]
+            },
+            "system": "http://fhir.de/NamingSystem/gkv/kvid-10",
+            "value": "5678",
+            "assigner": {
+              "identifier": {
+                "use": "official",
+                "system": "http://fhir.de/NamingSystem/arge-ik/iknr",
+                "value": "109905113"
+              }
+            }
+          }
+        ],
+        "gender": "unknown",
+        "birthDate": "1941-01-01",
+        "deceasedDateTime": "2018-08-05T21:28:00+02:00",
+        "address": [
+          {
+            "type": "physical",
+            "city": "Buschau",
+            "postalCode": "12365"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/pid.999"
+      }
+    },
+    {
+      "fullUrl": "Encounter/cid.106",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "cid.106",
+        "meta": {
+          "source": "#p21",
+          "security": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+              "code": "PSEUDED",
+              "display": "pseudonymized"
+            }
+          ]
+        },
+        "extension": [
+          {
+            "extension": [
+              {
+                "url": "aufnahmegrundPrefix",
+                "valueCoding": {
+                  "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmegrundPrefix",
+                  "code": "01",
+                  "display": "Krankenhausbehandlung, vollstationär"
+                }
+              },
+              {
+                "url": "aufnahmegrundDritteStelle",
+                "valueCoding": {
+                  "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmegrundDritteStelle",
+                  "code": "0",
+                  "display": "Anderes"
+                }
+              },
+              {
+                "url": "aufnahmegrundVierteStelle",
+                "valueCoding": {
+                  "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmegrundVierteStelle",
+                  "code": "7",
+                  "display": "Notfall"
+                }
+              }
+            ],
+            "url": "https://fhir.miracum.org/core/StructureDefinition/aufnahmegrund"
+          },
+          {
+            "url": "https://fhir.miracum.org/core/StructureDefinition/arbeitsfaehigkeit-bei-entlassung",
+            "valueCoding": {
+              "system": "https://fhir.miracum.org/core/CodeSystem/entlassgrundDritteStelle",
+              "code": "9",
+              "display": "keine Angabe"
+            }
+          }
+        ],
+        "identifier": [
+          {
+            "use": "usual",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN"
+                }
+              ]
+            },
+            "system": "https://miracum.org/fhir/NamingSystem/identifier/EncounterId",
+            "value": "pseuded-cid.106@visit-identifiers"
+          }
+        ],
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "IMP",
+          "display": "inpatient encounter"
+        },
+        "subject": {
+          "reference": "Patient/pid.999"
+        },
+        "period": {
+          "start": "2018-07-31T20:32:00+02:00",
+          "end": "2018-08-05T21:28:00+02:00"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Aufnahmeanlass",
+                "code": "A",
+                "display": "Verlegung mit Behandlungsdauer im verlegenden Krankenhaus bis zu 24 Stunden"
+              },
+              {
+                "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmeanlass",
+                "code": "A",
+                "display": "Verlegung mit Behandlungsdauer im verlegenden Krankenhaus bis zu 24 Stunden"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/admit-source",
+                "code": "hosp-trans",
+                "display": "Transferred from other hospital"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmegrundPrefix",
+                "code": "01",
+                "display": "Krankenhausbehandlung, vollstationär"
+              },
+              {
+                "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Aufnahmegrund",
+                "code": "01",
+                "display": "Krankenhausbehandlung, vollstationär"
+              }
+            ]
+          }
+        ],
+        "hospitalization": {
+          "extension": [
+            {
+              "url": "https://www.medizininformatik-initiative.de/fhir/core/StructureDefinition/Entlassungsgrund",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "https://fhir.miracum.org/core/CodeSystem/entlassgrundPrefix",
+                    "version": "0.3.0",
+                    "code": "07",
+                    "display": "Tod"
+                  },
+                  {
+                    "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Entlassungsgrund",
+                    "version": "0.9",
+                    "code": "07",
+                    "display": "Tod"
+                  },
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/discharge-disposition",
+                    "code": "exp",
+                    "display": "Expired"
+                  }
+                ]
+              }
+            }
+          ],
+          "admitSource": {
+            "coding": [
+              {
+                "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Aufnahmeanlass",
+                "code": "A",
+                "display": "Verlegung mit Behandlungsdauer im verlegenden Krankenhaus bis zu 24 Stunden"
+              },
+              {
+                "system": "https://fhir.miracum.org/core/CodeSystem/aufnahmeanlass",
+                "code": "A",
+                "display": "Verlegung mit Behandlungsdauer im verlegenden Krankenhaus bis zu 24 Stunden"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/admit-source",
+                "code": "hosp-trans",
+                "display": "Transferred from other hospital"
+              }
+            ]
+          },
+          "dischargeDisposition": {
+            "coding": [
+              {
+                "system": "https://fhir.miracum.org/core/CodeSystem/entlassgrundPrefix",
+                "version": "0.3.0",
+                "code": "07",
+                "display": "Tod"
+              },
+              {
+                "system": "https://www.medizininformatik-initiative.de/fhir/core/CodeSystem/Entlassungsgrund",
+                "version": "0.9",
+                "code": "07",
+                "display": "Tod"
+              },
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/discharge-disposition",
+                "code": "exp",
+                "display": "Expired"
+              }
+            ]
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Encounter/cid.106"
+      }
+    },
+    {
+      "fullUrl": "Task/fm-example5",
+      "resource": {
+        "resourceType": "Task",
+        "id": "fm-example5",
+        "identifier": [
+          {
+            "use": "official",
+            "system": "http:/happyvalley.com/task",
+            "value": "20181012-001"
+          }
+        ],
+        "status": "requested",
+        "intent": "order",
+        "priority": "stat",
+        "code": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/financialtaskcode",
+              "code": "status"
+            }
+          ]
+        },
+        "focus": {
+          "identifier": {
+            "system": "http://happyvalley.com/claim",
+            "value": "1500"
+          }
+        },
+        "authoredOn": "2018-10-04T08:25:05+10:00",
+        "lastModified": "2018-10-04T08:25:05+10:00",
+        "requester": {
+          "reference": "Organization/example",
+          "display": "Happy Valley Clinic"
+        },
+        "owner": {
+          "identifier": {
+            "system": "http://nationalinsurers.com/identifiers",
+            "value": "12345"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Task/fm-example5"
+      }
+    }
+  ]
+}
