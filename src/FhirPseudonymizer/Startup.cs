@@ -3,6 +3,7 @@ using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Entici;
 using FhirPseudonymizer.Pseudonymization.GPas;
+using FhirPseudonymizer.Pseudonymization.Mii;
 using FhirPseudonymizer.Pseudonymization.Vfps;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -56,6 +57,9 @@ public class Startup
                 break;
             case PseudonymizationServiceType.entici:
                 services.AddEnticiClient(appConfig.Entici);
+                break;
+            case PseudonymizationServiceType.Mii:
+                services.AddMiiClient(appConfig.Mii);
                 break;
             case PseudonymizationServiceType.None:
                 services.AddTransient<IPseudonymServiceClient, NoopPseudonymServiceClient>();
