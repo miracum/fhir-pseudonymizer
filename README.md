@@ -83,7 +83,7 @@ While not part of the "user" API, the application exposes metrics in the Prometh
 
 You can configure the anonymization and pseudonymization rules in the `anonymization.yaml` config file.
 It's mounted at `/etc/anonymization.yaml` within the container by default.
-See <https://github.com/microsoft/FHIR-Tools-for-Anonymization> for details on the syntax and options.
+See [Tools for Health Data Anonymization](https://github.com/microsoft/Tools-for-Health-Data-Anonymization) for details on the syntax and options.
 
 Additionally, there are some optional configuration values that can be set as environment variables:
 
