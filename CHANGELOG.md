@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.25.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.25.0...v2.25.1) (2026-04-03)
+
+
+### Miscellaneous Chores
+
+* updated lychee config and updated some URLs ([#325](https://github.com/miracum/fhir-pseudonymizer/issues/325)) ([a3a8987](https://github.com/miracum/fhir-pseudonymizer/commit/a3a898798c1d2dcff58d3b9a77b09c38200d625f))
+
 ## [2.25.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.24.1...v2.25.0) (2026-03-24)
 
 
