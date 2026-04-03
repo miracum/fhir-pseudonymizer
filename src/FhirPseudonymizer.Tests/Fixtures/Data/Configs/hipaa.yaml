@@ -1,5 +1,5 @@
 ---
-# HIPAA Safe Harbor sample rules from https://github.com/microsoft/FHIR-Tools-for-Anonymization/blob/master/src/Microsoft.Health.Fhir.Anonymizer.R4.CommandLineTool/configuration-sample.json
+# HIPAA Safe Harbor sample rules from https://github.com/microsoft/Tools-for-Health-Data-Anonymization/blob/master/FHIR/src/Microsoft.Health.Fhir.Anonymizer.R4.CommandLineTool/configuration-sample.json
 fhirVersion: R4
 fhirPathRules:
   - path: nodesByType('Extension')
