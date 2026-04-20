@@ -131,22 +131,12 @@ public class GPasFhirClientTests
         var config = new GPasConfig
         {
             Version = gPasVersion,
-            Cache = new CacheConfig
-            {
-                AbsoluteExpirationMinutes = 1,
-                SizeLimit = 1,
-                SlidingExpirationMinutes = 1,
-            },
         };
-
-        var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 1 });
 
         return new GPasFhirClient(
             A.Fake<ILogger<GPasFhirClient>>(),
             clientFactory,
-            config,
-            cache,
-            cache
+            config
         );
     }
 
