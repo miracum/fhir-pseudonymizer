@@ -1,5 +1,3 @@
-using System.IO;
-using System.Linq;
 using FhirPseudonymizer.Config;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Newtonsoft.Json;

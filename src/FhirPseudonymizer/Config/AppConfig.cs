@@ -33,7 +33,6 @@ public record GPasConfig
     public int RequestRetryCount { get; init; }
     public string Version { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
-    public CacheConfig Cache { get; init; } = new();
 }
 
 public record EnticiConfig

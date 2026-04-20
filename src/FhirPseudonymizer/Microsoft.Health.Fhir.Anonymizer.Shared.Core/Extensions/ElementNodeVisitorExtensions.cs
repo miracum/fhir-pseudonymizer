@@ -1,4 +1,3 @@
-using System.Linq;
 using Hl7.Fhir.ElementModel;
 using Microsoft.Health.Fhir.Anonymizer.Core.Visitors;
 

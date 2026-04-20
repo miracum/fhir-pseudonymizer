@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace Microsoft.Health.Fhir.Anonymizer.Core
 {
     public static class AnonymizerLogging

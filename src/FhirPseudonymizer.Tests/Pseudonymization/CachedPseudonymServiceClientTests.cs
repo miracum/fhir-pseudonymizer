@@ -46,8 +46,10 @@ public class CachedPseudonymServiceClientTests
     public async Task GetOriginalValueFor_WithSameKeyAsPseudonymization_ShouldNotReusePseudonymizationCacheEntry()
     {
         var innerClient = A.Fake<IPseudonymServiceClient>();
-        A.CallTo(() => innerClient.GetOrCreatePseudonymFor("same", "domain", null)).Returns("psn-same");
-        A.CallTo(() => innerClient.GetOriginalValueFor("same", "domain", null)).Returns("orig-same");
+        A.CallTo(() => innerClient.GetOrCreatePseudonymFor("same", "domain", null))
+            .Returns("psn-same");
+        A.CallTo(() => innerClient.GetOriginalValueFor("same", "domain", null))
+            .Returns("orig-same");
 
         var sut = new CachedPseudonymServiceClient(innerClient, CreateCache(), CreateCacheConfig());
 
@@ -127,10 +129,6 @@ public class CachedPseudonymServiceClientTests
 
     private static CacheConfig CreateCacheConfig()
     {
-        return new CacheConfig
-        {
-            AbsoluteExpirationMinutes = 30,
-            SlidingExpirationMinutes = 5,
-        };
+        return new CacheConfig { AbsoluteExpirationMinutes = 30, SlidingExpirationMinutes = 5 };
     }
 }

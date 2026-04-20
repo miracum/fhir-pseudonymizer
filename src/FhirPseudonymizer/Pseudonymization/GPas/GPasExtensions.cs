@@ -100,8 +100,8 @@ public static class GPasExtensions
             .UseHttpClientMetrics();
 
         services.AddTransient<GPasFhirClient>();
-        services.AddTransient<IPseudonymServiceClient>(serviceProvider =>
-            new CachedPseudonymServiceClient(
+        services.AddTransient<IPseudonymServiceClient>(
+            serviceProvider => new CachedPseudonymServiceClient(
                 serviceProvider.GetRequiredService<GPasFhirClient>(),
                 serviceProvider.GetRequiredService<IMemoryCache>(),
                 serviceProvider.GetRequiredService<CacheConfig>()

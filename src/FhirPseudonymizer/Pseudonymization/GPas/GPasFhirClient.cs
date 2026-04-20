@@ -3,7 +3,6 @@ using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Caching.Memory;
 using Prometheus;
 using Semver;
 
@@ -16,13 +15,7 @@ public class GPasFhirClient : IPseudonymServiceClient
     private static readonly Counter TotalGPasRequests = Metrics.CreateCounter(
         "fhirpseudonymizer_gpas_requests_total",
         "Total number of requests against the gPas service.",
-        new CounterConfiguration() { LabelNames = new[] { "operation" } }
-    );
-
-    private static readonly Counter TotalGPasRequestCacheMisses = Metrics.CreateCounter(
-        "fhirpseudonymizer_gpas_requests_cache_misses_total",
-        "Total number of requests against gPas that could not be resolved via the internal cache.",
-        new CounterConfiguration() { LabelNames = new[] { "operation" } }
+        new CounterConfiguration() { LabelNames = ["operation"] }
     );
 
     private readonly ILogger<GPasFhirClient> logger;
@@ -30,20 +23,12 @@ public class GPasFhirClient : IPseudonymServiceClient
     public GPasFhirClient(
         ILogger<GPasFhirClient> logger,
         IHttpClientFactory clientFactory,
-        GPasConfig config,
-        IMemoryCache pseudonymCache,
-        IMemoryCache originalValueCache
+        GPasConfig config
     )
     {
         this.logger = logger;
 
         ClientFactory = clientFactory;
-
-        PseudonymCache = pseudonymCache;
-        OriginalValueCache = originalValueCache;
-
-        SlidingExpiration = TimeSpan.FromMinutes(config.Cache.SlidingExpirationMinutes);
-        AbsoluteExpiration = TimeSpan.FromMinutes(config.Cache.AbsoluteExpirationMinutes);
 
         var configGPasVersion = config.Version;
         var supportedGPasVersion = SemVersion.Parse(configGPasVersion);
@@ -70,13 +55,8 @@ public class GPasFhirClient : IPseudonymServiceClient
         }
     }
 
-    private IMemoryCache PseudonymCache { get; }
-    private IMemoryCache OriginalValueCache { get; }
     private IHttpClientFactory ClientFactory { get; }
     private FhirJsonParser FhirParser { get; } = new();
-    private FhirJsonSerializer FhirSerializer { get; } = new();
-    private TimeSpan SlidingExpiration { get; }
-    private TimeSpan AbsoluteExpiration { get; }
     private Func<string, string, Task<string>> GetOrCreatePseudonymForResolver { get; }
     private Func<string, string, Task<string>> GetOriginalValueForResolver { get; }
 
@@ -88,26 +68,7 @@ public class GPasFhirClient : IPseudonymServiceClient
     {
         TotalGPasRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
 
-        return await PseudonymCache.GetOrCreateAsync(
-            (nameof(GetOrCreatePseudonymFor), value, domain),
-            async entry =>
-            {
-                TotalGPasRequestCacheMisses.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
-
-                entry
-                    .SetSize(1)
-                    .SetSlidingExpiration(SlidingExpiration)
-                    .SetAbsoluteExpiration(AbsoluteExpiration);
-
-                logger.LogDebug(
-                    "Getting or creating pseudonym for {value} in {domain}",
-                    value,
-                    domain
-                );
-
-                return await GetOrCreatePseudonymForResolver(value, domain);
-            }
-        );
+        return await GetOrCreatePseudonymForResolver(value, domain);
     }
 
     public async Task<string> GetOriginalValueFor(
@@ -118,26 +79,7 @@ public class GPasFhirClient : IPseudonymServiceClient
     {
         TotalGPasRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
 
-        return await OriginalValueCache.GetOrCreateAsync(
-            (nameof(GetOriginalValueFor), pseudonym, domain),
-            async entry =>
-            {
-                TotalGPasRequestCacheMisses.WithLabels(nameof(GetOriginalValueFor)).Inc();
-
-                entry
-                    .SetSize(1)
-                    .SetSlidingExpiration(SlidingExpiration)
-                    .SetAbsoluteExpiration(AbsoluteExpiration);
-
-                logger.LogDebug(
-                    "Getting original value for pseudonym {Pseudonym} from {Domain}",
-                    pseudonym,
-                    domain
-                );
-
-                return await GetOriginalValueForResolver(pseudonym, domain);
-            }
-        );
+        return await GetOriginalValueForResolver(pseudonym, domain);
     }
 
     private async Task<string> GetOriginalValueForV1(string pseudonym, string domain)

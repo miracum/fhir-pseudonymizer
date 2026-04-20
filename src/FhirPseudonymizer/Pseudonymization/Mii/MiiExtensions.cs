@@ -20,9 +20,7 @@ public static class MiiExtensions
     {
         if (string.IsNullOrWhiteSpace(miiConfig.Url?.AbsoluteUri))
         {
-            throw new ValidationException(
-                "Mii is enabled but the backend service URL is unset."
-            );
+            throw new ValidationException("Mii is enabled but the backend service URL is unset.");
         }
 
         var oAuthConfig = miiConfig.Auth.OAuth;
@@ -65,9 +63,7 @@ public static class MiiExtensions
         var clientBuilder = isOAuthEnabled
             ? services.AddClientCredentialsHttpClient(
                 MiiFhirClient.HttpClientName,
-                ClientCredentialsClientName.Parse(
-                    $"{MiiFhirClient.HttpClientName}.oAuth.client"
-                ),
+                ClientCredentialsClientName.Parse($"{MiiFhirClient.HttpClientName}.oAuth.client"),
                 client =>
                 {
                     client.BaseAddress = miiConfig.Url;
@@ -98,8 +94,8 @@ public static class MiiExtensions
             .UseHttpClientMetrics();
 
         services.AddTransient<MiiFhirClient>();
-        services.AddTransient<IPseudonymServiceClient>(serviceProvider =>
-            new CachedPseudonymServiceClient(
+        services.AddTransient<IPseudonymServiceClient>(
+            serviceProvider => new CachedPseudonymServiceClient(
                 serviceProvider.GetRequiredService<MiiFhirClient>(),
                 serviceProvider.GetRequiredService<IMemoryCache>(),
                 serviceProvider.GetRequiredService<CacheConfig>()

@@ -36,10 +36,7 @@ public class MiiFhirClient : IPseudonymServiceClient
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        var response = await fhirClient.WholeSystemOperationAsync(
-            "pseudonymize",
-            parameters
-        );
+        var response = await fhirClient.WholeSystemOperationAsync("pseudonymize", parameters);
 
         if (response is Parameters responseParameters)
         {
@@ -71,10 +68,7 @@ public class MiiFhirClient : IPseudonymServiceClient
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        var response = await fhirClient.WholeSystemOperationAsync(
-            "de-pseudonymize",
-            parameters
-        );
+        var response = await fhirClient.WholeSystemOperationAsync("de-pseudonymize", parameters);
 
         if (response is Parameters responseParameters)
         {

@@ -73,8 +73,8 @@ public static class VfpsExtensions
             );
 
         services.AddTransient<VfpsPseudonymServiceClient>();
-        services.AddTransient<IPseudonymServiceClient>(serviceProvider =>
-            new CachedPseudonymServiceClient(
+        services.AddTransient<IPseudonymServiceClient>(
+            serviceProvider => new CachedPseudonymServiceClient(
                 serviceProvider.GetRequiredService<VfpsPseudonymServiceClient>(),
                 serviceProvider.GetRequiredService<IMemoryCache>(),
                 serviceProvider.GetRequiredService<CacheConfig>()

@@ -1,7 +1,6 @@
-using System.Collections;
-using System.Globalization;
 using FhirPseudonymizer.Config;
 using Microsoft.Extensions.Caching.Memory;
+using Prometheus;
 
 namespace FhirPseudonymizer.Pseudonymization;
 
@@ -11,17 +10,25 @@ public class CachedPseudonymServiceClient(
     CacheConfig cacheConfig
 ) : IPseudonymServiceClient
 {
+    private static readonly Counter TotalPseudonymizationRequestCacheMisses = Metrics.CreateCounter(
+        "fhirpseudonymizer_gpas_requests_cache_misses_total",
+        "Total number of requests against the pseudonymization service that could not be resolved via the internal cache.",
+        new CounterConfiguration() { LabelNames = ["operation"] }
+    );
+
     public Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
         IReadOnlyDictionary<string, object> settings = null
     )
     {
-        var settingsKey = BuildSettingsCacheKey(settings);
         return cache.GetOrCreateAsync(
-            ("GetOrCreatePseudonymFor", value, domain, settingsKey),
+            ("GetOrCreatePseudonymFor", value, domain),
             async entry =>
             {
+                TotalPseudonymizationRequestCacheMisses
+                    .WithLabels(nameof(GetOrCreatePseudonymFor))
+                    .Inc();
                 ApplyCacheConfig(entry);
                 return await innerClient.GetOrCreatePseudonymFor(value, domain, settings);
             }
@@ -34,11 +41,13 @@ public class CachedPseudonymServiceClient(
         IReadOnlyDictionary<string, object> settings = null
     )
     {
-        var settingsKey = BuildSettingsCacheKey(settings);
         return cache.GetOrCreateAsync(
-            ("GetOriginalValueFor", pseudonym, domain, settingsKey),
+            ("GetOriginalValueFor", pseudonym, domain),
             async entry =>
             {
+                TotalPseudonymizationRequestCacheMisses
+                    .WithLabels(nameof(GetOriginalValueFor))
+                    .Inc();
                 ApplyCacheConfig(entry);
                 return await innerClient.GetOriginalValueFor(pseudonym, domain, settings);
             }
@@ -51,9 +60,7 @@ public class CachedPseudonymServiceClient(
 
         if (cacheConfig.SlidingExpirationMinutes > 0)
         {
-            entry.SetSlidingExpiration(
-                TimeSpan.FromMinutes(cacheConfig.SlidingExpirationMinutes)
-            );
+            entry.SetSlidingExpiration(TimeSpan.FromMinutes(cacheConfig.SlidingExpirationMinutes));
         }
 
         if (cacheConfig.AbsoluteExpirationMinutes > 0)
@@ -62,56 +69,5 @@ public class CachedPseudonymServiceClient(
                 TimeSpan.FromMinutes(cacheConfig.AbsoluteExpirationMinutes)
             );
         }
-    }
-
-    private static string BuildSettingsCacheKey(IReadOnlyDictionary<string, object> settings)
-    {
-        if (settings is null || settings.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        var key = string.Join(
-            ";",
-            settings
-                .OrderBy(static pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => $"{pair.Key}={BuildValueCacheKey(pair.Value)}")
-        );
-        return $"{{{key}}}";
-    }
-
-    private static string BuildValueCacheKey(object value)
-    {
-        if (value is null)
-        {
-            return "<null>";
-        }
-
-        if (value is IReadOnlyDictionary<string, object> stringDictionary)
-        {
-            return BuildSettingsCacheKey(stringDictionary);
-        }
-
-        if (value is IReadOnlyDictionary<object, object> objectDictionary)
-        {
-            var key = string.Join(
-                ";",
-                objectDictionary
-                    .OrderBy(pair => pair.Key?.ToString(), StringComparer.Ordinal)
-                    .Select(pair => $"{pair.Key}={BuildValueCacheKey(pair.Value)}")
-            );
-            return $"{{{key}}}";
-        }
-
-        if (value is IEnumerable sequence && value is not string)
-        {
-            var key = string.Join(
-                ",",
-                sequence.Cast<object>().Select(BuildValueCacheKey)
-            );
-            return $"[{key}]";
-        }
-
-        return Convert.ToString(value, CultureInfo.InvariantCulture) ?? "<null>";
     }
 }

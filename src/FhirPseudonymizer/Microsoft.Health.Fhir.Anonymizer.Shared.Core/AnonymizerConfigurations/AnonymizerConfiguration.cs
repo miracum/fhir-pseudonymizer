@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations

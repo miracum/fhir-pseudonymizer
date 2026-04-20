@@ -1,7 +1,3 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
-
 namespace Microsoft.Health.Fhir.Anonymizer.Core
 {
     public class FhirStreamReader : IFhirDataReader<string>, IDisposable

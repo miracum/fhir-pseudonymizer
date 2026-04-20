@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 {
     public class AnonymizerSettings
