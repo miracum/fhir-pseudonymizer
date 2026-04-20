@@ -3,6 +3,7 @@ using System.Text;
 using FhirPseudonymizer.Config;
 using Grpc.Core;
 using Grpc.Net.Client.Configuration;
+using Microsoft.Extensions.Caching.Memory;
 using Vfps.Protos;
 
 namespace FhirPseudonymizer.Pseudonymization.Vfps;
@@ -71,7 +72,14 @@ public static class VfpsExtensions
                 }
             );
 
-        services.AddTransient<IPseudonymServiceClient, VfpsPseudonymServiceClient>();
+        services.AddTransient<VfpsPseudonymServiceClient>();
+        services.AddTransient<IPseudonymServiceClient>(serviceProvider =>
+            new CachedPseudonymServiceClient(
+                serviceProvider.GetRequiredService<VfpsPseudonymServiceClient>(),
+                serviceProvider.GetRequiredService<IMemoryCache>(),
+                serviceProvider.GetRequiredService<CacheConfig>()
+            )
+        );
 
         return services;
     }

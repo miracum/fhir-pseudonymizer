@@ -89,7 +89,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         TotalGPasRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
 
         return await PseudonymCache.GetOrCreateAsync(
-            (value, domain),
+            (nameof(GetOrCreatePseudonymFor), value, domain),
             async entry =>
             {
                 TotalGPasRequestCacheMisses.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
@@ -119,7 +119,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         TotalGPasRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
 
         return await OriginalValueCache.GetOrCreateAsync(
-            (pseudonym, domain),
+            (nameof(GetOriginalValueFor), pseudonym, domain),
             async entry =>
             {
                 TotalGPasRequestCacheMisses.WithLabels(nameof(GetOriginalValueFor)).Inc();
