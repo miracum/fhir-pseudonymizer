@@ -11,7 +11,7 @@ public class CachedPseudonymServiceClient(
 ) : IPseudonymServiceClient
 {
     private static readonly Counter TotalPseudonymizationRequestCacheMisses = Metrics.CreateCounter(
-        "fhirpseudonymizer_gpas_requests_cache_misses_total",
+        "fhirpseudonymizer_pseudonymization_requests_cache_misses_total",
         "Total number of requests against the pseudonymization service that could not be resolved via the internal cache.",
         new CounterConfiguration() { LabelNames = ["operation"] }
     );
