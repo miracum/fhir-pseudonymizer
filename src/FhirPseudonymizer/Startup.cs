@@ -43,13 +43,15 @@ public class Startup
 
         // Required by the OAuth implementation. Could be used for all cache implementations later.
         services.AddDistributedMemoryCache();
+        var cacheConfig = appConfig.Cache;
+        services.AddSingleton(cacheConfig);
+        services.AddSingleton<IMemoryCache>(_ => new MemoryCache(
+            new MemoryCacheOptions { SizeLimit = cacheConfig.SizeLimit }
+        ));
 
         switch (appConfig.PseudonymizationService)
         {
             case PseudonymizationServiceType.gPAS:
-                services.AddSingleton<IMemoryCache>(_ => new MemoryCache(
-                    new MemoryCacheOptions { SizeLimit = appConfig.GPas.Cache.SizeLimit }
-                ));
                 services.AddGPasClient(appConfig.GPas);
                 break;
             case PseudonymizationServiceType.Vfps:

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Hl7.Fhir.Model;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors

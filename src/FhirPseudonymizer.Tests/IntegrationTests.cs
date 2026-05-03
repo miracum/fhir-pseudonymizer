@@ -138,11 +138,11 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
 
         var content = new StringContent(patient);
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await client.PostAsync("/fhir/$de-identify", content);
+        var response = await client.PostAsync("/fhir/$de-identify", content, TestContext.Current.CancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        var responseContent = await response.Content.ReadAsStringAsync();
+        var responseContent = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         var encryptedPatient = new FhirJsonParser().Parse<Patient>(responseContent);
 
@@ -176,11 +176,11 @@ public class IntegrationTests : IClassFixture<CustomWebApplicationFactory<Startu
         var content = new StringContent(patient);
         content.Headers.Add("x-api-key", "dev");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await client.PostAsync("/fhir/$de-pseudonymize", content);
+        var response = await client.PostAsync("/fhir/$de-pseudonymize", content, TestContext.Current.CancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        var responseContent = await response.Content.ReadAsStringAsync();
+        var responseContent = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var decryptedPatient = await new FhirJsonParser().ParseAsync<Patient>(responseContent);
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");

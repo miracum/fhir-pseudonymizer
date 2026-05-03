@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
+using Microsoft.Extensions.Caching.Memory;
 using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
@@ -19,9 +20,7 @@ public static class MiiExtensions
     {
         if (string.IsNullOrWhiteSpace(miiConfig.Url?.AbsoluteUri))
         {
-            throw new ValidationException(
-                "Mii is enabled but the backend service URL is unset."
-            );
+            throw new ValidationException("Mii is enabled but the backend service URL is unset.");
         }
 
         var oAuthConfig = miiConfig.Auth.OAuth;
@@ -64,9 +63,7 @@ public static class MiiExtensions
         var clientBuilder = isOAuthEnabled
             ? services.AddClientCredentialsHttpClient(
                 MiiFhirClient.HttpClientName,
-                ClientCredentialsClientName.Parse(
-                    $"{MiiFhirClient.HttpClientName}.oAuth.client"
-                ),
+                ClientCredentialsClientName.Parse($"{MiiFhirClient.HttpClientName}.oAuth.client"),
                 client =>
                 {
                     client.BaseAddress = miiConfig.Url;
@@ -96,7 +93,14 @@ public static class MiiExtensions
             .AddPolicyHandler(GetRetryPolicy(miiConfig.RequestRetryCount))
             .UseHttpClientMetrics();
 
-        services.AddTransient<IPseudonymServiceClient, MiiFhirClient>();
+        services.AddTransient<MiiFhirClient>();
+        services.AddTransient<IPseudonymServiceClient>(
+            serviceProvider => new CachedPseudonymServiceClient(
+                serviceProvider.GetRequiredService<MiiFhirClient>(),
+                serviceProvider.GetRequiredService<IMemoryCache>(),
+                serviceProvider.GetRequiredService<CacheConfig>()
+            )
+        );
 
         return services;
     }

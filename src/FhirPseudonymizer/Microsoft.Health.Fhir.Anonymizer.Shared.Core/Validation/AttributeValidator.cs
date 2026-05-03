@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Validation;

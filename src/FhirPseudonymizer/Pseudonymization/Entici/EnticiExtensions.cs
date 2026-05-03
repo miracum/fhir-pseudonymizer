@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
+using Microsoft.Extensions.Caching.Memory;
 using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
@@ -48,12 +49,12 @@ public static class EnticiExtensions
                         client.ClientId = ClientId.Parse(oAuthConfig.ClientId);
                         client.ClientSecret = ClientSecret.Parse(oAuthConfig.ClientSecret);
 
-                        if (oAuthConfig.Scope is not null)
+                        if (!string.IsNullOrEmpty(oAuthConfig.Scope))
                         {
                             client.Scope = Scope.Parse(oAuthConfig.Scope);
                         }
 
-                        if (oAuthConfig.Resource is not null)
+                        if (!string.IsNullOrEmpty(oAuthConfig.Resource))
                         {
                             client.Resource = Resource.Parse(oAuthConfig.Resource);
                         }
@@ -102,7 +103,14 @@ public static class EnticiExtensions
             .AddPolicyHandler(GetRetryPolicy(enticiConfig.RequestRetryCount))
             .UseHttpClientMetrics();
 
-        services.AddTransient<IPseudonymServiceClient, EnticiFhirClient>();
+        services.AddTransient<EnticiFhirClient>();
+        services.AddTransient<IPseudonymServiceClient>(
+            serviceProvider => new CachedPseudonymServiceClient(
+                serviceProvider.GetRequiredService<EnticiFhirClient>(),
+                serviceProvider.GetRequiredService<IMemoryCache>(),
+                serviceProvider.GetRequiredService<CacheConfig>()
+            )
+        );
 
         return services;
     }

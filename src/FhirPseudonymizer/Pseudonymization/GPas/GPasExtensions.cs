@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
+using Microsoft.Extensions.Caching.Memory;
 using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
@@ -98,7 +99,14 @@ public static class GPasExtensions
             .AddPolicyHandler(GetRetryPolicy(gPasConfig.RequestRetryCount))
             .UseHttpClientMetrics();
 
-        services.AddTransient<IPseudonymServiceClient, GPasFhirClient>();
+        services.AddTransient<GPasFhirClient>();
+        services.AddTransient<IPseudonymServiceClient>(
+            serviceProvider => new CachedPseudonymServiceClient(
+                serviceProvider.GetRequiredService<GPasFhirClient>(),
+                serviceProvider.GetRequiredService<IMemoryCache>(),
+                serviceProvider.GetRequiredService<CacheConfig>()
+            )
+        );
 
         return services;
     }

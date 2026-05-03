@@ -1,6 +1,4 @@
-using System.Linq;
 using Hl7.Fhir.Model;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Validation
 {

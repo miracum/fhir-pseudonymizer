@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using EnsureThat;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 

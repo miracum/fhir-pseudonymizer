@@ -1,8 +1,5 @@
-using System;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using AspNetCore.Authentication.ApiKey;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FhirPseudonymizer;
 

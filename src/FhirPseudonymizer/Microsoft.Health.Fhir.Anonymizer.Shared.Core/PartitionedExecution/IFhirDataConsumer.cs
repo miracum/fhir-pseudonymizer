@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace Microsoft.Health.Fhir.Anonymizer.Core
 {
     public interface IFhirDataConsumer<T>

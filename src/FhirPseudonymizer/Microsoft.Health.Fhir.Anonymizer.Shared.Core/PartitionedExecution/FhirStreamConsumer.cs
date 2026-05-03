@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-
 namespace Microsoft.Health.Fhir.Anonymizer.Core.PartitionedExecution
 {
     public class FhirStreamConsumer : IFhirDataConsumer<string>, IDisposable
