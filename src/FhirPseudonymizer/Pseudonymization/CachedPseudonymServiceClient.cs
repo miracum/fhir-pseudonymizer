@@ -23,7 +23,7 @@ public class CachedPseudonymServiceClient(
     )
     {
         return cache.GetOrCreateAsync(
-            ("GetOrCreatePseudonymFor", value, domain),
+            ("GetOrCreatePseudonymFor", value, domain, BuildSettingsCacheKey(settings)),
             async entry =>
             {
                 TotalPseudonymizationRequestCacheMisses
@@ -42,7 +42,7 @@ public class CachedPseudonymServiceClient(
     )
     {
         return cache.GetOrCreateAsync(
-            ("GetOriginalValueFor", pseudonym, domain),
+            ("GetOriginalValueFor", pseudonym, domain, BuildSettingsCacheKey(settings)),
             async entry =>
             {
                 TotalPseudonymizationRequestCacheMisses
@@ -51,6 +51,20 @@ public class CachedPseudonymServiceClient(
                 ApplyCacheConfig(entry);
                 return await innerClient.GetOriginalValueFor(pseudonym, domain, settings);
             }
+        );
+    }
+
+    private static string BuildSettingsCacheKey(IReadOnlyDictionary<string, object> settings)
+    {
+        if (settings == null || settings.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(
+            "&",
+            settings.OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
+                    .Select(kvp => $"{kvp.Key}={kvp.Value}")
         );
     }
 
