@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FhirPseudonymizer.Config;
 using Microsoft.Extensions.Caching.Memory;
 using Prometheus;
@@ -23,7 +24,7 @@ public class CachedPseudonymServiceClient(
     )
     {
         return cache.GetOrCreateAsync(
-            ("GetOrCreatePseudonymFor", value, domain),
+            ("GetOrCreatePseudonymFor", value, domain, BuildSettingsCacheKey(settings)),
             async entry =>
             {
                 TotalPseudonymizationRequestCacheMisses
@@ -42,7 +43,7 @@ public class CachedPseudonymServiceClient(
     )
     {
         return cache.GetOrCreateAsync(
-            ("GetOriginalValueFor", pseudonym, domain),
+            ("GetOriginalValueFor", pseudonym, domain, BuildSettingsCacheKey(settings)),
             async entry =>
             {
                 TotalPseudonymizationRequestCacheMisses
@@ -52,6 +53,16 @@ public class CachedPseudonymServiceClient(
                 return await innerClient.GetOriginalValueFor(pseudonym, domain, settings);
             }
         );
+    }
+
+    private static string BuildSettingsCacheKey(IReadOnlyDictionary<string, object> settings)
+    {
+        if (settings == null || settings.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return JsonSerializer.Serialize(settings);
     }
 
     private void ApplyCacheConfig(ICacheEntry entry)
