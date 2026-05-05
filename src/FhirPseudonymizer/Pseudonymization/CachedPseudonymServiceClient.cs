@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FhirPseudonymizer.Config;
 using Microsoft.Extensions.Caching.Memory;
 using Prometheus;
@@ -64,7 +65,7 @@ public class CachedPseudonymServiceClient(
         return string.Join(
             "&",
             settings.OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
-                    .Select(kvp => $"{kvp.Key}={kvp.Value}")
+                    .Select(kvp => $"{kvp.Key}={JsonSerializer.Serialize(kvp.Value)}")
         );
     }
 
