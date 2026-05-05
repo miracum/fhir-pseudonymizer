@@ -62,11 +62,7 @@ public class CachedPseudonymServiceClient(
             return string.Empty;
         }
 
-        return string.Join(
-            "&",
-            settings.OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
-                    .Select(kvp => $"{kvp.Key}={JsonSerializer.Serialize(kvp.Value)}")
-        );
+        return JsonSerializer.Serialize(settings);
     }
 
     private void ApplyCacheConfig(ICacheEntry entry)
