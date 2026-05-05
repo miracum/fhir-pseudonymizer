@@ -126,6 +126,96 @@ public class CachedPseudonymServiceClientTests
             .MustHaveHappenedOnceExactly();
     }
 
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WithEquivalentNestedSettings_ShouldShareCacheEntry()
+    {
+        var settingsA = new Dictionary<string, object>
+        {
+            ["entici"] = new Dictionary<object, object>
+            {
+                ["resourceType"] = "Patient",
+                ["project"] = "https://fhir.example.com/test",
+            },
+        };
+        var settingsB = new Dictionary<string, object>
+        {
+            ["entici"] = new Dictionary<object, object>
+            {
+                ["resourceType"] = "Patient",
+                ["project"] = "https://fhir.example.com/test",
+            },
+        };
+
+        var innerClient = A.Fake<IPseudonymServiceClient>();
+        A.CallTo(() =>
+                innerClient.GetOrCreatePseudonymFor(
+                    "same",
+                    "domain",
+                    A<IReadOnlyDictionary<string, object>>._
+                )
+            )
+            .Returns("psn");
+
+        var sut = new CachedPseudonymServiceClient(innerClient, CreateCache(), CreateCacheConfig());
+
+        await sut.GetOrCreatePseudonymFor("same", "domain", settingsA);
+        await sut.GetOrCreatePseudonymFor("same", "domain", settingsB);
+
+        A.CallTo(() =>
+                innerClient.GetOrCreatePseudonymFor(
+                    "same",
+                    "domain",
+                    A<IReadOnlyDictionary<string, object>>._
+                )
+            )
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WithDifferentNestedSettings_ShouldNotShareCacheEntry()
+    {
+        var settingsA = new Dictionary<string, object>
+        {
+            ["entici"] = new Dictionary<object, object>
+            {
+                ["resourceType"] = "Patient",
+                ["project"] = "https://fhir.example.com/test",
+            },
+        };
+        var settingsB = new Dictionary<string, object>
+        {
+            ["entici"] = new Dictionary<object, object>
+            {
+                ["resourceType"] = "Encounter",
+                ["project"] = "https://fhir.example.com/test",
+            },
+        };
+
+        var innerClient = A.Fake<IPseudonymServiceClient>();
+        A.CallTo(() =>
+                innerClient.GetOrCreatePseudonymFor(
+                    "same",
+                    "domain",
+                    A<IReadOnlyDictionary<string, object>>._
+                )
+            )
+            .Returns("psn");
+
+        var sut = new CachedPseudonymServiceClient(innerClient, CreateCache(), CreateCacheConfig());
+
+        await sut.GetOrCreatePseudonymFor("same", "domain", settingsA);
+        await sut.GetOrCreatePseudonymFor("same", "domain", settingsB);
+
+        A.CallTo(() =>
+                innerClient.GetOrCreatePseudonymFor(
+                    "same",
+                    "domain",
+                    A<IReadOnlyDictionary<string, object>>._
+                )
+            )
+            .MustHaveHappenedTwiceExactly();
+    }
+
     private static IMemoryCache CreateCache()
     {
         return new MemoryCache(new MemoryCacheOptions { SizeLimit = 1024 });
