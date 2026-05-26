@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.26.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.25.0...v2.26.0) (2026-05-05)
+
+
+### Features
+
+* add pseudonym caching for entici pseudonymization backend ([#328](https://github.com/miracum/fhir-pseudonymizer/issues/328)) ([c3fad47](https://github.com/miracum/fhir-pseudonymizer/commit/c3fad47a79580ebd98cf4b203da4cd4f575c6010))
+
+
+### Bug Fixes
+
+* include settings in pseudonym service cache key ([#330](https://github.com/miracum/fhir-pseudonymizer/issues/330)) ([4d0019c](https://github.com/miracum/fhir-pseudonymizer/commit/4d0019c90e04e1e689a963c8103026625b534d99))
+
+
+### Miscellaneous Chores
+
+* updated lychee config and updated some URLs ([#325](https://github.com/miracum/fhir-pseudonymizer/issues/325)) ([a3a8987](https://github.com/miracum/fhir-pseudonymizer/commit/a3a898798c1d2dcff58d3b9a77b09c38200d625f))
+
 ## [2.25.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.24.1...v2.25.0) (2026-03-24)
 
 
