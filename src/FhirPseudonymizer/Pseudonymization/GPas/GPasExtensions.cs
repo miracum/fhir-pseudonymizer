@@ -47,12 +47,12 @@ public static class GPasExtensions
                         client.ClientId = ClientId.Parse(oAuthConfig.ClientId);
                         client.ClientSecret = ClientSecret.Parse(oAuthConfig.ClientSecret);
 
-                        if (oAuthConfig.Scope is not null)
+                        if (!string.IsNullOrEmpty(oAuthConfig.Scope))
                         {
                             client.Scope = Scope.Parse(oAuthConfig.Scope);
                         }
 
-                        if (oAuthConfig.Resource is not null)
+                        if (!string.IsNullOrEmpty(oAuthConfig.Resource))
                         {
                             client.Resource = Resource.Parse(oAuthConfig.Resource);
                         }
