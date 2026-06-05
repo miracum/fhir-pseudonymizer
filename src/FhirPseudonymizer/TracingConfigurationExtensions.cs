@@ -16,8 +16,6 @@ public static class TracingConfigurationExtensions
     {
         var assembly = Assembly.GetExecutingAssembly().GetName();
         var assemblyVersion = assembly.Version?.ToString() ?? "unknown";
-        var tracingExporter =
-            configuration.GetValue<string>("Tracing:Exporter")?.ToLowerInvariant() ?? "jaeger";
         var serviceName =
             configuration.GetValue("Tracing:ServiceName", assembly.Name) ?? "fhir-pseudonymizer";
 
@@ -71,25 +69,13 @@ public static class TracingConfigurationExtensions
                     configuration.GetSection("Tracing:AspNetCoreInstrumentation")
                 );
 
-                switch (tracingExporter)
-                {
-                    case "jaeger":
-                        tracingBuilder.AddJaegerExporter();
-                        services.Configure<JaegerExporterOptions>(
-                            configuration.GetSection("Tracing:Jaeger")
-                        );
-                        break;
+                var endpoint =
+                    configuration.GetValue<string>("Tracing:Otlp:Endpoint")
+                    ?? throw new ArgumentException("Missing OTLP exporter endpoint URL");
 
-                    case "otlp":
-                        var endpoint =
-                            configuration.GetValue<string>("Tracing:Otlp:Endpoint")
-                            ?? throw new ArgumentException("Missing OTLP exporter endpoint URL");
-
-                        tracingBuilder.AddOtlpExporter(otlpOptions =>
-                            otlpOptions.Endpoint = new Uri(endpoint)
-                        );
-                        break;
-                }
+                tracingBuilder.AddOtlpExporter(otlpOptions =>
+                    otlpOptions.Endpoint = new Uri(endpoint)
+                );
             });
 
         return services;
