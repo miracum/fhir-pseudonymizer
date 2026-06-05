@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.26.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.26.0...v2.26.1) (2026-06-05)
+
+
+### Bug Fixes
+
+* handle empty and null resources and scope identical ([#332](https://github.com/miracum/fhir-pseudonymizer/issues/332)) ([a08f713](https://github.com/miracum/fhir-pseudonymizer/commit/a08f7136a8360fd712c8f6cafa5b5c7f942378a8))
+
+
+### Miscellaneous Chores
+
+* **deps:** updated base images and removed support for jaeger tracing ([#333](https://github.com/miracum/fhir-pseudonymizer/issues/333)) ([d30cb22](https://github.com/miracum/fhir-pseudonymizer/commit/d30cb22ffcbf859c117696445d92fbe33001eb8e))
+
 ## [2.26.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.25.0...v2.26.0) (2026-05-05)
 
 
