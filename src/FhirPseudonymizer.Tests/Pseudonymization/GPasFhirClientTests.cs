@@ -128,16 +128,9 @@ public class GPasFhirClientTests
 
     private IPseudonymServiceClient CreateGPasClient(string gPasVersion)
     {
-        var config = new GPasConfig
-        {
-            Version = gPasVersion,
-        };
+        var config = new GPasConfig { Version = gPasVersion };
 
-        return new GPasFhirClient(
-            A.Fake<ILogger<GPasFhirClient>>(),
-            clientFactory,
-            config
-        );
+        return new GPasFhirClient(A.Fake<ILogger<GPasFhirClient>>(), clientFactory, config);
     }
 
     private static HttpMessageHandler CreateHttpMessageHandler()

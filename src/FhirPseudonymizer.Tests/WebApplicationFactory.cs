@@ -58,13 +58,21 @@ namespace FhirPseudonymizer.Tests
                 services.AddTransient(_ => psnClient);
             });
 
-            if (CustomInMemorySettings is not null)
-            {
-                builder.ConfigureAppConfiguration(
-                    (context, configBuilder) =>
-                        configBuilder.AddInMemoryCollection(CustomInMemorySettings)
-                );
-            }
+            builder.ConfigureAppConfiguration(
+                (context, configBuilder) =>
+                {
+                    configBuilder.AddJsonFile(
+                        "appsettings.Test.json",
+                        optional: false,
+                        reloadOnChange: false
+                    );
+
+                    if (CustomInMemorySettings is not null)
+                    {
+                        configBuilder.AddInMemoryCollection(CustomInMemorySettings);
+                    }
+                }
+            );
         }
     }
 }
