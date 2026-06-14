@@ -11,6 +11,13 @@ public class CachedPseudonymServiceClient(
     CacheConfig cacheConfig
 ) : IPseudonymServiceClient
 {
+    private static readonly Counter TotalPseudonymizationRequests = Metrics.CreateCounter(
+        "fhirpseudonymizer_pseudonymization_requests_total",
+        "Total number of requests against the pseudonymization service cache, "
+            + "regardless of whether they were resolved via the cache or forwarded to the underlying service.",
+        new CounterConfiguration() { LabelNames = ["operation"] }
+    );
+
     private static readonly Counter TotalPseudonymizationRequestCacheMisses = Metrics.CreateCounter(
         "fhirpseudonymizer_pseudonymization_requests_cache_misses_total",
         "Total number of requests against the pseudonymization service that could not be resolved via the internal cache.",
@@ -23,6 +30,8 @@ public class CachedPseudonymServiceClient(
         IReadOnlyDictionary<string, object> settings = null
     )
     {
+        TotalPseudonymizationRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
+
         return cache.GetOrCreateAsync(
             ("GetOrCreatePseudonymFor", value, domain, BuildSettingsCacheKey(settings)),
             async entry =>
@@ -42,6 +51,8 @@ public class CachedPseudonymServiceClient(
         IReadOnlyDictionary<string, object> settings = null
     )
     {
+        TotalPseudonymizationRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
+
         return cache.GetOrCreateAsync(
             ("GetOriginalValueFor", pseudonym, domain, BuildSettingsCacheKey(settings)),
             async entry =>
