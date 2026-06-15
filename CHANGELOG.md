@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.27.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.26.1...v2.27.0) (2026-06-15)
+
+
+### Features
+
+* **metrics:** added metric for total pseudonymization requests count ([#335](https://github.com/miracum/fhir-pseudonymizer/issues/335)) ([8b620c6](https://github.com/miracum/fhir-pseudonymizer/commit/8b620c6b47ee302efc622d54d9ccbd2c04f1c7ef))
+
+
+### Miscellaneous Chores
+
+* **deps:** downgrade .net and rm redundant grype ([#337](https://github.com/miracum/fhir-pseudonymizer/issues/337)) ([a551a95](https://github.com/miracum/fhir-pseudonymizer/commit/a551a952649b186d6ec51f4121146cfc1cfd626e))
+
 ## [2.26.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.26.0...v2.26.1) (2026-06-05)
 
 
