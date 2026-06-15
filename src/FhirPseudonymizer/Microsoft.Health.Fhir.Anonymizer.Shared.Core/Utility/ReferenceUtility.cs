@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.RegularExpressions;
 using Hl7.Fhir.Model;
 
@@ -125,9 +126,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 return newReference;
             }
 
-            foreach (var regex in _referenceRegexes)
+            foreach (var match in _referenceRegexes.Select(regex => regex.Match(reference)))
             {
-                var match = regex.Match(reference);
                 if (match.Success)
                 {
                     var group = match.Groups["id"];
