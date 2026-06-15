@@ -105,5 +105,42 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             // No id pattern found in reference, will hash whole reference value
             return transformation(reference);
         }
+
+        public static async Task<string> TransformReferenceIdAsync(
+            string reference,
+            Func<string, Task<string>> transformationAsync
+        )
+        {
+            if (string.IsNullOrEmpty(reference))
+            {
+                return reference;
+            }
+
+            if (reference.StartsWith(InternalReferencePrefix))
+            {
+                var internalId = reference[InternalReferencePrefix.Length..];
+                var newReference =
+                    $"{InternalReferencePrefix}{await transformationAsync(internalId)}";
+
+                return newReference;
+            }
+
+            foreach (var regex in _referenceRegexes)
+            {
+                var match = regex.Match(reference);
+                if (match.Success)
+                {
+                    var group = match.Groups["id"];
+                    var newId = await transformationAsync(group.Value);
+                    var newReference =
+                        $"{match.Groups["prefix"].Value}{newId}{match.Groups["suffix"].Value}";
+
+                    return newReference;
+                }
+            }
+
+            // No id pattern found in reference, will hash whole reference value
+            return await transformationAsync(reference);
+        }
     }
 }

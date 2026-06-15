@@ -28,7 +28,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
         public List<string> RestrictedZipCodeTabulationAreas { get; set; }
 
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
@@ -36,40 +36,45 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         {
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
             {
-                return new ProcessResult();
+                return Task.FromResult(new ProcessResult());
             }
 
             if (node.IsDateNode())
             {
-                return DateTimeUtility.RedactDateNode(node, EnablePartialDatesForRedact);
+                return Task.FromResult(
+                    DateTimeUtility.RedactDateNode(node, EnablePartialDatesForRedact)
+                );
             }
 
             if (node.IsDateTimeNode() || node.IsInstantNode())
             {
-                return DateTimeUtility.RedactDateTimeAndInstantNode(
-                    node,
-                    EnablePartialDatesForRedact
+                return Task.FromResult(
+                    DateTimeUtility.RedactDateTimeAndInstantNode(node, EnablePartialDatesForRedact)
                 );
             }
 
             if (node.IsAgeDecimalNode())
             {
-                return DateTimeUtility.RedactAgeDecimalNode(node, EnablePartialAgesForRedact);
+                return Task.FromResult(
+                    DateTimeUtility.RedactAgeDecimalNode(node, EnablePartialAgesForRedact)
+                );
             }
 
             if (node.IsPostalCodeNode())
             {
-                return PostalCodeUtility.RedactPostalCode(
-                    node,
-                    EnablePartialZipCodesForRedact,
-                    RestrictedZipCodeTabulationAreas
+                return Task.FromResult(
+                    PostalCodeUtility.RedactPostalCode(
+                        node,
+                        EnablePartialZipCodesForRedact,
+                        RestrictedZipCodeTabulationAreas
+                    )
                 );
             }
 
             node.Value = null;
             var result = new ProcessResult();
             result.AddProcessRecord(AnonymizationOperations.Redact, node);
-            return result;
+            return Task.FromResult(result);
         }
 
         public static RedactProcessor Create(AnonymizerConfigurationManager configuratonManager)

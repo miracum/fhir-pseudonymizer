@@ -25,7 +25,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
         public bool EnablePartialDatesForRedact { get; set; }
 
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
@@ -34,34 +34,38 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             var processResult = new ProcessResult();
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
             {
-                return processResult;
+                return System.Threading.Tasks.Task.FromResult(processResult);
             }
 
             var fixedOffsetInDays = ExtractFixedOffsetInDays(settings);
 
             if (node.IsDateNode())
             {
-                return DateTimeUtility.ShiftDateNode(
-                    node,
-                    DateShiftKey,
-                    DateShiftKeyPrefix,
-                    EnablePartialDatesForRedact,
-                    fixedOffsetInDays
+                return System.Threading.Tasks.Task.FromResult(
+                    DateTimeUtility.ShiftDateNode(
+                        node,
+                        DateShiftKey,
+                        DateShiftKeyPrefix,
+                        EnablePartialDatesForRedact,
+                        fixedOffsetInDays
+                    )
                 );
             }
 
             if (node.IsDateTimeNode() || node.IsInstantNode())
             {
-                return DateTimeUtility.ShiftDateTimeAndInstantNode(
-                    node,
-                    DateShiftKey,
-                    DateShiftKeyPrefix,
-                    EnablePartialDatesForRedact,
-                    fixedOffsetInDays
+                return System.Threading.Tasks.Task.FromResult(
+                    DateTimeUtility.ShiftDateTimeAndInstantNode(
+                        node,
+                        DateShiftKey,
+                        DateShiftKeyPrefix,
+                        EnablePartialDatesForRedact,
+                        fixedOffsetInDays
+                    )
                 );
             }
 
-            return processResult;
+            return System.Threading.Tasks.Task.FromResult(processResult);
         }
 
         private static int? ExtractFixedOffsetInDays(Dictionary<string, object> settings)

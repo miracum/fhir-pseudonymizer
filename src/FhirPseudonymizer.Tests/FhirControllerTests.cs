@@ -11,15 +11,16 @@ namespace FhirPseudonymizer.Tests;
 public class FhirControllerTests
 {
     [Fact]
-    public void DeIdentify_ParsesDynamicSettings()
+    public async Task DeIdentify_ParsesDynamicSettings()
     {
         const string domainPrefix = "domain-prefix";
         var domainPrefixValue = new FhirString("test-");
         Dictionary<string, object> ruleSettings = null;
 
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
-            .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings);
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+            .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings)
+            .Returns(new Patient());
 
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
@@ -32,21 +33,22 @@ public class FhirControllerTests
             .Add("settings", new[] { Tuple.Create<string, Base>(domainPrefix, domainPrefixValue) })
             .Add("resource", new Patient());
 
-        controller.DeIdentify(parameters);
+        await controller.DeIdentify(parameters);
 
         ruleSettings.Should().ContainKey(domainPrefix).WhoseValue.Should().Be(domainPrefixValue);
     }
 
     [Fact]
-    public void DeIdentify_ParsesDateShiftFixedOffsetInDaysSetting()
+    public async Task DeIdentify_ParsesDateShiftFixedOffsetInDaysSetting()
     {
         const string settingKey = "dateShiftFixedOffsetInDays";
         var settingValue = new Integer(30);
         Dictionary<string, object> ruleSettings = null;
 
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
-            .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings);
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+            .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings)
+            .Returns(new Patient());
 
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
@@ -59,16 +61,16 @@ public class FhirControllerTests
             .Add("settings", new[] { Tuple.Create<string, Base>(settingKey, settingValue) })
             .Add("resource", new Patient());
 
-        controller.DeIdentify(parameters);
+        await controller.DeIdentify(parameters);
 
         ruleSettings.Should().ContainKey(settingKey).WhoseValue.Should().Be(settingValue);
     }
 
     [Fact]
-    public void DeIdentify_WithExceptionThrownInAnonymizer_ShouldReturnInternalError()
+    public async Task DeIdentify_WithExceptionThrownInAnonymizer_ShouldReturnInternalError()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
             .Throws(new Exception("something went wrong"));
 
         var controller = new FhirController(
@@ -78,7 +80,7 @@ public class FhirControllerTests
             A.Fake<IDePseudonymizerEngine>()
         );
 
-        var response = controller.DeIdentify(new Bundle());
+        var response = await controller.DeIdentify(new Bundle());
 
         response.StatusCode.Should().Be(500);
 
@@ -86,11 +88,11 @@ public class FhirControllerTests
     }
 
     [Fact]
-    public void DePseudonymize_WithExceptionThrownInDePseudonymizer_ShouldReturnInternalError()
+    public async Task DePseudonymize_WithExceptionThrownInDePseudonymizer_ShouldReturnInternalError()
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
         A.CallTo(() =>
-                dePseudonymizer.DePseudonymizeResource(A<Resource>._, A<AnonymizerSettings>._)
+                dePseudonymizer.DePseudonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._)
             )
             .Throws(new Exception("something went wrong"));
 
@@ -101,7 +103,7 @@ public class FhirControllerTests
             dePseudonymizer
         );
 
-        var response = controller.DePseudonymize(new Bundle());
+        var response = await controller.DePseudonymize(new Bundle());
 
         response.StatusCode.Should().Be(500);
 

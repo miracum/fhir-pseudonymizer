@@ -13,7 +13,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
         private static readonly PocoStructureDefinitionSummaryProvider s_provider =
             new PocoStructureDefinitionSummaryProvider();
 
-        public static ElementNode Anonymize(
+        public static async Task<ElementNode> AnonymizeAsync(
             this ElementNode node,
             AnonymizationFhirPathRule[] rules,
             Dictionary<string, IAnonymizerProcessor> processors,
@@ -21,7 +21,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
         )
         {
             var visitor = new AnonymizationVisitor(rules, processors, settings);
-            node.Accept(visitor);
+            await node.AcceptAsync(visitor);
             node.RemoveNullChildren();
 
             return node;

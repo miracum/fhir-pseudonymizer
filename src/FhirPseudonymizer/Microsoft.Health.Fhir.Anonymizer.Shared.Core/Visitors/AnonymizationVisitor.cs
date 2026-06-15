@@ -38,18 +38,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 
         public bool AddSecurityTag { get; set; } = true;
 
-        public override bool Visit(ElementNode node)
+        public override async Task<bool> VisitAsync(ElementNode node)
         {
             if (node.IsFhirResource())
             {
-                var result = ProcessResourceNode(node);
+                var result = await ProcessResourceNodeAsync(node);
                 _contextStack.Push(new Tuple<ElementNode, ProcessResult>(node, result));
             }
 
             return true;
         }
 
-        public override void EndVisit(ElementNode node)
+        public override Task EndVisitAsync(ElementNode node)
         {
             if (node.IsFhirResource())
             {
@@ -72,9 +72,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     node.AddSecurityTag(result);
                 }
             }
+
+            return Task.CompletedTask;
         }
 
-        private ProcessResult ProcessResourceNode(ElementNode node)
+        private async Task<ProcessResult> ProcessResourceNodeAsync(ElementNode node)
         {
             var result = new ProcessResult();
             var typeString = node.InstanceType;
@@ -112,7 +114,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                 foreach (var matchNode in matchNodes)
                 {
                     resultOnRule.Update(
-                        ProcessNodeRecursive(
+                        await ProcessNodeRecursiveAsync(
                             matchNode,
                             _processors[method],
                             context,
@@ -175,7 +177,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             );
         }
 
-        public ProcessResult ProcessNodeRecursive(
+        public async Task<ProcessResult> ProcessNodeRecursiveAsync(
             ElementNode node,
             IAnonymizerProcessor processor,
             ProcessContext context,
@@ -188,7 +190,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                 return result;
             }
 
-            result = processor.Process(node, context, settings);
+            result = await processor.ProcessAsync(node, context, settings);
             _visitedNodes.Add(node);
 
             foreach (var child in node.Children().CastElementNodes())
@@ -198,7 +200,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     continue;
                 }
 
-                result.Update(ProcessNodeRecursive(child, processor, context, settings));
+                result.Update(await ProcessNodeRecursiveAsync(child, processor, context, settings));
             }
 
             return result;

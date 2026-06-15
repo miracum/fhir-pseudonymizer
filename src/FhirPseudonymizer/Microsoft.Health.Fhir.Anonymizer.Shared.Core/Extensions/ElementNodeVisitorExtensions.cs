@@ -5,19 +5,22 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 {
     public static class ElementNodeVisitorExtensions
     {
-        public static void Accept(this ElementNode node, AbstractElementNodeVisitor visitor)
+        public static async Task AcceptAsync(
+            this ElementNode node,
+            AbstractElementNodeVisitor visitor
+        )
         {
-            var shouldVisitChild = visitor.Visit(node);
+            var shouldVisitChild = await visitor.VisitAsync(node);
 
             if (shouldVisitChild)
             {
                 foreach (var child in node.Children().CastElementNodes())
                 {
-                    child.Accept(visitor);
+                    await child.AcceptAsync(visitor);
                 }
             }
 
-            visitor.EndVisit(node);
+            await visitor.EndVisitAsync(node);
         }
     }
 }
