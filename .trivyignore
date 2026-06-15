@@ -6,3 +6,6 @@ AVD-DS-0002
 
 # Dockerfiles HEALTHCHECK implementation isn't relevant for Kubernetes-first deployments
 AVD-DS-0026
+
+# just in testing
+CVE-2026-48109
