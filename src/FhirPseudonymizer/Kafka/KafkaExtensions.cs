@@ -5,6 +5,8 @@ namespace FhirPseudonymizer.Kafka;
 
 public static class KafkaExtensions
 {
+    public const string DefaultGroupId = "fhir-pseudonymizer";
+
     public static IServiceCollection AddKafkaConsumer(
         this IServiceCollection services,
         KafkaConfig kafkaConfig
@@ -36,7 +38,7 @@ public static class KafkaExtensions
         var consumerConfig = new ConsumerConfig(new Dictionary<string, string>(kafkaConfig.Client));
 
         // sane defaults, overridable via Kafka__Consumer__* settings
-        consumerConfig.GroupId ??= "fhir-pseudonymizer";
+        consumerConfig.GroupId ??= DefaultGroupId;
         consumerConfig.AutoOffsetReset ??= AutoOffsetReset.Earliest;
         // makes rebalances incremental instead of stop-the-world, which matters once many
         // partitions (topics * partitions-per-topic) are assigned to a consumer instance.

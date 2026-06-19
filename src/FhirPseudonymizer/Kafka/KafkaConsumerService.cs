@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Channels;
 using Confluent.Kafka;
@@ -25,8 +27,8 @@ public class KafkaConsumerService : BackgroundService
 {
     private static readonly Counter ProcessedMessagesCounter = Metrics.CreateCounter(
         "fhirpseudonymizer_kafka_messages_total",
-        "Total number of FHIR resources consumed from Kafka, by source topic and outcome.",
-        new CounterConfiguration { LabelNames = new[] { "topic", "outcome" } }
+        "Total number of FHIR resources consumed from Kafka, by source topic and outcome (success, dead-lettered, or error).",
+        new CounterConfiguration { LabelNames = ["topic", "outcome"] }
     );
 
     private readonly IConsumer<byte[], string> consumer;
@@ -41,6 +43,7 @@ public class KafkaConsumerService : BackgroundService
     private readonly Channel<ConsumeResult<byte[], string>> completedResults =
         Channel.CreateUnbounded<ConsumeResult<byte[], string>>();
     private readonly Regex outputTopicPattern;
+    private readonly string groupId;
 
     public KafkaConsumerService(
         IConsumer<byte[], string> consumer,
@@ -59,6 +62,7 @@ public class KafkaConsumerService : BackgroundService
         this.logger = logger;
 
         outputTopicPattern = new Regex(kafkaConfig.OutputTopicPattern, RegexOptions.Compiled);
+        groupId = kafkaConfig.Consumer.GroupId ?? KafkaExtensions.DefaultGroupId;
 
         workerChannels =
         [
@@ -195,8 +199,72 @@ public class KafkaConsumerService : BackgroundService
         }
         catch (Exception exc)
         {
+            logger.LogError(
+                exc,
+                "Failed to process message from topic {Topic}, sending to dead letter queue",
+                result.Topic
+            );
+
+            await SendToDeadLetterQueueAsync(result, exc);
+        }
+    }
+
+    /// <summary>
+    ///     Sends a message that failed processing to its dead letter topic unchanged, along with
+    ///     headers describing the failure, and only then marks it as handled (i.e. its offset gets
+    ///     stored). If producing to the dead letter topic itself fails, the message is left
+    ///     unhandled so it gets reprocessed after a restart, same as if no dead letter queue existed.
+    /// </summary>
+    private async System.Threading.Tasks.Task SendToDeadLetterQueueAsync(
+        ConsumeResult<byte[], string> result,
+        Exception exc
+    )
+    {
+        try
+        {
+            var deadLetterTopic = GetDeadLetterTopic(result.Topic);
+
+            var message = new Message<byte[], string>
+            {
+                Key = result.Message.Key,
+                Value = result.Message.Value,
+                Headers = new Headers
+                {
+                    {
+                        "x-error-type",
+                        Encoding.UTF8.GetBytes(exc.GetType().FullName ?? exc.GetType().Name)
+                    },
+                    { "x-error-message", Encoding.UTF8.GetBytes(exc.Message) },
+                    { "x-source-topic", Encoding.UTF8.GetBytes(result.Topic) },
+                    {
+                        "x-source-partition",
+                        Encoding.UTF8.GetBytes(
+                            result.Partition.Value.ToString(CultureInfo.InvariantCulture)
+                        )
+                    },
+                    {
+                        "x-source-offset",
+                        Encoding.UTF8.GetBytes(
+                            result.Offset.Value.ToString(CultureInfo.InvariantCulture)
+                        )
+                    },
+                },
+            };
+
+            producer.Produce(deadLetterTopic, message);
+
+            ProcessedMessagesCounter.WithLabels(result.Topic, "dead-lettered").Inc();
+
+            await completedResults.Writer.WriteAsync(result, CancellationToken.None);
+        }
+        catch (Exception dlqExc)
+        {
             ProcessedMessagesCounter.WithLabels(result.Topic, "error").Inc();
-            logger.LogError(exc, "Failed to process message from topic {Topic}", result.Topic);
+            logger.LogError(
+                dlqExc,
+                "Failed to send message from topic {Topic} to dead letter queue",
+                result.Topic
+            );
         }
     }
 
@@ -209,6 +277,15 @@ public class KafkaConsumerService : BackgroundService
     public string GetOutputTopic(string sourceTopic)
     {
         return outputTopicPattern.Replace(sourceTopic, kafkaConfig.OutputTopicReplacement);
+    }
+
+    /// <summary>
+    ///     Derives the dead letter topic for a given input topic, named
+    ///     "error.&lt;input-topic&gt;.&lt;group-id&gt;" (mirroring Spring Kafka's default DLT naming).
+    /// </summary>
+    public string GetDeadLetterTopic(string sourceTopic)
+    {
+        return $"error.{sourceTopic}.{groupId}";
     }
 
     public string AnonymizeMessage(string sourceTopic, string json)

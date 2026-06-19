@@ -88,6 +88,8 @@ This is enabled by setting `Kafka__Client__BootstrapServers` and at least one to
 
 Messages are anonymized concurrently by a fixed pool of workers (`Kafka__WorkerCount`, defaulting to the number of CPU cores). Each Kafka partition is consistently routed to the same worker, so per-partition message order is preserved while different partitions are processed in parallel. Combined with Kafka's own partition-based consumer group scaling, this means throughput can be increased both by raising `Kafka__WorkerCount` within a replica and by running multiple replicas with the same `Kafka__Consumer__GroupId`.
 
+Transient failures calling the configured pseudonymization service (gPAS, Vfps, entici, Mii) are already retried with backoff at the HTTP/gRPC client level. If processing a message still fails after that (e.g. malformed input, an unrecoverable error, or those retries being exhausted), the original, unmodified message is published unchanged to a dead letter topic named `error.<input-topic>.<group-id>` (mirroring Spring Kafka's default dead letter topic naming), with headers describing the failure (`x-error-type`, `x-error-message`, `x-source-topic`, `x-source-partition`, `x-source-offset`), and its offset is committed so the consumer can move past it. If producing to the dead letter topic itself fails, the message's offset is left uncommitted so it gets reprocessed after a restart.
+
 ## Configuration
 
 You can configure the anonymization and pseudonymization rules in the `anonymization.yaml` config file.

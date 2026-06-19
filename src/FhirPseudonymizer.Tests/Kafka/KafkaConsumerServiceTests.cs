@@ -126,7 +126,7 @@ public class KafkaConsumerServiceTests
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_DoesNotProduce()
+    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_DoesNotProduceToOutputTopic()
     {
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(A.Fake<IAnonymizerEngine>(), producer);
@@ -137,12 +137,69 @@ public class KafkaConsumerServiceTests
 
         A.CallTo(() =>
                 producer.Produce(
-                    A<string>._,
+                    "pseudonymized.input-topic",
                     A<Message<byte[], string>>._,
                     A<Action<DeliveryReport<byte[], string>>>._
                 )
             )
             .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_SendsOriginalMessageToDeadLetterTopic()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        var service = CreateService(A.Fake<IAnonymizerEngine>(), producer);
+
+        var key = "patient-123"u8.ToArray();
+        var result = CreateConsumeResult("input-topic", 0, 0, "not valid fhir json", key);
+
+        Message<byte[], string> deadLetterMessage = null;
+        A.CallTo(() =>
+                producer.Produce(
+                    "error.input-topic.fhir-pseudonymizer",
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Invokes(
+                (
+                    string _,
+                    Message<byte[], string> message,
+                    Action<DeliveryReport<byte[], string>> _
+                ) => deadLetterMessage = message
+            );
+
+        await service.ProcessResultAsync(result);
+
+        deadLetterMessage.Should().NotBeNull();
+        deadLetterMessage.Key.Should().BeEquivalentTo(key);
+        deadLetterMessage.Value.Should().Be("not valid fhir json");
+        deadLetterMessage
+            .Headers.Should()
+            .Contain(h => h.Key == "x-source-topic")
+            .Which.GetValueBytes()
+            .Should()
+            .BeEquivalentTo("input-topic"u8.ToArray());
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task ProcessResultAsync_WhenDeadLetterProduceAlsoFails_DoesNotThrow()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Throws(new KafkaException(ErrorCode.Local_Transport));
+
+        var service = CreateService(A.Fake<IAnonymizerEngine>(), producer);
+        var result = CreateConsumeResult("input-topic", 0, 0, "not valid fhir json");
+
+        await service.Invoking(s => s.ProcessResultAsync(result)).Should().NotThrowAsync();
     }
 
     [Fact]
@@ -170,6 +227,32 @@ public class KafkaConsumerServiceTests
         );
 
         service.GetOutputTopic("fhir.test").Should().Be("fhir.pseudonymized.test");
+    }
+
+    [Fact]
+    public void GetDeadLetterTopic_WithDefaultGroupId_UsesDefaultGroupIdInTopicName()
+    {
+        var service = CreateService(
+            A.Fake<IAnonymizerEngine>(),
+            A.Fake<IProducer<byte[], string>>()
+        );
+
+        service
+            .GetDeadLetterTopic("input-topic")
+            .Should()
+            .Be("error.input-topic.fhir-pseudonymizer");
+    }
+
+    [Fact]
+    public void GetDeadLetterTopic_WithCustomGroupId_UsesConfiguredGroupIdInTopicName()
+    {
+        var service = CreateService(
+            A.Fake<IAnonymizerEngine>(),
+            A.Fake<IProducer<byte[], string>>(),
+            new KafkaConfig { Consumer = new ConsumerConfig { GroupId = "my-group" } }
+        );
+
+        service.GetDeadLetterTopic("input-topic").Should().Be("error.input-topic.my-group");
     }
 
     [Fact]
