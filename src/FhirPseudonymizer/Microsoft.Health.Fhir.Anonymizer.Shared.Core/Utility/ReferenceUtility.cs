@@ -126,17 +126,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 return newReference;
             }
 
-            foreach (var match in _referenceRegexes.Select(regex => regex.Match(reference)))
+            foreach (
+                var match in _referenceRegexes
+                    .Select(regex => regex.Match(reference))
+                    .Where(match => match.Success)
+            )
             {
-                if (match.Success)
-                {
-                    var group = match.Groups["id"];
-                    var newId = await transformationAsync(group.Value);
-                    var newReference =
-                        $"{match.Groups["prefix"].Value}{newId}{match.Groups["suffix"].Value}";
+                var group = match.Groups["id"];
+                var newId = await transformationAsync(group.Value);
+                var newReference =
+                    $"{match.Groups["prefix"].Value}{newId}{match.Groups["suffix"].Value}";
 
-                    return newReference;
-                }
+                return newReference;
             }
 
             // No id pattern found in reference, will hash whole reference value
