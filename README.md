@@ -79,6 +79,15 @@ Accessing this endpoint requires authentication. So make sure to set the `APIKEY
 
 While not part of the "user" API, the application exposes metrics in the Prometheus format at the `/metrics` endpoint on port `8081`.
 
+### Reading directly from Kafka
+
+In addition to the HTTP API, the application can consume FHIR resources/bundles directly from one or more Kafka topics, pseudonymize them, and publish the result to an output topic. The original message's key is preserved on the output message unchanged.
+The output topic for a given input topic is derived by applying a regular expression match-and-replace (`Kafka__OutputTopicPattern` / `Kafka__OutputTopicReplacement`) to the input topic's name. By default, this just prepends `pseudonymized.` to every topic, e.g. `fhir.test` becomes `pseudonymized.fhir.test`. To instead insert it after a common prefix, e.g. turning `fhir.test` into `fhir.pseudonymized.test`, set `Kafka__OutputTopicPattern=^fhir\.` and `Kafka__OutputTopicReplacement=fhir.pseudonymized.`.
+
+This is enabled by setting `Kafka__Client__BootstrapServers` and at least one topic in `Kafka__Topics`. See the [Kafka configuration](#kafka) section below for all available options.
+
+Messages are anonymized concurrently by a fixed pool of workers (`Kafka__WorkerCount`, defaulting to the number of CPU cores). Each Kafka partition is consistently routed to the same worker, so per-partition message order is preserved while different partitions are processed in parallel. Combined with Kafka's own partition-based consumer group scaling, this means throughput can be increased both by raising `Kafka__WorkerCount` within a replica and by running multiple replicas with the same `Kafka__Consumer__GroupId`.
+
 ## Configuration
 
 You can configure the anonymization and pseudonymization rules in the `anonymization.yaml` config file.
@@ -173,6 +182,19 @@ fhirPathRules:
 | `entici__Auth__OAuth__ClientSecret`  | The static (shared) client secret | `""`    |
 | `entici__Auth__OAuth__Scope`         | The scope                         | `""`    |
 | `entici__Auth__OAuth__Resource`      | The resource                      | `""`    |
+
+### Kafka
+
+| Environment Variable            | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Default             |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `Kafka__Topics__0`, `__1`, ...  | The input topics to consume FHIR resources/bundles from. Each message's value is parsed as a FHIR resource, pseudonymized, and published to the corresponding output topic. Reading from Kafka is disabled unless at least one topic is set.                                                                                                                                                                                                                                                                                                                         | `[]`                |
+| `Kafka__OutputTopicPattern`     | A regular expression matched against the input topic's name. Used together with `Kafka__OutputTopicReplacement` to derive the output topic name via match-and-replace, e.g. matching `^fhir\.` and replacing it with `fhir.pseudonymized.` turns `fhir.test` into `fhir.pseudonymized.test`.                                                                                                                                                                                                                                                                         | `"^"`               |
+| `Kafka__OutputTopicReplacement` | The replacement string substituted for every match of `Kafka__OutputTopicPattern`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `"pseudonymized."`  |
+| `Kafka__WorkerCount`            | The number of worker tasks anonymizing messages concurrently. Each Kafka partition is consistently routed to one worker, so messages from the same partition are always processed in order, while different partitions are anonymized in parallel across workers.                                                                                                                                                                                                                                                                                                    | number of CPU cores |
+| `Kafka__WorkerChannelCapacity`  | The maximum number of messages buffered per worker before the consumer pauses fetching new ones (backpressure).                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `100`               |
+| `Kafka__Client__*`              | Settings shared by the consumer and producer, e.g. `Kafka__Client__BootstrapServers`, `Kafka__Client__SecurityProtocol`, `Kafka__Client__SaslMechanism`, `Kafka__Client__SaslUsername`, `Kafka__Client__SaslPassword`. Any property of [`Confluent.Kafka.ClientConfig`](https://docs.confluent.io/platform/current/clients/confluent-kafka-dotnet/_site/api/Confluent.Kafka.ClientConfig.html) can be set this way.                                                                                                                                                  | unset               |
+| `Kafka__Consumer__*`            | Consumer-only settings layered on top of `Kafka__Client__*`, e.g. `Kafka__Consumer__GroupId`, `Kafka__Consumer__SessionTimeoutMs`. Any property of [`Confluent.Kafka.ConsumerConfig`](https://docs.confluent.io/platform/current/clients/confluent-kafka-dotnet/_site/api/Confluent.Kafka.ConsumerConfig.html) can be set this way; `GroupId` defaults to `"fhir-pseudonymizer"` if unset. Note that `EnableAutoOffsetStore` is always forced to `false` regardless of this setting, since offsets are only stored after a message has been anonymized and produced. | unset               |
+| `Kafka__Producer__*`            | Producer-only settings layered on top of `Kafka__Client__*`, e.g. `Kafka__Producer__LingerMs`, `Kafka__Producer__CompressionType`. Any property of [`Confluent.Kafka.ProducerConfig`](https://docs.confluent.io/platform/current/clients/confluent-kafka-dotnet/_site/api/Confluent.Kafka.ProducerConfig.html) can be set this way.                                                                                                                                                                                                                                  | unset               |
 
 ### Truncating Crypto-hash Length
 
@@ -305,6 +327,12 @@ to also start a Keycloak instance with pre-configured fhir-pseudonymizer client,
 
 ```sh
 docker compose -f compose.dev.yaml --profile=keycloak up
+```
+
+To also start a local Kafka broker for testing the [Kafka](#kafka) consumer, set `--profile=kafka`:
+
+```sh
+docker compose -f compose.dev.yaml --profile=kafka up
 ```
 
 ### Build
