@@ -81,7 +81,7 @@ namespace FhirPseudonymizer.Controllers
         [ProducesResponseType(typeof(Resource), 200)]
         [ProducesResponseType(typeof(OperationOutcome), 400)]
         [ProducesResponseType(typeof(OperationOutcome), 500)]
-        public ObjectResult DeIdentify([FromBody] Resource resource)
+        public async Task<ObjectResult> DeIdentify([FromBody] Resource resource)
         {
             if (resource == null)
             {
@@ -112,13 +112,16 @@ namespace FhirPseudonymizer.Controllers
                     );
                 }
 
-                return Anonymize(param.GetSingle("resource").Resource, settings);
+                return await Anonymize(param.GetSingle("resource").Resource, settings);
             }
 
-            return Anonymize(resource, settings);
+            return await Anonymize(resource, settings);
         }
 
-        private ObjectResult Anonymize(Resource resource, AnonymizerSettings anonymizerSettings)
+        private async Task<ObjectResult> Anonymize(
+            Resource resource,
+            AnonymizerSettings anonymizerSettings
+        )
         {
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
             activity?.AddTag("resource.type", resource.TypeName);
@@ -132,7 +135,7 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                return Ok(anonymizer.AnonymizeResource(resource, anonymizerSettings));
+                return Ok(await anonymizer.AnonymizeResourceAsync(resource, anonymizerSettings));
             }
             catch (Exception exc)
             {
@@ -152,7 +155,7 @@ namespace FhirPseudonymizer.Controllers
         [ProducesResponseType(typeof(Resource), 200)]
         [ProducesResponseType(typeof(OperationOutcome), 400)]
         [ProducesResponseType(typeof(OperationOutcome), 500)]
-        public ObjectResult DePseudonymize([FromBody] Resource resource)
+        public async Task<ObjectResult> DePseudonymize([FromBody] Resource resource)
         {
             if (resource == null)
             {
@@ -173,7 +176,7 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                return Ok(dePseudonymizer.DePseudonymizeResource(resource));
+                return Ok(await dePseudonymizer.DePseudonymizeResourceAsync(resource));
             }
             catch (Exception exc)
             {

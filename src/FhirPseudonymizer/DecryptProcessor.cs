@@ -17,7 +17,7 @@ namespace FhirPseudonymizer
             _key = Encoding.UTF8.GetBytes(decryptKey);
         }
 
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
@@ -26,7 +26,7 @@ namespace FhirPseudonymizer
             var processResult = new ProcessResult();
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
             {
-                return processResult;
+                return Task.FromResult(processResult);
             }
 
             var input = node.Value.ToString();
@@ -43,7 +43,7 @@ namespace FhirPseudonymizer
                 $"Fhir value '{input}' at '{node.Location}' is decrypted to '{node.Value}'."
             );
 
-            return processResult;
+            return Task.FromResult(processResult);
         }
     }
 }

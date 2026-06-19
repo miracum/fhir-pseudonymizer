@@ -16,7 +16,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
         private readonly FhirJsonParser _parser = new FhirJsonParser();
 
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
@@ -63,7 +63,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             );
             MarkSubstitutedFragmentAsVisited(node, context.VisitedNodes);
 
-            return processResult;
+            return System.Threading.Tasks.Task.FromResult(processResult);
         }
 
         private ProcessResult SubstituteNode(

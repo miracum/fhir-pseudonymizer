@@ -15,7 +15,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             _key = Encoding.UTF8.GetBytes(encryptKey);
         }
 
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
@@ -24,7 +24,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             var processResult = new ProcessResult();
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
             {
-                return processResult;
+                return Task.FromResult(processResult);
             }
 
             var input = node.Value.ToString();
@@ -34,7 +34,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             );
 
             processResult.AddProcessRecord(AnonymizationOperations.Encrypt, node);
-            return processResult;
+            return Task.FromResult(processResult);
         }
     }
 }

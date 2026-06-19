@@ -50,7 +50,7 @@ public class GPasPseudonymizationProcessorTests
 
     [Theory]
     [MemberData(nameof(GetProcessData))]
-    public void Process_SupportsDomainPrefixSetting(
+    public async Task Process_SupportsDomainPrefixSetting(
         string domainPrefix,
         string domainName,
         DataType element,
@@ -71,7 +71,7 @@ public class GPasPseudonymizationProcessorTests
             node = node.Children().CastElementNodes().First();
         }
 
-        processor.Process(
+        await processor.ProcessAsync(
             node,
             null,
             new Dictionary<string, object>

@@ -18,7 +18,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 CryptoHashUtility.ComputeHmacSHA256Hash(input, _cryptoHashKey);
         }
 
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
@@ -27,7 +27,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             var processResult = new ProcessResult();
             if (string.IsNullOrEmpty(node?.Value?.ToString()))
             {
-                return processResult;
+                return Task.FromResult(processResult);
             }
 
             var cryptoHashFunction = _cryptoHashFunction;
@@ -65,7 +65,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             );
 
             processResult.AddProcessRecord(AnonymizationOperations.CryptoHash, node);
-            return processResult;
+            return Task.FromResult(processResult);
         }
     }
 }

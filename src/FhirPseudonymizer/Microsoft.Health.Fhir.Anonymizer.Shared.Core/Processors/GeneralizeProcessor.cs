@@ -10,7 +10,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public class GeneralizeProcessor : IAnonymizerProcessor
     {
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
@@ -23,7 +23,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             var result = new ProcessResult();
             if (!ModelInfo.IsPrimitive(node.InstanceType) || node.Value == null)
             {
-                return result;
+                return System.Threading.Tasks.Task.FromResult(result);
             }
 
             var generalizeSetting = GeneralizeSetting.CreateFromRuleSettings(settings);
@@ -35,7 +35,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                     {
                         node.Value = node.Scalar(eachCase.Value);
                         result.AddProcessRecord(AnonymizationOperations.Generalize, node);
-                        return result;
+                        return System.Threading.Tasks.Task.FromResult(result);
                     }
                 }
                 catch (InvalidOperationException ex)
@@ -53,7 +53,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             }
 
             result.AddProcessRecord(AnonymizationOperations.Generalize, node);
-            return result;
+            return System.Threading.Tasks.Task.FromResult(result);
         }
     }
 }

@@ -24,7 +24,7 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
     private Regex ResourceTypeMatcher { get; } = ResourceTypeRegex();
     private bool IsConditionalReferencePseudonymizationEnabled { get; }
 
-    public ProcessResult Process(
+    public async Task<ProcessResult> ProcessAsync(
         ElementNode node,
         ProcessContext context = null,
         Dictionary<string, object> settings = null
@@ -55,9 +55,9 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
             // create a domain from the reference, ie "Patient/123" -> "Patient"
             domain ??= ReferenceUtility.GetReferencePrefix(input).TrimEnd('/');
 
-            node.Value = ReferenceUtility.TransformReferenceId(
+            node.Value = await ReferenceUtility.TransformReferenceIdAsync(
                 input,
-                x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain, settings)
+                x => GetOrCreatePseudonymAsync(x, domainPrefix.ToString() + domain, settings)
             );
         }
         else if (
@@ -69,27 +69,31 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
                 .Groups["domain"]
                 .Value;
 
-            node.Value = ReferenceUtility.TransformReferenceId(
+            node.Value = await ReferenceUtility.TransformReferenceIdAsync(
                 input,
-                x => GetOrCreatePseudonym(x, domainPrefix.ToString() + domain, settings)
+                x => GetOrCreatePseudonymAsync(x, domainPrefix.ToString() + domain, settings)
             );
         }
         else
         {
-            node.Value = GetOrCreatePseudonym(input, domainPrefix.ToString() + domain, settings);
+            node.Value = await GetOrCreatePseudonymAsync(
+                input,
+                domainPrefix.ToString() + domain,
+                settings
+            );
         }
 
         processResult.AddProcessRecord(AnonymizationOperations.Pseudonymize, node);
         return processResult;
     }
 
-    protected virtual string GetOrCreatePseudonym(
+    protected virtual Task<string> GetOrCreatePseudonymAsync(
         string input,
         string domain,
         IReadOnlyDictionary<string, object> settings
     )
     {
-        return PsnClient.GetOrCreatePseudonymFor(input, domain, settings).Result;
+        return PsnClient.GetOrCreatePseudonymFor(input, domain, settings);
     }
 }
 
@@ -101,12 +105,12 @@ public class DePseudonymizationProcessor : PseudonymizationProcessor
     )
         : base(psnClient, features) { }
 
-    protected override string GetOrCreatePseudonym(
+    protected override Task<string> GetOrCreatePseudonymAsync(
         string input,
         string domain,
         IReadOnlyDictionary<string, object> settings
     )
     {
-        return PsnClient.GetOriginalValueFor(input, domain, settings).Result;
+        return PsnClient.GetOriginalValueFor(input, domain, settings);
     }
 }

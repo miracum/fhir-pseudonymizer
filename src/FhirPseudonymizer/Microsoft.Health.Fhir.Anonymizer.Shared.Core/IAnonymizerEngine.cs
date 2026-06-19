@@ -5,11 +5,17 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 {
     public interface IAnonymizerEngine
     {
-        Resource AnonymizeResource(Resource resource, AnonymizerSettings settings = null);
+        Task<Resource> AnonymizeResourceAsync(
+            Resource resource,
+            AnonymizerSettings settings = null
+        );
     }
 
     public interface IDePseudonymizerEngine
     {
-        Resource DePseudonymizeResource(Resource resource, AnonymizerSettings settings = null);
+        Task<Resource> DePseudonymizeResourceAsync(
+            Resource resource,
+            AnonymizerSettings settings = null
+        );
     }
 }

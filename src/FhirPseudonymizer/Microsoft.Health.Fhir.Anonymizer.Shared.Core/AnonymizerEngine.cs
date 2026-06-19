@@ -34,13 +34,19 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             _logger.LogDebug("AnonymizerEngine initialized successfully");
         }
 
-        public Resource AnonymizeResource(Resource resource, AnonymizerSettings settings = null)
+        public async Task<Resource> AnonymizeResourceAsync(
+            Resource resource,
+            AnonymizerSettings settings = null
+        )
         {
             EnsureArg.IsNotNull(resource, nameof(resource));
 
             ValidateInput(settings, resource);
-            var anonymizedResource = AnonymizeElement(resource.ToTypedElement(), settings)
-                .ToPoco<Resource>();
+            var anonymizedElement = await AnonymizeElementAsync(
+                resource.ToTypedElement(),
+                settings
+            );
+            var anonymizedResource = anonymizedElement.ToPoco<Resource>();
             ValidateOutput(settings, anonymizedResource);
 
             return anonymizedResource;
@@ -75,7 +81,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             return new AnonymizerEngine(configurationManager);
         }
 
-        public ITypedElement AnonymizeElement(
+        public async Task<ITypedElement> AnonymizeElementAsync(
             ITypedElement element,
             AnonymizerSettings settings = null
         )
@@ -83,15 +89,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             EnsureArg.IsNotNull(element, nameof(element));
 
             var resourceNode = ElementNode.FromElement(element);
-            return resourceNode.Anonymize(_rules, _processors, settings);
+            return await resourceNode.AnonymizeAsync(_rules, _processors, settings);
         }
 
-        public string AnonymizeJson(string json, AnonymizerSettings settings = null)
+        public async Task<string> AnonymizeJsonAsync(
+            string json,
+            AnonymizerSettings settings = null
+        )
         {
             EnsureArg.IsNotNullOrEmpty(json, nameof(json));
 
             var resource = _parser.Parse<Resource>(json);
-            var anonymizedResource = AnonymizeResource(resource, settings);
+            var anonymizedResource = await AnonymizeResourceAsync(resource, settings);
 
             var serializationSettings = new FhirJsonSerializationSettings
             {
@@ -156,12 +165,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             ClearProcessors();
         }
 
-        public Resource DePseudonymizeResource(
+        public Task<Resource> DePseudonymizeResourceAsync(
             Resource resource,
             AnonymizerSettings settings = null
         )
         {
-            return AnonymizeResource(resource, settings);
+            return AnonymizeResourceAsync(resource, settings);
         }
     }
 }
