@@ -202,7 +202,37 @@ public class KafkaConsumerService : BackgroundService
 
             await completedResults.Writer.WriteAsync(result, CancellationToken.None);
         }
-        catch (Exception exc)
+        catch (ProduceException<byte[], string> exc)
+        {
+            logger.LogError(
+                exc,
+                "Failed to process message from topic {Topic}, sending to dead letter queue",
+                result.Topic
+            );
+
+            await SendToDeadLetterQueueAsync(result, exc);
+        }
+        catch (ConsumeException exc)
+        {
+            logger.LogError(
+                exc,
+                "Failed to process message from topic {Topic}, sending to dead letter queue",
+                result.Topic
+            );
+
+            await SendToDeadLetterQueueAsync(result, exc);
+        }
+        catch (FormatException exc)
+        {
+            logger.LogError(
+                exc,
+                "Failed to process message from topic {Topic}, sending to dead letter queue",
+                result.Topic
+            );
+
+            await SendToDeadLetterQueueAsync(result, exc);
+        }
+        catch (InvalidOperationException exc)
         {
             logger.LogError(
                 exc,
