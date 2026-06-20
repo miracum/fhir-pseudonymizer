@@ -146,4 +146,36 @@ public class KafkaExtensionsTests
         consumerConfig.BootstrapServers.Should().Be("broker1:9092,broker2:9092");
         consumerConfig.GroupId.Should().Be("my-group");
     }
+
+    [Theory]
+    [InlineData("topic-a,topic-b", new[] { "topic-a", "topic-b" })]
+    [InlineData("topic-a, topic-b ,topic-c", new[] { "topic-a", "topic-b", "topic-c" })]
+    [InlineData("topic-a", new[] { "topic-a" })]
+    public void NormalizeTopics_SplitsCommaSeparatedStringWhenNoArrayWasBound(
+        string rawTopics,
+        string[] expectedTopics
+    )
+    {
+        var settings = new Dictionary<string, string> { ["Kafka:Topics"] = rawTopics };
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+
+        var topics = KafkaExtensions.NormalizeTopics(configuration, []);
+
+        topics.Should().Equal(expectedTopics);
+    }
+
+    [Fact]
+    public void NormalizeTopics_PrefersAlreadyBoundArrayOverRawCommaSeparatedString()
+    {
+        var settings = new Dictionary<string, string>
+        {
+            ["Kafka:Topics:0"] = "topic-a",
+            ["Kafka:Topics:1"] = "topic-b",
+        };
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+
+        var topics = KafkaExtensions.NormalizeTopics(configuration, ["topic-a", "topic-b"]);
+
+        topics.Should().Equal("topic-a", "topic-b");
+    }
 }
