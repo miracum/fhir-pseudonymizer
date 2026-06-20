@@ -15,7 +15,8 @@ public class KafkaConsumerServiceTests
         int partition,
         long offset,
         string json,
-        byte[] key = null
+        byte[] key = null,
+        Headers headers = null
     )
     {
         return new ConsumeResult<byte[], string>
@@ -24,7 +25,12 @@ public class KafkaConsumerServiceTests
                 new TopicPartition(topic, new Partition(partition)),
                 new Offset(offset)
             ),
-            Message = new Message<byte[], string> { Key = key, Value = json },
+            Message = new Message<byte[], string>
+            {
+                Key = key,
+                Value = json,
+                Headers = headers,
+            },
         };
     }
 
@@ -45,18 +51,18 @@ public class KafkaConsumerServiceTests
     }
 
     [Fact]
-    public void AnonymizeMessage_ReturnsAnonymizedResource()
+    public async Task AnonymizeMessageAsync_ReturnsAnonymizedResource()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
-            .ReturnsLazily((Resource resource, AnonymizerSettings _) => resource);
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+            .ReturnsLazily((Resource resource, AnonymizerSettings _) => Task.FromResult(resource));
 
         var service = CreateService(anonymizer, A.Fake<IProducer<byte[], string>>());
 
         var patient = new Patient { Id = "123" };
         var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(patient);
 
-        var output = service.AnonymizeMessage("input-topic", json);
+        var output = await service.AnonymizeMessageAsync("input-topic", json);
 
         output.Should().Contain("\"id\":\"123\"");
     }
@@ -65,8 +71,8 @@ public class KafkaConsumerServiceTests
     public async System.Threading.Tasks.Task ProcessResultAsync_AnonymizesResourceAndProducesToPrefixedTopic()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
-            .ReturnsLazily((Resource resource, AnonymizerSettings _) => resource);
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+            .ReturnsLazily((Resource resource, AnonymizerSettings _) => Task.FromResult(resource));
 
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(anonymizer, producer);
@@ -92,8 +98,8 @@ public class KafkaConsumerServiceTests
     public async System.Threading.Tasks.Task ProcessResultAsync_PreservesOriginalMessageKey()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResource(A<Resource>._, A<AnonymizerSettings>._))
-            .ReturnsLazily((Resource resource, AnonymizerSettings _) => resource);
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+            .ReturnsLazily((Resource resource, AnonymizerSettings _) => Task.FromResult(resource));
 
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(anonymizer, producer);
@@ -123,6 +129,48 @@ public class KafkaConsumerServiceTests
         await service.ProcessResultAsync(result);
 
         producedMessage.Key.Should().BeEquivalentTo(key);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task ProcessResultAsync_ForwardsOriginalMessageHeaders()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+            .ReturnsLazily((Resource resource, AnonymizerSettings _) => Task.FromResult(resource));
+
+        var producer = A.Fake<IProducer<byte[], string>>();
+        var service = CreateService(anonymizer, producer);
+
+        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
+            new Patient { Id = "123" }
+        );
+        var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
+        var result = CreateConsumeResult("input-topic", 0, 0, json, headers: headers);
+
+        Message<byte[], string> producedMessage = null;
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Invokes(
+                (
+                    string _,
+                    Message<byte[], string> message,
+                    Action<DeliveryReport<byte[], string>> _
+                ) => producedMessage = message
+            );
+
+        await service.ProcessResultAsync(result);
+
+        producedMessage
+            .Headers.Should()
+            .Contain(h => h.Key == "traceparent")
+            .Which.GetValueBytes()
+            .Should()
+            .BeEquivalentTo("trace-123"u8.ToArray());
     }
 
     [Fact]
@@ -181,6 +229,48 @@ public class KafkaConsumerServiceTests
             .Which.GetValueBytes()
             .Should()
             .BeEquivalentTo("input-topic"u8.ToArray());
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_ForwardsOriginalMessageHeadersToDeadLetterTopic()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        var service = CreateService(A.Fake<IAnonymizerEngine>(), producer);
+
+        var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
+        var result = CreateConsumeResult(
+            "input-topic",
+            0,
+            0,
+            "not valid fhir json",
+            headers: headers
+        );
+
+        Message<byte[], string> deadLetterMessage = null;
+        A.CallTo(() =>
+                producer.Produce(
+                    "error.input-topic.fhir-pseudonymizer",
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Invokes(
+                (
+                    string _,
+                    Message<byte[], string> message,
+                    Action<DeliveryReport<byte[], string>> _
+                ) => deadLetterMessage = message
+            );
+
+        await service.ProcessResultAsync(result);
+
+        deadLetterMessage
+            .Headers.Should()
+            .Contain(h => h.Key == "traceparent")
+            .Which.GetValueBytes()
+            .Should()
+            .BeEquivalentTo("trace-123"u8.ToArray());
+        deadLetterMessage.Headers.Should().Contain(h => h.Key == "x-error-type");
     }
 
     [Fact]

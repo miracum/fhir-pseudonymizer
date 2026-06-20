@@ -185,12 +185,17 @@ public class KafkaConsumerService : BackgroundService
     {
         try
         {
-            var output = AnonymizeMessage(result.Topic, result.Message.Value);
+            var output = await AnonymizeMessageAsync(result.Topic, result.Message.Value);
             var outputTopic = GetOutputTopic(result.Topic);
 
             producer.Produce(
                 outputTopic,
-                new Message<byte[], string> { Key = result.Message.Key, Value = output }
+                new Message<byte[], string>
+                {
+                    Key = result.Message.Key,
+                    Value = output,
+                    Headers = CopyHeaders(result.Message.Headers),
+                }
             );
 
             ProcessedMessagesCounter.WithLabels(result.Topic, "success").Inc();
@@ -224,31 +229,29 @@ public class KafkaConsumerService : BackgroundService
         {
             var deadLetterTopic = GetDeadLetterTopic(result.Topic);
 
+            var headers = CopyHeaders(result.Message.Headers);
+            headers.Add(
+                "x-error-type",
+                Encoding.UTF8.GetBytes(exc.GetType().FullName ?? exc.GetType().Name)
+            );
+            headers.Add("x-error-message", Encoding.UTF8.GetBytes(exc.Message));
+            headers.Add("x-source-topic", Encoding.UTF8.GetBytes(result.Topic));
+            headers.Add(
+                "x-source-partition",
+                Encoding.UTF8.GetBytes(
+                    result.Partition.Value.ToString(CultureInfo.InvariantCulture)
+                )
+            );
+            headers.Add(
+                "x-source-offset",
+                Encoding.UTF8.GetBytes(result.Offset.Value.ToString(CultureInfo.InvariantCulture))
+            );
+
             var message = new Message<byte[], string>
             {
                 Key = result.Message.Key,
                 Value = result.Message.Value,
-                Headers = new Headers
-                {
-                    {
-                        "x-error-type",
-                        Encoding.UTF8.GetBytes(exc.GetType().FullName ?? exc.GetType().Name)
-                    },
-                    { "x-error-message", Encoding.UTF8.GetBytes(exc.Message) },
-                    { "x-source-topic", Encoding.UTF8.GetBytes(result.Topic) },
-                    {
-                        "x-source-partition",
-                        Encoding.UTF8.GetBytes(
-                            result.Partition.Value.ToString(CultureInfo.InvariantCulture)
-                        )
-                    },
-                    {
-                        "x-source-offset",
-                        Encoding.UTF8.GetBytes(
-                            result.Offset.Value.ToString(CultureInfo.InvariantCulture)
-                        )
-                    },
-                },
+                Headers = headers,
             };
 
             producer.Produce(deadLetterTopic, message);
@@ -266,6 +269,26 @@ public class KafkaConsumerService : BackgroundService
                 result.Topic
             );
         }
+    }
+
+    /// <summary>
+    ///     Copies a consumed message's headers (e.g. distributed tracing context, correlation
+    ///     ids) onto a new <see cref="Headers" /> instance, so they survive being forwarded onto
+    ///     the message produced to the output/dead letter topic.
+    /// </summary>
+    private static Headers CopyHeaders(Headers originalHeaders)
+    {
+        var headers = new Headers();
+
+        if (originalHeaders is not null)
+        {
+            foreach (var header in originalHeaders)
+            {
+                headers.Add(header.Key, header.GetValueBytes());
+            }
+        }
+
+        return headers;
     }
 
     /// <summary>
@@ -288,9 +311,12 @@ public class KafkaConsumerService : BackgroundService
         return $"error.{sourceTopic}.{groupId}";
     }
 
-    public string AnonymizeMessage(string sourceTopic, string json)
+    public async System.Threading.Tasks.Task<string> AnonymizeMessageAsync(
+        string sourceTopic,
+        string json
+    )
     {
-        using var activity = Program.ActivitySource.StartActivity(nameof(AnonymizeMessage));
+        using var activity = Program.ActivitySource.StartActivity(nameof(AnonymizeMessageAsync));
         activity?.AddTag("kafka.topic", sourceTopic);
 
         var resource = fhirJsonParser.Parse<Resource>(json);
@@ -300,7 +326,7 @@ public class KafkaConsumerService : BackgroundService
             ShouldAddSecurityTag = anonymizationConfig.ShouldAddSecurityTag,
         };
 
-        var anonymized = anonymizer.AnonymizeResource(resource, settings);
+        var anonymized = await anonymizer.AnonymizeResourceAsync(resource, settings);
         return fhirJsonSerializer.SerializeToString(anonymized);
     }
 
