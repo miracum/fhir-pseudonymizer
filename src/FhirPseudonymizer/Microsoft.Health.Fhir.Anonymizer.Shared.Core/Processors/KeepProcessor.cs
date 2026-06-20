@@ -5,13 +5,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public class KeepProcessor : IAnonymizerProcessor
     {
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
         )
         {
-            return new ProcessResult();
+            return Task.FromResult(new ProcessResult());
         }
     }
 }

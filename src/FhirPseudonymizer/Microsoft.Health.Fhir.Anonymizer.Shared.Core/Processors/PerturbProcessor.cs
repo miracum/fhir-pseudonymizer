@@ -25,7 +25,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             FHIRAllTypes.UnsignedInt.ToString(),
         };
 
-        public ProcessResult Process(
+        public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
@@ -62,7 +62,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             // Perturb will not happen if value node is empty or visited.
             if (valueNode?.Value == null || context.VisitedNodes.Contains(valueNode))
             {
-                return result;
+                return System.Threading.Tasks.Task.FromResult(result);
             }
 
             var perturbSetting = PerturbSetting.CreateFromRuleSettings(settings);
@@ -70,7 +70,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             AddNoise(valueNode, perturbSetting);
             context.VisitedNodes.UnionWith(node.Descendants().CastElementNodes());
             result.AddProcessRecord(AnonymizationOperations.Perturb, node);
-            return result;
+            return System.Threading.Tasks.Task.FromResult(result);
         }
 
         private void AddNoise(ElementNode node, PerturbSetting perturbSetting)

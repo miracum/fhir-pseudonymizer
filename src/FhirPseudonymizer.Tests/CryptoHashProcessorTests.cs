@@ -44,7 +44,7 @@ public class CryptoHashProcessorTests
 
     [Theory]
     [MemberData(nameof(GetProcessData))]
-    public void Process_HashesIdPart(DataType element, string expected)
+    public async Task Process_HashesIdPart(DataType element, string expected)
     {
         var processor = new CryptoHashProcessor("test");
 
@@ -54,14 +54,14 @@ public class CryptoHashProcessorTests
             node = node.Children().CastElementNodes().First();
         }
 
-        processor.Process(node);
+        await processor.ProcessAsync(node);
 
         node.Value.ToString().Should().Be(expected);
     }
 
     [Theory]
     [MemberData(nameof(GetTruncatedProcessData))]
-    public void Process_WithTruncatedHashLengthSet_HashHasMaxLength(
+    public async Task Process_WithTruncatedHashLengthSet_HashHasMaxLength(
         DataType element,
         string expected
     )
@@ -74,7 +74,7 @@ public class CryptoHashProcessorTests
             node = node.Children().CastElementNodes().First();
         }
 
-        processor.Process(
+        await processor.ProcessAsync(
             node,
             settings: new Dictionary<string, object>() { { "truncateToMaxLength", 32 } }
         );
