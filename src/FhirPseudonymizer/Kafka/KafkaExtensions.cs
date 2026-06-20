@@ -7,6 +7,28 @@ public static class KafkaExtensions
 {
     public const string DefaultGroupId = "fhir-pseudonymizer";
 
+    /// <summary>
+    ///     Topics are normally bound from an array (e.g. "Kafka:Topics:0", "Kafka:Topics:1" /
+    ///     a JSON array), which is awkward to set via a single environment variable. As a
+    ///     convenience, this also allows "Kafka:Topics" to be set to a single comma-separated
+    ///     string (e.g. "Kafka__Topics=topic-a,topic-b") whenever no array was bound.
+    /// </summary>
+    public static List<string> NormalizeTopics(IConfiguration configuration, List<string> boundTopics)
+    {
+        if (boundTopics.Count > 0)
+        {
+            return boundTopics;
+        }
+
+        var raw = configuration["Kafka:Topics"];
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return boundTopics;
+        }
+
+        return [.. raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)];
+    }
+
     public static IServiceCollection AddKafkaConsumer(
         this IServiceCollection services,
         KafkaConfig kafkaConfig

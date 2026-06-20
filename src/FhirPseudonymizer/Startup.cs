@@ -29,6 +29,13 @@ public class Startup
     {
         var appConfig = new AppConfig();
         Configuration.Bind(appConfig);
+        appConfig = appConfig with
+        {
+            Kafka = appConfig.Kafka with
+            {
+                Topics = KafkaExtensions.NormalizeTopics(Configuration, appConfig.Kafka.Topics),
+            },
+        };
 
         if (appConfig.EnableMetrics)
         {
