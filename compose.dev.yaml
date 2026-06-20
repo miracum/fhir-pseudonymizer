@@ -100,6 +100,62 @@ services:
     volumes:
       - ./hack/mocks:/config:ro
 
+  kafka:
+    image: docker.io/apache/kafka:4.3.0@sha256:0be4c9eb3565733612d2836d65636fd611a219ebcf5b4162e5ac259ea0ecb907
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    privileged: false
+    ipc: none
+    security_opt:
+      - "no-new-privileges:true"
+    environment:
+      KAFKA_NODE_ID: "0"
+      KAFKA_KRAFT_CLUSTER_ID: "kafka-fhir-to-server"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka:9093"
+      KAFKA_PROCESS_ROLES: "controller,broker"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_MESSAGE_MAX_BYTES: "31457280"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_LOG_CLEANUP_POLICY: compact
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+    ports:
+      - 127.0.0.1:9094:9094
+
+  akhq:
+    image: docker.io/tchiotludo/akhq:0.27.1@sha256:66a43e84a3355f0a13f3b165a48f515c72a5344ea7ea0575a3e4efe2d3ac9a91
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            kafka:
+              properties:
+                bootstrap.servers: "kafka:9092"
+    ports:
+      - 127.0.0.1:8084:8080
+    depends_on:
+      - kafka
+
+  mock-data-loader:
+    image: docker.io/confluentinc/cp-kcat:8.2.1@sha256:21df66a65d2d6b5b9c6669e4c0f49f7f5570afb7dddf53a1b4c2ba4654493fd1
+    entrypoint: ["/bin/bash", "-c"]
+    restart: on-failure
+    command:
+      [
+        "while true; do kcat -b kafka:9092 -t fhir-msg -P -K: -l /data/fhir.ndjson; sleep 5; done",
+      ]
+    volumes:
+      - ${PWD}/hack/fhir.ndjson:/data/fhir.ndjson:ro
+    depends_on:
+      - kafka
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.5.6@sha256:8d44614c74798322c4e07fbe0ecb15cfbb5879d69b484628555f58ade06f0d8c
     restart: unless-stopped

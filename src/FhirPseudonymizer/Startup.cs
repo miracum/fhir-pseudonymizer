@@ -1,5 +1,6 @@
 using System.Reflection;
 using FhirPseudonymizer.Config;
+using FhirPseudonymizer.Kafka;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Entici;
 using FhirPseudonymizer.Pseudonymization.GPas;
@@ -69,6 +70,12 @@ public class Startup
         }
 
         services.AddAnonymizerEngine(appConfig);
+
+        if (appConfig.Kafka.Topics.Count > 0)
+        {
+            services.AddSingleton(_ => appConfig.Kafka);
+            services.AddKafkaConsumer(appConfig.Kafka);
+        }
 
         services.AddRequestDecompression();
 

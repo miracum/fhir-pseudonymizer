@@ -86,6 +86,14 @@
         "resolved": "9.0.0",
         "contentHash": "bvQc1iVs3RJZY+BEzId90Dv5R4pFVCyDscYoYIwkbpKRWPR5CCKgAjICsrS6pV8jfZOKNaJRyCLtGGn35adO2Q=="
       },
+      "Confluent.Kafka": {
+        "type": "Transitive",
+        "resolved": "2.14.2",
+        "contentHash": "ngjb+jon9UvPig2zLWW2pQHZhWUUWgOdEdyK72UXGDs9waLghNC90mn4dd/ODESfHvBqW0s9+nUP6eb+/5HtBQ==",
+        "dependencies": {
+          "librdkafka.redist": "2.14.2"
+        }
+      },
       "ConsoleTables": {
         "type": "Transitive",
         "resolved": "2.4.2",
@@ -274,6 +282,11 @@
         "dependencies": {
           "FSharp.Core": "9.0.300-beta.25181.1"
         }
+      },
+      "librdkafka.redist": {
+        "type": "Transitive",
+        "resolved": "2.14.2",
+        "contentHash": "8GRCTOKqCfwAyMSWmJ8c/wJc4PYm1lXAnRUWKQhaUtkz+JJUnDygxwtWPDqBMgS2YMxcrkaubFPTkhddt3RPOQ=="
       },
       "MathNet.Numerics": {
         "type": "Transitive",
@@ -1190,6 +1203,7 @@
         "type": "Project",
         "dependencies": {
           "AspNetCore.Authentication.ApiKey": "[9.0.0, )",
+          "Confluent.Kafka": "[2.14.2, )",
           "Duende.AccessTokenManagement": "[4.2.0, )",
           "Ensure.That": "[10.1.0, )",
           "FhirParametersGenerator": "[0.5.0, )",

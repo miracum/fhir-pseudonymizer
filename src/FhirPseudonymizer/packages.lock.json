@@ -8,6 +8,15 @@
         "resolved": "9.0.0",
         "contentHash": "bvQc1iVs3RJZY+BEzId90Dv5R4pFVCyDscYoYIwkbpKRWPR5CCKgAjICsrS6pV8jfZOKNaJRyCLtGGn35adO2Q=="
       },
+      "Confluent.Kafka": {
+        "type": "Direct",
+        "requested": "[2.14.2, )",
+        "resolved": "2.14.2",
+        "contentHash": "ngjb+jon9UvPig2zLWW2pQHZhWUUWgOdEdyK72UXGDs9waLghNC90mn4dd/ODESfHvBqW0s9+nUP6eb+/5HtBQ==",
+        "dependencies": {
+          "librdkafka.redist": "2.14.2"
+        }
+      },
       "Duende.AccessTokenManagement": {
         "type": "Direct",
         "requested": "[4.2.0, )",
@@ -255,6 +264,11 @@
         "dependencies": {
           "Hl7.Fhir.Base": "5.13.4"
         }
+      },
+      "librdkafka.redist": {
+        "type": "Transitive",
+        "resolved": "2.14.2",
+        "contentHash": "8GRCTOKqCfwAyMSWmJ8c/wJc4PYm1lXAnRUWKQhaUtkz+JJUnDygxwtWPDqBMgS2YMxcrkaubFPTkhddt3RPOQ=="
       },
       "Microsoft.Extensions.AmbientMetadata.Application": {
         "type": "Transitive",

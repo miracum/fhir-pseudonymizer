@@ -1,3 +1,4 @@
+using Confluent.Kafka;
 using FhirPseudonymizer.Pseudonymization;
 
 namespace FhirPseudonymizer.Config;
@@ -18,6 +19,45 @@ public record AppConfig
     public bool EnableMetrics { get; set; } = true;
     public FeatureManagement Features { get; set; } = new();
     public AnonymizationConfig Anonymization { get; set; } = new();
+    public KafkaConfig Kafka { get; init; } = new();
+}
+
+public record KafkaConfig
+{
+    public List<string> Topics { get; init; } = [];
+
+    /// <summary>
+    ///     A regular expression matched against the input topic name to derive the output topic
+    ///     name it gets replaced with, e.g. matching "^fhir\." and replacing it with
+    ///     "fhir.pseudonymized." turns the input topic "fhir.test" into the output topic
+    ///     "fhir.pseudonymized.test". The default simply prepends "pseudonymized." to every topic.
+    /// </summary>
+    public string OutputTopicPattern { get; init; } = "^";
+    public string OutputTopicReplacement { get; init; } = "pseudonymized.";
+    public int WorkerCount { get; init; } = Environment.ProcessorCount;
+    public int WorkerChannelCapacity { get; init; } = 100;
+
+    /// <summary>
+    ///     Settings shared between the consumer and producer client (e.g. BootstrapServers,
+    ///     SecurityProtocol, Sasl*). Bound from the "Kafka:Client" config section using the
+    ///     property names of <see cref="ClientConfig" /> directly, so any
+    ///     librdkafka client setting can be set without adding a dedicated property here.
+    /// </summary>
+    public ClientConfig Client { get; init; } = new();
+
+    /// <summary>
+    ///     Consumer-only overrides/additions on top of <see cref="Client" />. Bound from the
+    ///     "Kafka:Consumer" section using <see cref="ConsumerConfig" /> property
+    ///     names, e.g. "Kafka__Consumer__SessionTimeoutMs".
+    /// </summary>
+    public ConsumerConfig Consumer { get; init; } = new();
+
+    /// <summary>
+    ///     Producer-only overrides/additions on top of <see cref="Client" />. Bound from the
+    ///     "Kafka:Producer" section using <see cref="ProducerConfig" /> property
+    ///     names, e.g. "Kafka__Producer__LingerMs".
+    /// </summary>
+    public ProducerConfig Producer { get; init; } = new();
 }
 
 public record CacheConfig
