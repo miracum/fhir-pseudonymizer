@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.28.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.27.0...v2.28.0) (2026-06-20)
+
+
+### Features
+
+* support for reading fhir resources from Kafka directly ([#339](https://github.com/miracum/fhir-pseudonymizer/issues/339)) ([0d986d2](https://github.com/miracum/fhir-pseudonymizer/commit/0d986d2aa31fc4c1bddb343b61fe2d34bbd7c70c))
+* support setting the list of kafka topics as a comma-seperated string ([#341](https://github.com/miracum/fhir-pseudonymizer/issues/341)) ([dffc935](https://github.com/miracum/fhir-pseudonymizer/commit/dffc9358dc8547a42b0925038ab9d38096b0567d))
+
 ## [2.27.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.26.1...v2.27.0) (2026-06-15)
 
 
