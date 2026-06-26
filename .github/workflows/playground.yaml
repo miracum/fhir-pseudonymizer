@@ -3,19 +3,13 @@ name: playground
 on:
   push:
     branches: [master]
-    paths:
-      - "src/FhirPseudonymizer.Playground/**"
-      - "src/FhirPseudonymizer/Microsoft.Health.Fhir.Anonymizer.Shared.Core/**"
-      - "src/FhirPseudonymizer/Microsoft.Health.Fhir.Anonymizer.R4.Core/**"
-      - ".github/workflows/playground.yaml"
+  release:
+    types: [created]
   pull_request:
     branches: [master]
-    paths:
-      - "src/FhirPseudonymizer.Playground/**"
-      - "src/FhirPseudonymizer/Microsoft.Health.Fhir.Anonymizer.Shared.Core/**"
-      - "src/FhirPseudonymizer/Microsoft.Health.Fhir.Anonymizer.R4.Core/**"
-      - ".github/workflows/playground.yaml"
-  workflow_dispatch: {}
+  merge_group:
+    types:
+      - checks_requested
 
 permissions:
   contents: read
@@ -23,6 +17,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    name: build
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -46,8 +41,9 @@ jobs:
           path: publish-output/wwwroot
 
   deploy:
-    if: github.ref == 'refs/heads/master'
+    if: ${{ github.ref == 'refs/heads/master' }}
     needs: build
+    name: deploy
     runs-on: ubuntu-24.04
     permissions:
       pages: write
@@ -58,4 +54,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
