@@ -5,71 +5,69 @@
 <PageTitle>FHIR Pseudonymizer Playground</PageTitle>
 
 <header>
-    <h1>FHIR Pseudonymizer Playground</h1>
-    <p>
-        Try out <code>anonymization.yaml</code> rules entirely in your browser - nothing is sent to a server.
-        See the <a href="https://github.com/miracum/fhir-pseudonymizer" target="_blank" rel="noopener">project README</a> for the full rule syntax.
-        Note: <code>pseudonymize</code> rules use a mock, non-reversible substitute here since this playground has no pseudonymization vault (gPAS/vfps) backend.
-    </p>
+  <h1>FHIR Pseudonymizer Playground</h1>
+  <p>
+    Try out <code>anonymization.yaml</code> rules entirely in your browser - nothing is sent to a server.
+  </p>
 </header>
 
 <div class="toolbar">
-    <button @onclick="Run">Run</button>
-    <label><input type="checkbox" @bind="prettyOutput" /> Pretty-print output</label>
+  <button @onclick="Run">Run</button>
+  <label><input type="checkbox" @bind="prettyOutput" /> Pretty-print output</label>
 </div>
 
 @if (!string.IsNullOrEmpty(errorMessage))
 {
-    <pre class="error">@errorMessage</pre>
+  <pre class="error">@errorMessage</pre>
 }
 
 <div class="panes">
-    <section class="pane">
-        <h2>Rules (anonymization.yaml)</h2>
-        <textarea spellcheck="false" @bind="rulesYaml" @bind:event="oninput"></textarea>
-    </section>
+  <section class="pane">
+    <h2>Rules (anonymization.yaml)</h2>
+    <textarea spellcheck="false" @bind="rulesYaml" @bind:event="oninput"></textarea>
+  </section>
 
-    <section class="pane">
-        <h2>Input resource (JSON)</h2>
-        <textarea spellcheck="false" @bind="inputJson" @bind:event="oninput"></textarea>
-    </section>
+  <section class="pane">
+    <h2>Input resource (JSON)</h2>
+    <textarea spellcheck="false" @bind="inputJson" @bind:event="oninput"></textarea>
+  </section>
 
-    <section class="pane">
-        <h2>Output</h2>
-        <textarea spellcheck="false" readonly value="@outputJson"></textarea>
-    </section>
+  <section class="pane">
+    <h2>Output</h2>
+    <textarea spellcheck="false" readonly value="@outputJson"></textarea>
+  </section>
 </div>
 
 @code {
-    private string rulesYaml = DefaultRulesYaml;
-    private string inputJson = DefaultInputJson;
-    private string outputJson = string.Empty;
-    private string errorMessage = string.Empty;
-    private bool prettyOutput = true;
+  private string rulesYaml = DefaultRulesYaml;
+  private string inputJson = DefaultInputJson;
+  private string outputJson = string.Empty;
+  private string errorMessage = string.Empty;
+  private bool prettyOutput = true;
 
-    protected override void OnInitialized()
+  protected override void OnInitialized()
+  {
+    Run();
+  }
+
+  private void Run()
+  {
+    errorMessage = string.Empty;
+    outputJson = string.Empty;
+
+    try
     {
-        Run();
+      var engine = AnonymizerEngineHost.CreateFromYaml(rulesYaml);
+      var settings = new AnonymizerSettings { IsPrettyOutput = prettyOutput };
+      outputJson = engine.AnonymizeJsonAsync(inputJson, settings).GetAwaiter().GetResult();
     }
-
-    private void Run()
+    catch (Exception ex)
     {
-        errorMessage = string.Empty;
-        outputJson = string.Empty;
-
-        try
-        {
-            var engine = AnonymizerEngineHost.CreateFromYaml(rulesYaml);
-            var settings = new AnonymizerSettings { IsPrettyOutput = prettyOutput };
-            outputJson = engine.AnonymizeJsonAsync(inputJson, settings).GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-        }
+      errorMessage = ex.Message;
     }
+  }
 
-    private const string DefaultRulesYaml =
+  private const string DefaultRulesYaml =
         """
         fhirVersion: R4
         fhirPathRules:
@@ -91,7 +89,7 @@
           restrictedZipCodeTabulationAreas: []
         """;
 
-    private const string DefaultInputJson =
+  private const string DefaultInputJson =
         """
         {
           "resourceType": "Patient",

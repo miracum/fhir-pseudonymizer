@@ -13,7 +13,10 @@ public static class KafkaExtensions
     ///     convenience, this also allows "Kafka:Topics" to be set to a single comma-separated
     ///     string (e.g. "Kafka__Topics=topic-a,topic-b") whenever no array was bound.
     /// </summary>
-    public static List<string> NormalizeTopics(IConfiguration configuration, List<string> boundTopics)
+    public static List<string> NormalizeTopics(
+        IConfiguration configuration,
+        List<string> boundTopics
+    )
     {
         if (boundTopics.Count > 0)
         {
@@ -26,7 +29,13 @@ public static class KafkaExtensions
             return boundTopics;
         }
 
-        return [.. raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)];
+        return
+        [
+            .. raw.Split(
+                ',',
+                StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
+            ),
+        ];
     }
 
     public static IServiceCollection AddKafkaConsumer(
