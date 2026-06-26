@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.29.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.28.0...v2.29.0) (2026-06-26)
+
+
+### Features
+
+* added anonymization playground web app ([#344](https://github.com/miracum/fhir-pseudonymizer/issues/344)) ([c4f244c](https://github.com/miracum/fhir-pseudonymizer/commit/c4f244c9f93927886648382ff4177eb4ebb60c13))
+
 ## [2.28.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.27.0...v2.28.0) (2026-06-20)
 
 
