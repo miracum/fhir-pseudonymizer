@@ -35,10 +35,15 @@ jobs:
       - name: Publish
         run: dotnet publish src/FhirPseudonymizer.Playground/FhirPseudonymizer.Playground.csproj -c Release -o publish-output
 
+      - name: Move output under /playground
+        run: |
+          mkdir -p pages-root/playground
+          cp -r publish-output/wwwroot/. pages-root/playground/
+
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
-          path: publish-output/wwwroot
+          path: pages-root
 
   deploy:
     if: ${{ github.ref == 'refs/heads/master' }}
