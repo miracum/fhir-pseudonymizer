@@ -15,7 +15,7 @@
       Version="10.0.9"
       PrivateAssets="all"
     />
-    <PackageReference Include="Hl7.Fhir.R4" Version="5.13.4" />
+    <PackageReference Include="Hl7.Fhir.R4" Version="6.2.0" />
     <PackageReference Include="Hl7.Fhir.Base" Version="5.13.4" />
     <PackageReference Include="YamlDotNet" Version="18.0.0" />
     <PackageReference Include="Ensure.That" Version="10.1.0" />
