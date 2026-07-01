@@ -251,10 +251,11 @@
       },
       "Hl7.Fhir.Base": {
         "type": "Transitive",
-        "resolved": "5.13.4",
-        "contentHash": "UXeWvf7gQdpViZZm21yfqI5e+Xt04BX78qZRPQsqTh55H2DrvQCnhjGRZUTvOVBcIWjA4EGZ14uyr4h5/FKtZg==",
+        "resolved": "6.2.0",
+        "contentHash": "ElZPJ4Iv9enmHCpui0HRAZDmXzmj/FntCaSntOaKJG1HxfbT9S2cW08sHYiiEh4Z+1HMxqyKbHwYPsmc75YYvA==",
         "dependencies": {
           "Fhir.Metrics": "1.3.1",
+          "Microsoft.Extensions.Caching.Memory": "10.0.7",
           "Newtonsoft.Json": "13.0.4",
           "System.ComponentModel.Annotations": "5.0.0"
         }
@@ -343,10 +344,10 @@
       },
       "Microsoft.Extensions.Caching.Abstractions": {
         "type": "Transitive",
-        "resolved": "10.0.0",
-        "contentHash": "Zcoy6H9mSoGyvr7UvlGokEZrlZkcPCICPZr8mCsSt9U/N8eeCwCXwKF5bShdA66R0obxBCwP4AxomQHvVkC/uA==",
+        "resolved": "10.0.7",
+        "contentHash": "pUDgQKEqNUFlerDIFRg7zzoDVRPEWIG7nR40h8Gzg8RXza4Ry0lWZ7u91bmwu3iUDCxw3Dv6TLHVFoAgY0gy7Q==",
         "dependencies": {
-          "Microsoft.Extensions.Primitives": "10.0.0"
+          "Microsoft.Extensions.Primitives": "10.0.7"
         }
       },
       "Microsoft.Extensions.Caching.Hybrid": {
@@ -362,14 +363,14 @@
       },
       "Microsoft.Extensions.Caching.Memory": {
         "type": "Transitive",
-        "resolved": "10.0.0",
-        "contentHash": "krK19MKp0BNiR9rpBDW7PKSrTMLVlifS9am3CVc4O1Jq6GWz0o4F+sw5OSL4L3mVd56W8l6JRgghUa2KB51vOw==",
+        "resolved": "10.0.7",
+        "contentHash": "6eULH/sc97yfCEV31g7AgUzHc7dIm0DGBcofoE8GgBaXbdAPPhathN8rYcgi1TSiG1QucCdqKiVNaDEPAEXL5Q==",
         "dependencies": {
-          "Microsoft.Extensions.Caching.Abstractions": "10.0.0",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.0",
-          "Microsoft.Extensions.Options": "10.0.0",
-          "Microsoft.Extensions.Primitives": "10.0.0"
+          "Microsoft.Extensions.Caching.Abstractions": "10.0.7",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.7",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.7",
+          "Microsoft.Extensions.Options": "10.0.7",
+          "Microsoft.Extensions.Primitives": "10.0.7"
         }
       },
       "Microsoft.Extensions.Compliance.Abstractions": {
@@ -1210,7 +1211,7 @@
           "Google.Protobuf": "[3.35.1, )",
           "Grpc.Net.Client": "[2.80.0, )",
           "Grpc.Net.ClientFactory": "[2.80.0, )",
-          "Hl7.Fhir.Base": "[5.13.4, )",
+          "Hl7.Fhir.Base": "[6.2.0, )",
           "Hl7.Fhir.R4": "[5.13.4, )",
           "MathNet.Numerics": "[5.0.0, )",
           "Microsoft.Extensions.Http.Polly": "[10.0.9, )",
