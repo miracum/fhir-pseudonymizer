@@ -1,6 +1,6 @@
 # kics false positive "Missing User Instruction": <https://docs.kics.io/latest/queries/dockerfile-queries/fd54f200-402c-4333-a5a4-36ef6709af2f/>
 # kics-scan ignore-line
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/aspnet:10.0.8-resolute-chiseled@sha256:deca9bb91992932c95d051081c5fb8638f226f36d8cce64637530f4da9648fca AS runtime
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/aspnet:10.0.9-resolute-chiseled@sha256:d942d0db45f473ca68a9a9adcb1b2d8886a75d3586a8a08eedbb42046f0dab7c AS runtime
 WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp 8081/tcp
 USER 65532:65532
@@ -8,7 +8,7 @@ ENV ASPNETCORE_ENVIRONMENT="Production" \
     DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     ASPNETCORE_URLS="http://*:8080"
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0.202-resolute@sha256:1eebda31ad2eeea59ed675029683c5aa43133200d662ceeb1fbc2d2f762f67d1 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0.301-resolute@sha256:196f61c6262aa890f41dd654ff52d3b995187124a37778fb990ed0c31c26da44 AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 WORKDIR /build
 COPY src/Directory.Build.props .
@@ -53,7 +53,7 @@ WORKDIR /opt/fhir-pseudonymizer-stress
 
 # https://github.com/hadolint/hadolint/pull/815 isn't yet in mega-linter
 # hadolint ignore=DL3022
-COPY --from=docker.io/rancher/kubectl:v1.35.2@sha256:25cae09dd56c549742c0ac0458f17553a724f261f4e8a119b56d93d7eeeeb638 /bin/kubectl /usr/bin/kubectl
+COPY --from=docker.io/rancher/kubectl:v1.36.1@sha256:e430739d5eaef82b73e738ffa57019c8206c92b65ab3a18df766a1732b17c7f5 /bin/kubectl /usr/bin/kubectl
 
 COPY tests/chaos/chaos.yaml /tmp/
 COPY --from=build-stress-test /build/publish .

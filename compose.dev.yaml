@@ -157,7 +157,7 @@ services:
       - kafka
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.5.6@sha256:8d44614c74798322c4e07fbe0ecb15cfbb5879d69b484628555f58ade06f0d8c
+    image: quay.io/keycloak/keycloak:26.6.4@sha256:0aae0de7fca85525f727d3354df17896092de8bb26ae4c12d89c77e5df8cbce4
     restart: unless-stopped
     profiles:
       - keycloak
