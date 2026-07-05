@@ -6,3 +6,4 @@ src/**/obj
 !.editorconfig
 !tests/chaos
 !LICENSE
+!global.json

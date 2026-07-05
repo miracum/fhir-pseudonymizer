@@ -6,7 +6,6 @@ using NBomber.Contracts.Stats;
 using NBomber.Http;
 using Polly;
 using Polly.Retry;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace FhirPseudonymizer.StressTests;
