@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@602a4dd955cee8ab1e7e9c70761b5b4c9d678a95 # v1.21.4
+    uses: miracum/.github/.github/workflows/standard-build.yaml@3bfac3980e60d6a95007eba4117cd7fd0054b0e2 # v1.22.2
     permissions:
       contents: write
       id-token: write
@@ -24,6 +24,7 @@ jobs:
       pull-requests: write
       actions: read
       security-events: write
+      attestations: write
     with:
       enable-build-test-layer: true
       enable-upload-test-image: true
@@ -94,7 +95,7 @@ jobs:
           docker cp unit-test-container:/build/src/FhirPseudonymizer.Tests/coverage ./coverage
 
       - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # tag=v1.3.0
+        uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
         with:
           filename: coverage/**/coverage.cobertura.xml
           badge: true
@@ -238,7 +239,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@602a4dd955cee8ab1e7e9c70761b5b4c9d678a95 # v1.21.4
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@3bfac3980e60d6a95007eba4117cd7fd0054b0e2 # v1.22.2
     permissions:
       contents: read
       pull-requests: write
