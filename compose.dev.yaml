@@ -144,7 +144,7 @@ services:
       - kafka
 
   mock-data-loader:
-    image: docker.io/confluentinc/cp-kcat:8.2.1@sha256:21df66a65d2d6b5b9c6669e4c0f49f7f5570afb7dddf53a1b4c2ba4654493fd1
+    image: docker.io/confluentinc/cp-kcat:8.2.2@sha256:66889260e24491424ea6066f63d6c091aa50b995a1a4cbfdd902322546d1e69e
     entrypoint: ["/bin/bash", "-c"]
     restart: on-failure
     command:
