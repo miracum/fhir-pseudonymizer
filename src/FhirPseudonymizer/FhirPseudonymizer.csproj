@@ -4,6 +4,27 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
+  <!--
+    SDK Container Building support (`dotnet publish -p:PublishProfile=DefaultContainer`).
+    Mirrors the "runtime" stage of the root Dockerfile so both approaches can be compared in CI.
+    See https://learn.microsoft.com/dotnet/core/containers/publish-configuration
+  -->
+  <PropertyGroup>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:10.0.9-resolute-chiseled@sha256:d942d0db45f473ca68a9a9adcb1b2d8886a75d3586a8a08eedbb42046f0dab7c</ContainerBaseImage>
+    <ContainerRepository>fhir-pseudonymizer</ContainerRepository>
+    <ContainerWorkingDirectory>/opt/fhir-pseudonymizer</ContainerWorkingDirectory>
+    <ContainerUser>65532:65532</ContainerUser>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- explicit, since the default derives "$(ContainerWorkingDirectory)$(AssemblyName).dll" without a path separator -->
+    <ContainerAppCommand Include="dotnet" />
+    <ContainerAppCommand Include="/opt/fhir-pseudonymizer/FhirPseudonymizer.dll" />
+    <ContainerPort Include="8080" Type="tcp" />
+    <ContainerPort Include="8081" Type="tcp" />
+    <ContainerEnvironmentVariable Include="ASPNETCORE_ENVIRONMENT" Value="Production" />
+    <ContainerEnvironmentVariable Include="DOTNET_CLI_TELEMETRY_OPTOUT" Value="1" />
+    <ContainerEnvironmentVariable Include="ASPNETCORE_URLS" Value="http://*:8080" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Duende.AccessTokenManagement" Version="4.2.0" />
     <PackageReference Include="AspNetCore.Authentication.ApiKey" Version="9.0.0" />

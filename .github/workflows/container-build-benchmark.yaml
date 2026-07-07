@@ -1,0 +1,69 @@
+name: container build benchmark
+
+# Compares building the runtime container image via the .NET SDK's built-in
+# container support (`dotnet publish`, no Dockerfile/Docker daemon needed)
+# against the standard `docker buildx build` using the root Dockerfile.
+# See https://learn.microsoft.com/dotnet/core/containers/publish-configuration
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [test-dotnet-container-build]
+  pull_request:
+    branches: [master]
+    paths:
+      - "src/FhirPseudonymizer/**"
+      - "Dockerfile"
+      - "global.json"
+      - ".github/workflows/container-build-benchmark.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
+        with:
+          global-json-file: global.json
+
+      # No Dockerfile, no Docker daemon: publishes straight to an OCI archive on disk.
+      - name: Build container image via dotnet publish (SDK container support)
+        run: |
+          dotnet publish src/FhirPseudonymizer/FhirPseudonymizer.csproj \
+            -c Release \
+            -p:PublishProfile=DefaultContainer \
+            -p:ContainerRuntimeIdentifier=linux-x64 \
+            -p:ContainerArchiveOutputPath="${RUNNER_TEMP}/fhir-pseudonymizer-sdk.tar"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Build container image via docker buildx (standard Dockerfile build)
+        run: |
+          docker buildx build \
+            --target runtime \
+            --platform linux/amd64 \
+            --no-cache \
+            -o type=oci,dest="${RUNNER_TEMP}/fhir-pseudonymizer-docker.tar" \
+            .
+
+      - name: Compare image sizes
+        run: |
+          {
+            echo "## Container build benchmark";
+            echo "";
+            echo "Step durations above show the wall-clock time for each build. Sizes below:";
+            echo "";
+            echo "| build method | archive size |";
+            echo "| --- | --- |";
+            echo "| dotnet publish (SDK containers) | $(du -h "${RUNNER_TEMP}/fhir-pseudonymizer-sdk.tar" | cut -f1) |";
+            echo "| docker buildx (Dockerfile) | $(du -h "${RUNNER_TEMP}/fhir-pseudonymizer-docker.tar" | cut -f1) |";
+          } | tee -a "$GITHUB_STEP_SUMMARY"
