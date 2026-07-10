@@ -20,8 +20,9 @@
 </header>
 
 <div class="toolbar">
-  <button @onclick="Run">Run</button>
+  <button @onclick="RunAsync">Run</button>
   <button @onclick="Share" disabled="@_sharing">@(_sharing ? "Copied!" : "Share")</button>
+  <button class="toolbar-theme" @onclick="ToggleTheme">@(_theme == "dark" ? "Light mode" : "Dark mode")</button>
   <label><input type="checkbox" @bind="prettyOutput" /> Pretty-print output</label>
 </div>
 
@@ -33,19 +34,29 @@
 <div class="panes">
   <section class="pane">
     <h2>Rules (anonymization.yaml)</h2>
-    <textarea spellcheck="false" @bind="rulesYaml" @bind:event="oninput"></textarea>
+    <div class="editor-container">
+      <StandaloneCodeEditor @ref="_rulesEditor" Id="rules-editor"
+        ConstructionOptions="RulesEditorOptions" />
+    </div>
   </section>
 
   <section class="pane">
     <h2>Input resource (JSON)</h2>
-    <textarea spellcheck="false" @bind="inputJson" @bind:event="oninput"></textarea>
-  </section>
-
-  <section class="pane">
-    <h2>Output</h2>
-    <textarea spellcheck="false" readonly value="@outputJson"></textarea>
+    <div class="editor-container">
+      <StandaloneCodeEditor @ref="_inputEditor" Id="input-editor"
+        ConstructionOptions="InputEditorOptions" />
+    </div>
   </section>
 </div>
+
+<section class="pane-diff">
+  <h2>Diff (input → anonymized)</h2>
+  <div class="editor-container editor-container--diff">
+    <StandaloneDiffEditor @ref="_diffEditor" Id="diff-editor"
+      ConstructionOptions="DiffEditorOptions"
+      OnDidInit="DiffEditorOnDidInit" />
+  </div>
+</section>
 
 @code {
   private string rulesYaml = DefaultRulesYaml;
@@ -54,6 +65,12 @@
   private string errorMessage = string.Empty;
   private bool prettyOutput = true;
   private bool _sharing;
+  private bool _diffEditorInitialized;
+  private string _theme = "light";
+
+  private StandaloneCodeEditor? _rulesEditor;
+  private StandaloneCodeEditor? _inputEditor;
+  private StandaloneDiffEditor? _diffEditor;
 
   protected override void OnInitialized()
   {
@@ -63,14 +80,34 @@
       rulesYaml = rules;
       inputJson = input;
     }
-    Run();
+    // Compute output synchronously so DiffEditorOnDidInit can use the result
+    ComputeOutput();
   }
 
-  private void Run()
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (!firstRender) return;
+    _theme = await JS.InvokeAsync<string>("playground.getTheme");
+    StateHasChanged();
+  }
+
+  private async Task ToggleTheme()
+  {
+    _theme = _theme == "dark" ? "light" : "dark";
+    await ApplyThemeAsync();
+  }
+
+  private async Task ApplyThemeAsync()
+  {
+    await JS.InvokeVoidAsync("playground.setTheme", _theme);
+    if (_diffEditorInitialized)
+      await BlazorMonaco.Editor.Global.SetTheme(JS, _theme == "dark" ? "vs-dark" : "vs");
+  }
+
+  private void ComputeOutput()
   {
     errorMessage = string.Empty;
     outputJson = string.Empty;
-
     try
     {
       var engine = AnonymizerEngineHost.CreateFromYaml(rulesYaml);
@@ -83,8 +120,70 @@
     }
   }
 
+  private async Task RunAsync()
+  {
+    if (_rulesEditor != null)
+      rulesYaml = await _rulesEditor.GetValue();
+    if (_inputEditor != null)
+      inputJson = await _inputEditor.GetValue();
+
+    ComputeOutput();
+
+    if (_diffEditorInitialized && _diffEditor != null)
+    {
+      await _diffEditor.OriginalEditor.SetValue(inputJson);
+      await _diffEditor.ModifiedEditor.SetValue(outputJson);
+    }
+  }
+
+  private StandaloneEditorConstructionOptions RulesEditorOptions(StandaloneCodeEditor _) => new()
+  {
+    Language = "yaml",
+    AutomaticLayout = true,
+    Value = rulesYaml,
+    Minimap = new EditorMinimapOptions { Enabled = false },
+    ScrollBeyondLastLine = false,
+  };
+
+  private StandaloneEditorConstructionOptions InputEditorOptions(StandaloneCodeEditor _) => new()
+  {
+    Language = "json",
+    AutomaticLayout = true,
+    Value = inputJson,
+    Minimap = new EditorMinimapOptions { Enabled = false },
+    ScrollBeyondLastLine = false,
+  };
+
+  private StandaloneDiffEditorConstructionOptions DiffEditorOptions(StandaloneDiffEditor _) => new()
+  {
+    AutomaticLayout = true,
+    OriginalEditable = false,
+    ReadOnly = true,
+  };
+
+  private async Task DiffEditorOnDidInit()
+  {
+    _diffEditorInitialized = true;
+    if (_diffEditor == null)
+      return;
+
+    await BlazorMonaco.Editor.Global.SetTheme(JS, _theme == "dark" ? "vs-dark" : "vs");
+    var originalModel = await BlazorMonaco.Editor.Global.CreateModel(JS, inputJson, "json", "playground-original");
+    var modifiedModel = await BlazorMonaco.Editor.Global.CreateModel(JS, outputJson, "json", "playground-modified");
+    await _diffEditor.SetModel(new DiffEditorModel
+    {
+      Original = originalModel,
+      Modified = modifiedModel,
+    });
+  }
+
   private async Task Share()
   {
+    if (_rulesEditor != null)
+      rulesYaml = await _rulesEditor.GetValue();
+    if (_inputEditor != null)
+      inputJson = await _inputEditor.GetValue();
+
     _sharing = true;
     var hash = EncodeState(rulesYaml, inputJson);
     var shareUrl = Nav.Uri.Split('#')[0] + "#" + hash;

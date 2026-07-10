@@ -12,6 +12,14 @@
     <base href="./" />
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="css/app.css" />
+    <script>
+      /* Run before first paint to avoid flash of wrong theme */
+      (function () {
+        var saved = localStorage.getItem('playground-theme');
+        var theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <script type="importmap"></script>
   </head>
 
@@ -29,11 +37,19 @@
       <a href="." class="reload">Reload</a>
       <span class="dismiss">🗙</span>
     </div>
+    <script src="_content/BlazorMonaco/jsInterop.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
     <script>
       window.playground = {
         setUrlHash: (hash) => history.pushState(null, '', '#' + hash),
         copyToClipboard: (text) => navigator.clipboard.writeText(text),
+        getTheme: () => document.documentElement.dataset.theme || 'light',
+        setTheme: (theme) => {
+          document.documentElement.dataset.theme = theme;
+          localStorage.setItem('playground-theme', theme);
+        },
       };
     </script>
   </body>
