@@ -74,6 +74,11 @@
 
   protected override void OnInitialized()
   {
+    // IJSInProcessRuntime is always available in Blazor WASM; read theme before
+    // ConstructionOptions callbacks fire so editors start with the correct theme.
+    if (JS is IJSInProcessRuntime syncJS)
+      _theme = syncJS.Invoke<string>("playground.getTheme");
+
     var fragment = new Uri(Nav.Uri).Fragment.TrimStart('#');
     if (!string.IsNullOrEmpty(fragment) && TryDecodeState(fragment, out var rules, out var input))
     {
@@ -143,6 +148,7 @@
     Value = rulesYaml,
     Minimap = new EditorMinimapOptions { Enabled = false },
     ScrollBeyondLastLine = false,
+    Theme = _theme == "dark" ? "vs-dark" : "vs",
   };
 
   private StandaloneEditorConstructionOptions InputEditorOptions(StandaloneCodeEditor _) => new()
@@ -152,6 +158,7 @@
     Value = inputJson,
     Minimap = new EditorMinimapOptions { Enabled = false },
     ScrollBeyondLastLine = false,
+    Theme = _theme == "dark" ? "vs-dark" : "vs",
   };
 
   private StandaloneDiffEditorConstructionOptions DiffEditorOptions(StandaloneDiffEditor _) => new()
@@ -159,6 +166,7 @@
     AutomaticLayout = true,
     OriginalEditable = false,
     ReadOnly = true,
+    Theme = _theme == "dark" ? "vs-dark" : "vs",
   };
 
   private async Task DiffEditorOnDidInit()
@@ -167,7 +175,6 @@
     if (_diffEditor == null)
       return;
 
-    await BlazorMonaco.Editor.Global.SetTheme(JS, _theme == "dark" ? "vs-dark" : "vs");
     var originalModel = await BlazorMonaco.Editor.Global.CreateModel(JS, inputJson, "json", "playground-original");
     var modifiedModel = await BlazorMonaco.Editor.Global.CreateModel(JS, outputJson, "json", "playground-modified");
     await _diffEditor.SetModel(new DiffEditorModel
