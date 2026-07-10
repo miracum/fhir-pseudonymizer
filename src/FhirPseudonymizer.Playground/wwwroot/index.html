@@ -30,5 +30,11 @@
       <span class="dismiss">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script>
+      window.playground = {
+        setUrlHash: (hash) => history.pushState(null, '', '#' + hash),
+        copyToClipboard: (text) => navigator.clipboard.writeText(text),
+      };
+    </script>
   </body>
 </html>

@@ -1,6 +1,11 @@
 @page "/"
+@using System.IO.Compression
+@using System.Text
+@using System.Text.Json
 @using FhirPseudonymizer.Playground
 @using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
+@inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>FHIR Pseudonymizer Playground</PageTitle>
 
@@ -16,6 +21,7 @@
 
 <div class="toolbar">
   <button @onclick="Run">Run</button>
+  <button @onclick="Share" disabled="@_sharing">@(_sharing ? "Copied!" : "Share")</button>
   <label><input type="checkbox" @bind="prettyOutput" /> Pretty-print output</label>
 </div>
 
@@ -47,9 +53,16 @@
   private string outputJson = string.Empty;
   private string errorMessage = string.Empty;
   private bool prettyOutput = true;
+  private bool _sharing;
 
   protected override void OnInitialized()
   {
+    var fragment = new Uri(Nav.Uri).Fragment.TrimStart('#');
+    if (!string.IsNullOrEmpty(fragment) && TryDecodeState(fragment, out var rules, out var input))
+    {
+      rulesYaml = rules;
+      inputJson = input;
+    }
     Run();
   }
 
@@ -70,6 +83,47 @@
     }
   }
 
+  private async Task Share()
+  {
+    _sharing = true;
+    var hash = EncodeState(rulesYaml, inputJson);
+    var shareUrl = Nav.Uri.Split('#')[0] + "#" + hash;
+    await JS.InvokeVoidAsync("playground.setUrlHash", hash);
+    await JS.InvokeVoidAsync("playground.copyToClipboard", shareUrl);
+    StateHasChanged();
+    await Task.Delay(2000);
+    _sharing = false;
+  }
+
+  private static string EncodeState(string rules, string input)
+  {
+    var json = JsonSerializer.Serialize(new { r = rules, i = input });
+    var bytes = Encoding.UTF8.GetBytes(json);
+    using var ms = new MemoryStream();
+    using (var deflate = new DeflateStream(ms, CompressionLevel.Optimal, leaveOpen: true))
+      deflate.Write(bytes);
+    return Convert.ToBase64String(ms.ToArray())
+        .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+  }
+
+  private static bool TryDecodeState(string encoded, out string rules, out string input)
+  {
+    rules = input = string.Empty;
+    try
+    {
+      var padded = encoded.Replace('-', '+').Replace('_', '/');
+      padded += (padded.Length % 4) switch { 2 => "==", 3 => "=", _ => "" };
+      using var compressed = new MemoryStream(Convert.FromBase64String(padded));
+      using var deflate = new DeflateStream(compressed, CompressionMode.Decompress);
+      using var reader = new StreamReader(deflate, Encoding.UTF8);
+      var doc = JsonDocument.Parse(reader.ReadToEnd());
+      rules = doc.RootElement.GetProperty("r").GetString() ?? string.Empty;
+      input = doc.RootElement.GetProperty("i").GetString() ?? string.Empty;
+      return true;
+    }
+    catch { return false; }
+  }
+
   private const string DefaultRulesYaml =
         """
         fhirVersion: R4
@@ -86,9 +140,9 @@
           dateShiftKey: playground
           dateShiftScope: resource
           cryptoHashKey: fhir-pseudonymizer
-          enablePartialAgesForRedact: true
-          enablePartialDatesForRedact: true
-          enablePartialZipCodesForRedact: true
+          enablePartialAgesForRedact: false
+          enablePartialDatesForRedact: false
+          enablePartialZipCodesForRedact: false
           restrictedZipCodeTabulationAreas: []
         """;
 
