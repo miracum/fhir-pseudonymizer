@@ -78,8 +78,50 @@
   content: var(--blazor-load-percentage-text, "Loading");
 }
 
+/* ── Theme tokens ────────────────────────────────── */
+:root {
+  color-scheme: light;
+
+  --bg: #fff;
+  --fg: #1a1a1a;
+  --muted: #555;
+  --border: #d0d0d0;
+  --error-bg: #fdecea;
+  --error-fg: #611a15;
+  --error-border: #f5c6cb;
+  --code-fg: #c02d76;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #1e1e1e;
+    --fg: #d4d4d4;
+    --muted: #9d9d9d;
+    --border: #3e3e3e;
+    --error-bg: #2d1515;
+    --error-fg: #f87171;
+    --error-border: #7f2020;
+    --code-fg: #f472b6;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #1e1e1e;
+  --fg: #d4d4d4;
+  --muted: #9d9d9d;
+  --border: #3e3e3e;
+  --error-bg: #2d1515;
+  --error-fg: #f87171;
+  --error-border: #7f2020;
+  --code-fg: #f472b6;
+}
+
 code {
-  color: #c02d76;
+  color: var(--code-fg);
 }
 
 .form-floating > .form-control-plaintext::placeholder,
@@ -94,6 +136,8 @@ code {
 }
 
 body {
+  background: var(--bg);
+  color: var(--fg);
   font-family:
     -apple-system,
     "Segoe UI",
@@ -109,7 +153,7 @@ header h1 {
 }
 
 header p {
-  color: #444;
+  color: var(--muted);
   max-width: 60em;
 }
 
@@ -125,10 +169,14 @@ header p {
   cursor: pointer;
 }
 
+.toolbar-theme {
+  margin-left: auto;
+}
+
 .error {
-  background: #fdecea;
-  color: #611a15;
-  border: 1px solid #f5c6cb;
+  background: var(--error-bg);
+  color: var(--error-fg);
+  border: 1px solid var(--error-border);
   padding: 0.75rem 1rem;
   white-space: pre-wrap;
   border-radius: 4px;
@@ -136,8 +184,9 @@ header p {
 
 .panes {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .pane {
@@ -146,23 +195,36 @@ header p {
   min-width: 0;
 }
 
-.pane h2 {
+.pane h2,
+.pane-diff h2 {
   font-size: 1rem;
   margin: 0 0 0.4rem;
 }
 
-.pane textarea {
-  flex: 1;
-  min-height: 60vh;
-  font-family: ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
-  font-size: 0.85rem;
-  padding: 0.5rem;
-  box-sizing: border-box;
+.editor-container {
+  border: 1px solid var(--border);
+  height: 40vh;
+  min-height: 120px;
   resize: vertical;
-  white-space: pre;
+  overflow: hidden;
 }
 
-@media (width <= 1100px) {
+.editor-container-diff {
+  height: 55vh;
+  min-height: 120px;
+}
+
+#rules-editor,
+#input-editor,
+#diff-editor {
+  height: 100%;
+}
+
+.pane-diff {
+  margin-bottom: 1rem;
+}
+
+@media (width <= 900px) {
   .panes {
     grid-template-columns: 1fr;
   }
