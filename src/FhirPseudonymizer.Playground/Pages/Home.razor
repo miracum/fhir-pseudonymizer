@@ -220,7 +220,10 @@
       input = doc.RootElement.GetProperty("i").GetString() ?? string.Empty;
       return true;
     }
-    catch { return false; }
+    catch (FormatException) { return false; }
+    catch (InvalidDataException) { return false; }
+    catch (JsonException) { return false; }
+    catch (IOException) { return false; }
   }
 
   private const string DefaultRulesYaml =
