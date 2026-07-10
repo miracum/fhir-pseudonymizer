@@ -39,8 +39,7 @@
     </div>
     <script src="_content/BlazorMonaco/jsInterop.js"></script>
     <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
-    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
     <script>
       window.playground = {
         setUrlHash: (hash) => history.pushState(null, '', '#' + hash),
@@ -51,6 +50,12 @@
           localStorage.setItem('playground-theme', theme);
         },
       };
+
+      /* Start Blazor only after Monaco has fully loaded to avoid the race condition
+         where Blazor renders and calls monaco APIs before window.monaco is defined. */
+      require(['vs/editor/editor.main'], async function () {
+        await Blazor.start();
+      });
     </script>
   </body>
 </html>
