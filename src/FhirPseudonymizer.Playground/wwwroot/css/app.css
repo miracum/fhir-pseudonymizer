@@ -81,9 +81,10 @@
 /* ── Theme tokens ────────────────────────────────── */
 :root {
   color-scheme: light;
-  --bg: #ffffff;
+
+  --bg: #fff;
   --fg: #1a1a1a;
-  --muted: #555555;
+  --muted: #555;
   --border: #d0d0d0;
   --error-bg: #fdecea;
   --error-fg: #611a15;
@@ -94,6 +95,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
+
     --bg: #1e1e1e;
     --fg: #d4d4d4;
     --muted: #9d9d9d;
@@ -107,6 +109,7 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+
   --bg: #1e1e1e;
   --fg: #d4d4d4;
   --muted: #9d9d9d;
@@ -206,7 +209,7 @@ header p {
   overflow: hidden;
 }
 
-.editor-container--diff {
+.editor-container-diff {
   height: 55vh;
   min-height: 120px;
 }

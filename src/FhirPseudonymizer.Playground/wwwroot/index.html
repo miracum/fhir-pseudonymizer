@@ -12,6 +12,10 @@
     <base href="./" />
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="css/app.css" />
+    <script type="importmap"></script>
+  </head>
+
+  <body>
     <script>
       /* Run before first paint to avoid flash of wrong theme */
       (function () {
@@ -20,10 +24,6 @@
         document.documentElement.dataset.theme = theme;
       })();
     </script>
-    <script type="importmap"></script>
-  </head>
-
-  <body>
     <div id="app">
       <svg class="loading-progress">
         <circle r="40%" cx="50%" cy="50%" />
