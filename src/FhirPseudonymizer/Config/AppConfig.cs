@@ -38,6 +38,14 @@ public record KafkaConfig
     public int WorkerChannelCapacity { get; init; } = 100;
 
     /// <summary>
+    ///     The topic that FHIR Provenance resources documenting the pseudonymization of a message
+    ///     are produced to, one Provenance per pseudonymized resource, bundled into a single
+    ///     "collection" Bundle per input message. Left unset (the default), no provenance records
+    ///     are produced.
+    /// </summary>
+    public string ProvenanceTopic { get; init; }
+
+    /// <summary>
     ///     Settings shared between the consumer and producer client (e.g. BootstrapServers,
     ///     SecurityProtocol, Sasl*). Bound from the "Kafka:Client" config section using the
     ///     property names of <see cref="ClientConfig" /> directly, so any

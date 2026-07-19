@@ -37,7 +37,8 @@ public class KafkaConsumerServiceTests
     private static KafkaConsumerService CreateService(
         IAnonymizerEngine anonymizer,
         IProducer<byte[], string> producer,
-        KafkaConfig kafkaConfig = null
+        KafkaConfig kafkaConfig = null,
+        IProvenancePublisher provenancePublisher = null
     )
     {
         return new KafkaConsumerService(
@@ -46,6 +47,7 @@ public class KafkaConsumerServiceTests
             anonymizer,
             A.Fake<AnonymizationConfig>(),
             kafkaConfig ?? new KafkaConfig(),
+            provenancePublisher ?? A.Fake<IProvenancePublisher>(),
             A.Fake<ILogger<KafkaConsumerService>>()
         );
     }
@@ -290,6 +292,73 @@ public class KafkaConsumerServiceTests
         var result = CreateConsumeResult("input-topic", 0, 0, "not valid fhir json");
 
         await service.Invoking(s => s.ProcessResultAsync(result)).Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task ProcessResultAsync_PublishesProvenanceForTheAnonymizedResourceWithOriginalKeyAndHeaders()
+    {
+        var anonymized = new Patient { Id = "hashed-456" };
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+            .Returns(Task.FromResult<Resource>(anonymized));
+
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+        var service = CreateService(
+            anonymizer,
+            A.Fake<IProducer<byte[], string>>(),
+            provenancePublisher: provenancePublisher
+        );
+
+        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
+            new Patient { Id = "123" }
+        );
+        var key = "patient-123"u8.ToArray();
+        var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
+        var result = CreateConsumeResult("input-topic", 0, 0, json, key, headers);
+
+        Resource publishedOriginal = null;
+        Resource publishedPseudonymized = null;
+        byte[] publishedKey = null;
+        Headers publishedHeaders = null;
+        A.CallTo(() =>
+                provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<byte[]>._, A<Headers>._)
+            )
+            .Invokes(
+                (Resource o, Resource p, byte[] k, Headers h) =>
+                {
+                    publishedOriginal = o;
+                    publishedPseudonymized = p;
+                    publishedKey = k;
+                    publishedHeaders = h;
+                }
+            );
+
+        await service.ProcessResultAsync(result);
+
+        publishedOriginal.Id.Should().Be("123");
+        publishedPseudonymized.Should().BeSameAs(anonymized);
+        publishedKey.Should().BeEquivalentTo(key);
+        publishedHeaders.Should().Contain(h => h.Key == "traceparent");
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_DoesNotPublishProvenance()
+    {
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+        var service = CreateService(
+            A.Fake<IAnonymizerEngine>(),
+            A.Fake<IProducer<byte[], string>>(),
+            provenancePublisher: provenancePublisher
+        );
+
+        var result = CreateConsumeResult("input-topic", 0, 0, "not valid fhir json");
+
+        await service.ProcessResultAsync(result);
+
+        A.CallTo(() =>
+                provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<byte[]>._, A<Headers>._)
+            )
+            .MustNotHaveHappened();
     }
 
     [Fact]

@@ -14,7 +14,10 @@ namespace FhirPseudonymizer.Kafka;
 
 /// <summary>
 ///     Consumes FHIR resources/bundles from one or more Kafka topics, anonymizes them, and produces
-///     the result to a per-topic output topic.
+///     the result to a per-topic output topic. Every anonymized message is also passed to the
+///     configured <see cref="IProvenancePublisher" />, which publishes a Bundle of Provenance
+///     resources documenting the pseudonymization to <see cref="KafkaConfig.ProvenanceTopic" />, if
+///     configured.
 ///
 ///     A single thread owns the <see cref="IConsumer{TKey,TValue}" /> and polls for new messages
 ///     (Consume/StoreOffset are not guaranteed thread-safe). Each consumed message is routed, based
@@ -36,6 +39,7 @@ public class KafkaConsumerService : BackgroundService
     private readonly IAnonymizerEngine anonymizer;
     private readonly AnonymizationConfig anonymizationConfig;
     private readonly KafkaConfig kafkaConfig;
+    private readonly IProvenancePublisher provenancePublisher;
     private readonly ILogger<KafkaConsumerService> logger;
     private readonly FhirJsonParser fhirJsonParser = new();
     private readonly FhirJsonSerializer fhirJsonSerializer = new();
@@ -51,6 +55,7 @@ public class KafkaConsumerService : BackgroundService
         IAnonymizerEngine anonymizer,
         AnonymizationConfig anonymizationConfig,
         KafkaConfig kafkaConfig,
+        IProvenancePublisher provenancePublisher,
         ILogger<KafkaConsumerService> logger
     )
     {
@@ -59,6 +64,7 @@ public class KafkaConsumerService : BackgroundService
         this.anonymizer = anonymizer;
         this.anonymizationConfig = anonymizationConfig;
         this.kafkaConfig = kafkaConfig;
+        this.provenancePublisher = provenancePublisher;
         this.logger = logger;
 
         outputTopicPattern = new Regex(kafkaConfig.OutputTopicPattern, RegexOptions.Compiled);
@@ -185,7 +191,9 @@ public class KafkaConsumerService : BackgroundService
     {
         try
         {
-            var output = await AnonymizeMessageAsync(result.Topic, result.Message.Value);
+            var original = fhirJsonParser.Parse<Resource>(result.Message.Value);
+            var anonymized = await AnonymizeResourceAsync(original, result.Topic);
+            var output = fhirJsonSerializer.SerializeToString(anonymized);
             var outputTopic = GetOutputTopic(result.Topic);
 
             producer.Produce(
@@ -199,6 +207,13 @@ public class KafkaConsumerService : BackgroundService
             );
 
             ProcessedMessagesCounter.WithLabels(result.Topic, "success").Inc();
+
+            provenancePublisher.Publish(
+                original,
+                anonymized,
+                result.Message.Key,
+                CopyHeaders(result.Message.Headers)
+            );
 
             await completedResults.Writer.WriteAsync(result, CancellationToken.None);
         }
@@ -346,18 +361,31 @@ public class KafkaConsumerService : BackgroundService
         string json
     )
     {
+        var resource = fhirJsonParser.Parse<Resource>(json);
+        var anonymized = await AnonymizeResourceAsync(resource, sourceTopic);
+        return fhirJsonSerializer.SerializeToString(anonymized);
+    }
+
+    /// <summary>
+    ///     Anonymizes an already-parsed resource. Takes the parsed <see cref="Resource" /> rather
+    ///     than raw JSON so callers (see <see cref="ProcessResultAsync" />) retain the
+    ///     pre-anonymization resource, needed to tell which security labels
+    ///     <see cref="IProvenancePublisher" /> newly applied versus already had.
+    /// </summary>
+    private async System.Threading.Tasks.Task<Resource> AnonymizeResourceAsync(
+        Resource resource,
+        string sourceTopic
+    )
+    {
         using var activity = Program.ActivitySource.StartActivity(nameof(AnonymizeMessageAsync));
         activity?.AddTag("kafka.topic", sourceTopic);
-
-        var resource = fhirJsonParser.Parse<Resource>(json);
 
         var settings = new AnonymizerSettings
         {
             ShouldAddSecurityTag = anonymizationConfig.ShouldAddSecurityTag,
         };
 
-        var anonymized = await anonymizer.AnonymizeResourceAsync(resource, settings);
-        return fhirJsonSerializer.SerializeToString(anonymized);
+        return await anonymizer.AnonymizeResourceAsync(resource, settings);
     }
 
     public override async System.Threading.Tasks.Task StopAsync(CancellationToken cancellationToken)

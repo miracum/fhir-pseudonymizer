@@ -46,11 +46,27 @@ public static class KafkaExtensions
         services.AddSingleton(_ =>
             new ConsumerBuilder<byte[], string>(CreateConsumerConfig(kafkaConfig)).Build()
         );
+
+        services.AddHostedService<KafkaConsumerService>();
+
+        return services;
+    }
+
+    /// <summary>
+    ///     Registers the shared <see cref="IProducer{TKey,TValue}" /> used both by
+    ///     <see cref="KafkaConsumerService" /> to publish anonymized messages, and by
+    ///     <see cref="KafkaProvenancePublisher" /> to publish provenance bundles - the latter of
+    ///     which can be needed even when reading from Kafka (<see cref="AddKafkaConsumer" />) is
+    ///     not enabled, e.g. when only pseudonymizing over the REST API.
+    /// </summary>
+    public static IServiceCollection AddKafkaProducer(
+        this IServiceCollection services,
+        KafkaConfig kafkaConfig
+    )
+    {
         services.AddSingleton(_ =>
             new ProducerBuilder<byte[], string>(CreateProducerConfig(kafkaConfig)).Build()
         );
-
-        services.AddHostedService<KafkaConsumerService>();
 
         return services;
     }
