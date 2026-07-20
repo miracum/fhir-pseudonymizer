@@ -9,10 +9,5 @@ namespace FhirPseudonymizer.Kafka;
 /// </summary>
 public class NoopProvenancePublisher : IProvenancePublisher
 {
-    public void Publish(
-        Resource original,
-        Resource pseudonymized,
-        byte[] key = null,
-        Headers headers = null
-    ) { }
+    public void Publish(Resource original, Resource pseudonymized, Headers headers = null) { }
 }

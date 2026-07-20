@@ -1,3 +1,4 @@
+using System.Text;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
@@ -50,12 +51,11 @@ public class KafkaProvenancePublisherTests
     }
 
     [Fact]
-    public void Publish_ForwardsGivenKeyAndHeadersOntoTheProducedMessage()
+    public void Publish_ForwardsGivenHeadersOntoTheProducedMessage()
     {
         var producer = A.Fake<IProducer<byte[], string>>();
         var publisher = CreatePublisher(producer);
 
-        var key = "patient-123"u8.ToArray();
         var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
 
         Message<byte[], string> producedMessage = null;
@@ -74,15 +74,44 @@ public class KafkaProvenancePublisherTests
                 ) => producedMessage = message
             );
 
-        publisher.Publish(
-            new Patient { Id = "456" },
-            new Patient { Id = "hashed-456" },
-            key,
-            headers
-        );
+        publisher.Publish(new Patient { Id = "456" }, new Patient { Id = "hashed-456" }, headers);
 
-        producedMessage.Key.Should().BeEquivalentTo(key);
         producedMessage.Headers.Should().BeSameAs(headers);
+    }
+
+    [Fact]
+    public void Publish_UsesTheBundlesIdAsTheKafkaMessageKey()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        var publisher = CreatePublisher(producer);
+
+        var original = new Patient { Id = "456" };
+        var pseudonymized = new Patient { Id = "hashed-456" };
+        // the id is deterministic and doesn't depend on "recorded", so this independently computed
+        // bundle's id matches whatever the publisher produces internally
+        var expectedId = ProvenanceFactory
+            .CreateBundle(original, pseudonymized, DateTimeOffset.UtcNow)
+            .Id;
+
+        Message<byte[], string> producedMessage = null;
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Invokes(
+                (
+                    string _,
+                    Message<byte[], string> message,
+                    Action<DeliveryReport<byte[], string>> _
+                ) => producedMessage = message
+            );
+
+        publisher.Publish(original, pseudonymized);
+
+        producedMessage.Key.Should().BeEquivalentTo(Encoding.UTF8.GetBytes(expectedId));
     }
 
     [Fact]

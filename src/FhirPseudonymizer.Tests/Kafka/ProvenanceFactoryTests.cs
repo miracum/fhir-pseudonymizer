@@ -28,6 +28,16 @@ public class ProvenanceFactoryTests
     }
 
     [Fact]
+    public void CreateBundle_SetsTheBundlesIdToTheProvenancesId()
+    {
+        var patient = new Patient { Id = "hashed-123" };
+
+        var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
+
+        bundle.Id.Should().Be(bundle.Entry.Single().Resource.Id);
+    }
+
+    [Fact]
     public void CreateBundle_WithSingleResource_SetsAgent()
     {
         var patient = new Patient { Id = "hashed-123" };

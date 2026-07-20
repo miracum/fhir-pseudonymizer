@@ -17,7 +17,8 @@ namespace FhirPseudonymizer.Kafka;
 ///     SHA-256 hash of its targets' combined identity, preferring each target's <c>Resource.id</c>
 ///     and falling back to its <c>identifier.system|identifier.value</c>, see
 ///     <see cref="GetIdentityToken" />) so that re-pseudonymizing the same input later PUTs to the
-///     same Provenance instead of creating a duplicate.
+///     same Provenance instead of creating a duplicate. Since a Bundle only ever contains this one
+///     Provenance, the wrapping Bundle is given that same id.
 /// </summary>
 public static class ProvenanceFactory
 {
@@ -49,7 +50,8 @@ public static class ProvenanceFactory
     ///     targets every contained resource (each by its possibly-changed post-pseudonymization
     ///     <c>&lt;type&gt;/&lt;id&gt;</c>); otherwise it targets <paramref name="pseudonymized" />
     ///     itself. Returns null if there is nothing to reference (e.g. an empty bundle, or a
-    ///     resource without an id). The entry is a PUT to <c>Provenance/&lt;id&gt;</c>, see
+    ///     resource without an id). The Bundle's own id is set to the (single) Provenance's id, and
+    ///     its one entry is a PUT to <c>Provenance/&lt;id&gt;</c>, see
     ///     <see cref="ComputeProvenanceId" /> for how that id is derived.
     /// </summary>
     public static Bundle CreateBundle(
@@ -68,7 +70,7 @@ public static class ProvenanceFactory
 
         var bundle = new Bundle
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = provenance.Id,
             Type = Bundle.BundleType.Transaction,
             Timestamp = recorded,
         };

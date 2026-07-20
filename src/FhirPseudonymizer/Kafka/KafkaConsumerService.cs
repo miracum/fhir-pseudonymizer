@@ -208,12 +208,7 @@ public class KafkaConsumerService : BackgroundService
 
             ProcessedMessagesCounter.WithLabels(result.Topic, "success").Inc();
 
-            provenancePublisher.Publish(
-                original,
-                anonymized,
-                result.Message.Key,
-                CopyHeaders(result.Message.Headers)
-            );
+            provenancePublisher.Publish(original, anonymized, CopyHeaders(result.Message.Headers));
 
             await completedResults.Writer.WriteAsync(result, CancellationToken.None);
         }

@@ -112,7 +112,7 @@ public class FhirControllerTests
 
         await controller.DeIdentify(original);
 
-        A.CallTo(() => provenancePublisher.Publish(original, anonymized, null, null))
+        A.CallTo(() => provenancePublisher.Publish(original, anonymized, null))
             .MustHaveHappenedOnceExactly();
     }
 
@@ -141,7 +141,6 @@ public class FhirControllerTests
                 provenancePublisher.Publish(
                     A<Resource>._,
                     A<Resource>._,
-                    A<byte[]>._,
                     A<Confluent.Kafka.Headers>._
                 )
             )

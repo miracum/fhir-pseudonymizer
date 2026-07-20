@@ -1,3 +1,4 @@
+using System.Text;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
@@ -23,12 +24,7 @@ public class KafkaProvenancePublisher : IProvenancePublisher
         this.logger = logger;
     }
 
-    public void Publish(
-        Resource original,
-        Resource pseudonymized,
-        byte[] key = null,
-        Headers headers = null
-    )
+    public void Publish(Resource original, Resource pseudonymized, Headers headers = null)
     {
         var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, DateTimeOffset.UtcNow);
         if (bundle is null)
@@ -42,7 +38,7 @@ public class KafkaProvenancePublisher : IProvenancePublisher
                 kafkaConfig.ProvenanceTopic,
                 new Message<byte[], string>
                 {
-                    Key = key,
+                    Key = Encoding.UTF8.GetBytes(bundle.Id),
                     Value = fhirJsonSerializer.SerializeToString(bundle),
                     Headers = headers,
                 }

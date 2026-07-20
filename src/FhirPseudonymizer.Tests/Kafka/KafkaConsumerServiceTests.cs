@@ -295,7 +295,7 @@ public class KafkaConsumerServiceTests
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_PublishesProvenanceForTheAnonymizedResourceWithOriginalKeyAndHeaders()
+    public async System.Threading.Tasks.Task ProcessResultAsync_PublishesProvenanceForTheOriginalAndAnonymizedResourceWithForwardedHeaders()
     {
         var anonymized = new Patient { Id = "hashed-456" };
         var anonymizer = A.Fake<IAnonymizerEngine>();
@@ -312,23 +312,18 @@ public class KafkaConsumerServiceTests
         var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
             new Patient { Id = "123" }
         );
-        var key = "patient-123"u8.ToArray();
         var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
-        var result = CreateConsumeResult("input-topic", 0, 0, json, key, headers);
+        var result = CreateConsumeResult("input-topic", 0, 0, json, headers: headers);
 
         Resource publishedOriginal = null;
         Resource publishedPseudonymized = null;
-        byte[] publishedKey = null;
         Headers publishedHeaders = null;
-        A.CallTo(() =>
-                provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<byte[]>._, A<Headers>._)
-            )
+        A.CallTo(() => provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<Headers>._))
             .Invokes(
-                (Resource o, Resource p, byte[] k, Headers h) =>
+                (Resource o, Resource p, Headers h) =>
                 {
                     publishedOriginal = o;
                     publishedPseudonymized = p;
-                    publishedKey = k;
                     publishedHeaders = h;
                 }
             );
@@ -337,7 +332,6 @@ public class KafkaConsumerServiceTests
 
         publishedOriginal.Id.Should().Be("123");
         publishedPseudonymized.Should().BeSameAs(anonymized);
-        publishedKey.Should().BeEquivalentTo(key);
         publishedHeaders.Should().Contain(h => h.Key == "traceparent");
     }
 
@@ -355,9 +349,7 @@ public class KafkaConsumerServiceTests
 
         await service.ProcessResultAsync(result);
 
-        A.CallTo(() =>
-                provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<byte[]>._, A<Headers>._)
-            )
+        A.CallTo(() => provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<Headers>._))
             .MustNotHaveHappened();
     }
 
