@@ -1,7 +1,7 @@
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using Hl7.Fhir.Model;
-using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 
 namespace FhirPseudonymizer.Kafka;
 
@@ -11,9 +11,9 @@ namespace FhirPseudonymizer.Kafka;
 ///     activity produced - each resource by its post-pseudonymization identity (its type stays the
 ///     same, but its id may have changed, e.g. when cryptoHash-ing <c>Resource.id</c>) - while
 ///     <see cref="Provenance.Entity" /> (role <c>source</c>, see <see cref="GetSourceEntity" />)
-///     references what it was derived from - each resource's pre-pseudonymization identity. States
-///     which de-identification operations (redact, cryptoHash, pseudonymize, ...) were actually
-///     applied via <see cref="Provenance.Activity" />. The Provenance is given a deterministic id (a
+///     references what it was derived from - each resource's pre-pseudonymization identity.
+///     <see cref="Provenance.Activity" /> is always the fixed ISO/HL7 21089 "de-identify" lifecycle
+///     event code (see <see cref="ActivityCoding" />). The Provenance is given a deterministic id (a
 ///     SHA-256 hash of its targets' combined identity, preferring each target's <c>Resource.id</c>
 ///     and falling back to its <c>identifier.system|identifier.value</c>, see
 ///     <see cref="GetIdentityToken" />) so that re-pseudonymizing the same input later PUTs to the
@@ -25,34 +25,59 @@ public static class ProvenanceFactory
     public const string AgentDisplay = "FHIR Pseudonymizer";
 
     /// <summary>
-    ///     The <see cref="Meta.Security" /> codes the anonymizer's <c>AddSecurityTag</c> step (see
-    ///     <c>ElementNodeOperationExtensions.AddSecurityTag</c>) tags a resource with for each
-    ///     de-identification operation actually applied to it (redact, cryptoHash, pseudonymize,
-    ///     ...). Only these are ever considered for a Provenance's <see cref="Provenance.Activity" />.
+    ///     Identifies the pseudonymizer's participation as having carried out the activity, per
+    ///     <see cref="Provenance.AgentComponent.Type" />'s narrow, unambiguous binding.
     /// </summary>
-    private static readonly HashSet<string> AnonymizationSecurityLabelCodes = new(
-        StringComparer.OrdinalIgnoreCase
-    )
-    {
-        SecurityLabels.REDACT.Code,
-        SecurityLabels.ABSTRED.Code,
-        SecurityLabels.CRYTOHASH.Code,
-        SecurityLabels.ENCRYPT.Code,
-        SecurityLabels.PERTURBED.Code,
-        SecurityLabels.SUBSTITUTED.Code,
-        SecurityLabels.GENERALIZED.Code,
-        SecurityLabels.PSEUDED.Code,
-    };
+    private static readonly Coding AgentType = new(
+        "http://terminology.hl7.org/CodeSystem/provenance-participant-type",
+        "performer",
+        "Performer"
+    );
+
+    /// <summary>
+    ///     The pseudonymizer's functional role with respect to the activity, per
+    ///     <see cref="Provenance.AgentComponent.Role" />. Unlike <see cref="AgentType" />, that
+    ///     binding is a broad, extensible grab-bag with no single obvious code for "automated
+    ///     de-identification software"; "author (originator)" is the closest, commonly used fit for
+    ///     an automated system that produced/transformed the content.
+    /// </summary>
+    private static readonly Coding AgentRole = new(
+        "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+        "AUT",
+        "author (originator)"
+    );
+
+    /// <summary>
+    ///     The fixed <see cref="Provenance.Activity" /> every Provenance produced by this factory is
+    ///     given, identifying the activity as an ISO/HL7 21089 "de-identify" record lifecycle event.
+    /// </summary>
+    private static readonly Coding ActivityCoding = new(
+        "http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle",
+        "deidentify",
+        "De-Identify (Anononymize) Record Lifecycle Event"
+    );
+
+    /// <summary>
+    ///     The Device resource representing the FHIR Pseudonymizer itself, referenced by every
+    ///     Provenance's <see cref="Provenance.AgentComponent.Who" /> (instead of just a display
+    ///     string) and included in the same Bundle. Built once - its id is derived only from the
+    ///     app's name and assembly version (see <see cref="BuildDeviceId" />), so it stays the same,
+    ///     and PUTs idempotently, across every Provenance produced by this running instance, only
+    ///     changing on a version bump.
+    /// </summary>
+    private static readonly Device PseudonymizerDevice = CreatePseudonymizerDevice();
 
     /// <summary>
     ///     Creates a "transaction" Bundle containing a single Provenance resource documenting the
-    ///     pseudonymization of <paramref name="pseudonymized" />. If it is a Bundle, the Provenance
-    ///     targets every contained resource (each by its possibly-changed post-pseudonymization
-    ///     <c>&lt;type&gt;/&lt;id&gt;</c>); otherwise it targets <paramref name="pseudonymized" />
-    ///     itself. Returns null if there is nothing to reference (e.g. an empty bundle, or a
-    ///     resource without an id). The Bundle's own id is set to the (single) Provenance's id, and
-    ///     its one entry is a PUT to <c>Provenance/&lt;id&gt;</c>, see
-    ///     <see cref="ComputeProvenanceId" /> for how that id is derived.
+    ///     pseudonymization of <paramref name="pseudonymized" />, alongside the
+    ///     <see cref="PseudonymizerDevice" /> it references as its agent. If it is a Bundle, the
+    ///     Provenance targets every contained resource (each by its possibly-changed
+    ///     post-pseudonymization <c>&lt;type&gt;/&lt;id&gt;</c>); otherwise it targets
+    ///     <paramref name="pseudonymized" /> itself. Returns null if there is nothing to reference
+    ///     (e.g. an empty bundle, or a resource without an id). The Bundle's own id is set to the
+    ///     (single) Provenance's id, and both entries are PUTs to their own <c>&lt;type&gt;/&lt;id&gt;</c>,
+    ///     see <see cref="ComputeProvenanceId" /> and <see cref="BuildDeviceId" /> for how those ids
+    ///     are derived.
     /// </summary>
     public static Bundle CreateBundle(
         Resource original,
@@ -75,20 +100,27 @@ public static class ProvenanceFactory
             Timestamp = recorded,
         };
 
-        bundle.Entry.Add(
-            new Bundle.EntryComponent
-            {
-                FullUrl = $"Provenance/{provenance.Id}",
-                Resource = provenance,
-                Request = new Bundle.RequestComponent
-                {
-                    Method = Bundle.HTTPVerb.PUT,
-                    Url = $"Provenance/{provenance.Id}",
-                },
-            }
-        );
+        bundle.Entry.Add(AsPutEntry(PseudonymizerDevice));
+        bundle.Entry.Add(AsPutEntry(provenance));
 
         return bundle;
+    }
+
+    /// <summary>
+    ///     Wraps <paramref name="resource" /> (which must already have an id) in a Bundle entry that
+    ///     PUTs it to its own <c>&lt;type&gt;/&lt;id&gt;</c>, the pattern every resource in a
+    ///     provenance Bundle is published with so applying the Bundle to a FHIR server upserts by id
+    ///     instead of creating duplicates.
+    /// </summary>
+    private static Bundle.EntryComponent AsPutEntry(Resource resource)
+    {
+        var url = $"{resource.TypeName}/{resource.Id}";
+        return new Bundle.EntryComponent
+        {
+            FullUrl = url,
+            Resource = resource,
+            Request = new Bundle.RequestComponent { Method = Bundle.HTTPVerb.PUT, Url = url },
+        };
     }
 
     /// <summary>
@@ -129,7 +161,7 @@ public static class ProvenanceFactory
         DateTimeOffset recorded
     )
     {
-        var provenance = new Provenance
+        return new Provenance
         {
             Id = ComputeProvenanceId(targets),
             Target = targets
@@ -142,29 +174,20 @@ public static class ProvenanceFactory
                 .Where(entity => entity is not null)
                 .ToList(),
             Recorded = recorded,
+            Activity = new CodeableConcept { Coding = [ActivityCoding] },
             Agent =
             [
                 new Provenance.AgentComponent
                 {
-                    Who = new ResourceReference { Display = AgentDisplay },
+                    Type = new CodeableConcept { Coding = [AgentType] },
+                    Role = [new CodeableConcept { Coding = [AgentRole] }],
+                    Who = new ResourceReference($"Device/{PseudonymizerDevice.Id}")
+                    {
+                        Display = AgentDisplay,
+                    },
                 },
             ],
         };
-
-        var appliedOperations = targets
-            .SelectMany(target =>
-                GetNewlyAppliedAnonymizationOperations(target.Original, target.Pseudonymized)
-            )
-            .GroupBy(coding => coding.Code, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.First())
-            .ToList();
-
-        if (appliedOperations.Count > 0)
-        {
-            provenance.Activity = new CodeableConcept { Coding = appliedOperations };
-        }
-
-        return provenance;
     }
 
     /// <summary>
@@ -255,31 +278,37 @@ public static class ProvenanceFactory
     }
 
     /// <summary>
-    ///     Reads back which de-identification operations were actually applied to
-    ///     <paramref name="target" /> by comparing its security labels against
-    ///     <paramref name="original" />'s: a label only counts if it is one of the known
-    ///     anonymization codes (<see cref="AnonymizationSecurityLabelCodes" />) AND was not already
-    ///     present before pseudonymization. This keeps a Provenance's activity accurate even if the
-    ///     input resource already carried its own (e.g. previously pseudonymized upstream) security
-    ///     labels - only labels the pseudonymizer itself added are reflected. Returns empty if
-    ///     nothing new was added, e.g. when <c>Anonymization__ShouldAddSecurityTag</c> is disabled.
+    ///     Builds the <see cref="PseudonymizerDevice" /> resource, naming and versioning it after
+    ///     this running assembly.
     /// </summary>
-    private static List<Coding> GetNewlyAppliedAnonymizationOperations(
-        Resource original,
-        Resource target
-    )
+    private static Device CreatePseudonymizerDevice()
     {
-        var preExistingCodes = new HashSet<string>(
-            original?.Meta?.Security?.Select(coding => coding.Code) ?? [],
-            StringComparer.OrdinalIgnoreCase
-        );
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
 
-        return target
-                .Meta?.Security.Where(coding =>
-                    AnonymizationSecurityLabelCodes.Contains(coding.Code)
-                    && !preExistingCodes.Contains(coding.Code)
-                )
-                .ToList()
-            ?? [];
+        return new Device
+        {
+            Id = BuildDeviceId(AgentDisplay, version),
+            DeviceName =
+            [
+                new Device.DeviceNameComponent
+                {
+                    Name = AgentDisplay,
+                    Type = DeviceNameType.UserFriendlyName,
+                },
+            ],
+            Version = [new Device.VersionComponent { Value = version }],
+        };
+    }
+
+    /// <summary>
+    ///     Derives <see cref="PseudonymizerDevice" />'s id from its name and version alone: the
+    ///     SHA-256 hash (lowercase hex, which fits FHIR's 64-character id limit exactly) of
+    ///     <c>name|version</c>. This keeps the id - and so the Device PUT target - stable across
+    ///     restarts and only changing when the app's version does.
+    /// </summary>
+    private static string BuildDeviceId(string name, string version)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes($"{name}|{version}"));
+        return Convert.ToHexStringLower(hash);
     }
 }

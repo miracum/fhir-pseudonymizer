@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using FhirPseudonymizer.Kafka;
@@ -10,6 +11,21 @@ public class ProvenanceFactoryTests
 {
     private static readonly DateTimeOffset Recorded = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
+    private static readonly string ExpectedDeviceVersion =
+        Assembly.GetAssembly(typeof(ProvenanceFactory))!.GetName().Version?.ToString() ?? "unknown";
+
+    private static readonly string ExpectedDeviceId = Convert.ToHexStringLower(
+        SHA256.HashData(
+            Encoding.UTF8.GetBytes($"{ProvenanceFactory.AgentDisplay}|{ExpectedDeviceVersion}")
+        )
+    );
+
+    private static Provenance GetProvenance(Bundle bundle) =>
+        bundle.Entry.Select(e => e.Resource).OfType<Provenance>().Single();
+
+    private static Device GetDevice(Bundle bundle) =>
+        bundle.Entry.Select(e => e.Resource).OfType<Device>().Single();
+
     [Fact]
     public void CreateBundle_WithSingleResource_ReturnsBundleWithOneProvenanceTargetingIt()
     {
@@ -19,9 +35,8 @@ public class ProvenanceFactoryTests
 
         bundle.Should().NotBeNull();
         bundle.Type.Should().Be(Bundle.BundleType.Transaction);
-        bundle.Entry.Should().ContainSingle();
 
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        var provenance = GetProvenance(bundle);
         provenance.Target.Should().ContainSingle();
         provenance.Target.Single().Reference.Should().Be("Patient/hashed-123");
         provenance.Recorded.Should().Be(Recorded);
@@ -34,20 +49,90 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
 
-        bundle.Id.Should().Be(bundle.Entry.Single().Resource.Id);
+        bundle.Id.Should().Be(GetProvenance(bundle).Id);
     }
 
     [Fact]
-    public void CreateBundle_WithSingleResource_SetsAgent()
+    public void CreateBundle_IncludesThePseudonymizerDeviceAsAPutEntry()
     {
         var patient = new Patient { Id = "hashed-123" };
 
         var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
 
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        var deviceEntry = bundle.Entry.Single(e => e.Resource is Device);
+        var device = (Device)deviceEntry.Resource;
+
+        device.Id.Should().Be(ExpectedDeviceId);
+        device.DeviceName.Should().ContainSingle(n => n.Name == ProvenanceFactory.AgentDisplay);
+        device.Version.Should().ContainSingle(v => v.Value == ExpectedDeviceVersion);
+
+        deviceEntry.FullUrl.Should().Be($"Device/{device.Id}");
+        deviceEntry.Request.Method.Should().Be(Bundle.HTTPVerb.PUT);
+        deviceEntry.Request.Url.Should().Be($"Device/{device.Id}");
+    }
+
+    [Fact]
+    public void CreateBundle_ReferencesThePseudonymizerDeviceAsTheAgentWho()
+    {
+        var patient = new Patient { Id = "hashed-123" };
+
+        var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
+
+        var provenance = GetProvenance(bundle);
+        var device = GetDevice(bundle);
+
+        provenance.Agent.Single().Who.Reference.Should().Be($"Device/{device.Id}");
+    }
+
+    [Fact]
+    public void CreateBundle_CalledTwice_ReferencesTheSameDeviceIdBothTimes()
+    {
+        var firstDevice = GetDevice(
+            ProvenanceFactory.CreateBundle(null, new Patient { Id = "1" }, Recorded)
+        );
+        var secondDevice = GetDevice(
+            ProvenanceFactory.CreateBundle(null, new Patient { Id = "2" }, Recorded)
+        );
+
+        firstDevice.Id.Should().Be(secondDevice.Id);
+    }
+
+    [Fact]
+    public void CreateBundle_WithSingleResource_SetsAgentDisplay()
+    {
+        var patient = new Patient { Id = "hashed-123" };
+
+        var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
+
+        var provenance = GetProvenance(bundle);
         provenance
             .Agent.Should()
             .ContainSingle(a => a.Who.Display == ProvenanceFactory.AgentDisplay);
+    }
+
+    [Fact]
+    public void CreateBundle_WithSingleResource_SetsAgentTypeAndRole()
+    {
+        var patient = new Patient { Id = "hashed-123" };
+
+        var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
+
+        var agent = GetProvenance(bundle).Agent.Single();
+
+        agent
+            .Type.Coding.Should()
+            .ContainSingle(c =>
+                c.System == "http://terminology.hl7.org/CodeSystem/provenance-participant-type"
+                && c.Code == "performer"
+            );
+        agent
+            .Role.Should()
+            .ContainSingle(role =>
+                role.Coding.Any(c =>
+                    c.System == "http://terminology.hl7.org/CodeSystem/v3-ParticipationType"
+                    && c.Code == "AUT"
+                )
+            );
     }
 
     [Fact]
@@ -58,7 +143,7 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
 
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        var provenance = GetProvenance(bundle);
         provenance.Entity.Should().ContainSingle();
         var entity = provenance.Entity.Single();
         entity.Role.Should().Be(Provenance.ProvenanceEntityRole.Source);
@@ -76,8 +161,7 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
 
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        var entity = provenance.Entity.Single();
+        var entity = GetProvenance(bundle).Entity.Single();
         entity.Role.Should().Be(Provenance.ProvenanceEntityRole.Source);
         entity.What.Reference.Should().BeNull();
         entity.What.Identifier.System.Should().Be("http://example.org/mrn");
@@ -91,8 +175,7 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(null, pseudonymized, Recorded);
 
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        provenance.Entity.Should().BeEmpty();
+        GetProvenance(bundle).Entity.Should().BeEmpty();
     }
 
     [Fact]
@@ -117,13 +200,29 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(originalBundle, pseudonymizedBundle, Recorded);
 
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        var sources = provenance.Entity.Select(e => e.What.Reference).ToList();
+        var sources = GetProvenance(bundle).Entity.Select(e => e.What.Reference).ToList();
         sources.Should().BeEquivalentTo(["Patient/patient-1", "Observation/obs-1"]);
     }
 
     [Fact]
-    public void CreateBundle_WithSecurityLabelsNewlyAddedByPseudonymization_SetsActivityFromThem()
+    public void CreateBundle_SetsFixedDeidentifyActivity()
+    {
+        var patient = new Patient { Id = "hashed-123" };
+
+        var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
+
+        var provenance = GetProvenance(bundle);
+        provenance
+            .Activity.Coding.Should()
+            .ContainSingle(c =>
+                c.System == "http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle"
+                && c.Code == "deidentify"
+                && c.Display == "De-Identify (Anononymize) Record Lifecycle Event"
+            );
+    }
+
+    [Fact]
+    public void CreateBundle_SetsTheSameFixedActivityRegardlessOfTheResourcesSecurityLabels()
     {
         var original = new Patient { Id = "123" };
         var pseudonymized = new Patient
@@ -134,84 +233,9 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
 
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        provenance
-            .Activity.Coding.Should()
-            .BeEquivalentTo([SecurityLabels.CRYTOHASH, SecurityLabels.PSEUDED]);
-    }
-
-    [Fact]
-    public void CreateBundle_WithSecurityLabelAlreadyPresentOnInput_ExcludesItFromActivity()
-    {
-        // simulates a resource that was already pseudonymized upstream before reaching this
-        // service - its pre-existing PSEUDED tag must not be attributed to this run
-        var original = new Patient
-        {
-            Id = "123",
-            Meta = new Meta { Security = [SecurityLabels.PSEUDED] },
-        };
-        var pseudonymized = new Patient
-        {
-            Id = "hashed-123",
-            Meta = new Meta { Security = [SecurityLabels.PSEUDED, SecurityLabels.CRYTOHASH] },
-        };
-
-        var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
-
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        provenance.Activity.Coding.Should().BeEquivalentTo([SecurityLabels.CRYTOHASH]);
-    }
-
-    [Fact]
-    public void CreateBundle_WithOnlyPreExistingSecurityLabels_LeavesActivityUnset()
-    {
-        // nothing was actually applied by this pseudonymization run
-        var original = new Patient
-        {
-            Id = "123",
-            Meta = new Meta { Security = [SecurityLabels.PSEUDED] },
-        };
-        var pseudonymized = new Patient
-        {
-            Id = "123",
-            Meta = new Meta { Security = [SecurityLabels.PSEUDED] },
-        };
-
-        var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
-
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        provenance.Activity.Should().BeNull();
-    }
-
-    [Fact]
-    public void CreateBundle_WithResourceCarryingUnrelatedSecurityLabel_ExcludesItFromActivity()
-    {
-        var unrelatedLabel = new Coding
-        {
-            System = "http://terminology.hl7.org/CodeSystem/v3-ActReason",
-            Code = "HTEST",
-        };
-        var pseudonymized = new Patient
-        {
-            Id = "hashed-123",
-            Meta = new Meta { Security = [SecurityLabels.PSEUDED, unrelatedLabel] },
-        };
-
-        var bundle = ProvenanceFactory.CreateBundle(null, pseudonymized, Recorded);
-
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        provenance.Activity.Coding.Should().BeEquivalentTo([SecurityLabels.PSEUDED]);
-    }
-
-    [Fact]
-    public void CreateBundle_WithResourceWithoutSecurityLabels_LeavesActivityUnset()
-    {
-        var patient = new Patient { Id = "hashed-123" };
-
-        var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
-
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        provenance.Activity.Should().BeNull();
+        var provenance = GetProvenance(bundle);
+        provenance.Activity.Coding.Should().ContainSingle();
+        provenance.Activity.Coding.Single().Code.Should().Be("deidentify");
     }
 
     [Fact]
@@ -228,51 +252,9 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(null, bundleInput, Recorded);
 
-        bundle.Entry.Should().ContainSingle();
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        var provenance = GetProvenance(bundle);
         var targets = provenance.Target.Select(t => t.Reference).ToList();
         targets.Should().BeEquivalentTo(["Patient/patient-1", "Observation/obs-1"]);
-    }
-
-    [Fact]
-    public void CreateBundle_WithBundleInput_PairsEntriesByPositionForActivityDiffing()
-    {
-        var originalBundle = new Bundle
-        {
-            Entry =
-            [
-                new Bundle.EntryComponent
-                {
-                    Resource = new Patient
-                    {
-                        Id = "patient-1",
-                        Meta = new Meta { Security = [SecurityLabels.PSEUDED] },
-                    },
-                },
-            ],
-        };
-        var pseudonymizedBundle = new Bundle
-        {
-            Entry =
-            [
-                new Bundle.EntryComponent
-                {
-                    Resource = new Patient
-                    {
-                        Id = "hashed-1",
-                        Meta = new Meta
-                        {
-                            Security = [SecurityLabels.PSEUDED, SecurityLabels.CRYTOHASH],
-                        },
-                    },
-                },
-            ],
-        };
-
-        var bundle = ProvenanceFactory.CreateBundle(originalBundle, pseudonymizedBundle, Recorded);
-
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        provenance.Activity.Coding.Should().BeEquivalentTo([SecurityLabels.CRYTOHASH]);
     }
 
     [Fact]
@@ -293,11 +275,7 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(null, bundleInput, Recorded);
 
-        bundle.Entry.Should().ContainSingle();
-        ((Provenance)bundle.Entry.Single().Resource)
-            .Target.Single()
-            .Reference.Should()
-            .Be("Patient/patient-1");
+        GetProvenance(bundle).Target.Single().Reference.Should().Be("Patient/patient-1");
     }
 
     [Fact]
@@ -321,26 +299,28 @@ public class ProvenanceFactoryTests
     }
 
     [Fact]
-    public void CreateBundle_GivesEachEntryAFullUrlMatchingItsProvenanceId()
+    public void CreateBundle_GivesTheProvenanceEntryAFullUrlMatchingItsId()
     {
         var patient = new Patient { Id = "hashed-123" };
 
         var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
 
-        var entry = bundle.Entry.Single();
-        entry.FullUrl.Should().Be($"Provenance/{entry.Resource.Id}");
+        var provenance = GetProvenance(bundle);
+        var entry = bundle.Entry.Single(e => e.Resource == provenance);
+        entry.FullUrl.Should().Be($"Provenance/{provenance.Id}");
     }
 
     [Fact]
-    public void CreateBundle_SetsAPutRequestToProvenanceSlashIdForEachEntry()
+    public void CreateBundle_SetsAPutRequestToProvenanceSlashIdForTheProvenanceEntry()
     {
         var patient = new Patient { Id = "hashed-123" };
 
         var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
 
-        var entry = bundle.Entry.Single();
+        var provenance = GetProvenance(bundle);
+        var entry = bundle.Entry.Single(e => e.Resource == provenance);
         entry.Request.Method.Should().Be(Bundle.HTTPVerb.PUT);
-        entry.Request.Url.Should().Be($"Provenance/{entry.Resource.Id}");
+        entry.Request.Url.Should().Be($"Provenance/{provenance.Id}");
     }
 
     [Fact]
@@ -357,7 +337,7 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
 
-        bundle.Entry.Single().Resource.Id.Should().Be(expectedId);
+        GetProvenance(bundle).Id.Should().Be(expectedId);
     }
 
     [Fact]
@@ -369,14 +349,10 @@ public class ProvenanceFactoryTests
             Identifier = [new Identifier("http://example.org/mrn", "12345")],
         };
 
-        var firstId = ProvenanceFactory
-            .CreateBundle(null, patient, Recorded)
-            .Entry.Single()
-            .Resource.Id;
-        var secondId = ProvenanceFactory
-            .CreateBundle(null, patient, Recorded.AddDays(1))
-            .Entry.Single()
-            .Resource.Id;
+        var firstId = GetProvenance(ProvenanceFactory.CreateBundle(null, patient, Recorded)).Id;
+        var secondId = GetProvenance(
+            ProvenanceFactory.CreateBundle(null, patient, Recorded.AddDays(1))
+        ).Id;
 
         firstId.Should().Be(secondId);
     }
@@ -404,7 +380,7 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
 
-        bundle.Entry.Single().Resource.Id.Should().Be(expectedId);
+        GetProvenance(bundle).Id.Should().Be(expectedId);
     }
 
     [Fact]
@@ -427,7 +403,7 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
 
-        bundle.Entry.Single().Resource.Id.Should().Be(expectedId);
+        GetProvenance(bundle).Id.Should().Be(expectedId);
     }
 
     [Fact]
@@ -437,7 +413,7 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
 
-        Guid.TryParse(bundle.Entry.Single().Resource.Id, out _).Should().BeTrue();
+        Guid.TryParse(GetProvenance(bundle).Id, out _).Should().BeTrue();
     }
 
     [Fact]
@@ -473,48 +449,6 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(null, bundleInput, Recorded);
 
-        bundle.Entry.Single().Resource.Id.Should().Be(expectedId);
-    }
-
-    [Fact]
-    public void CreateBundle_WithBundleInput_UnionsAppliedOperationsAcrossAllContainedResources()
-    {
-        var originalBundle = new Bundle
-        {
-            Entry =
-            [
-                new Bundle.EntryComponent { Resource = new Patient { Id = "patient-1" } },
-                new Bundle.EntryComponent { Resource = new Observation { Id = "obs-1" } },
-            ],
-        };
-        var pseudonymizedBundle = new Bundle
-        {
-            Entry =
-            [
-                new Bundle.EntryComponent
-                {
-                    Resource = new Patient
-                    {
-                        Id = "hashed-patient-1",
-                        Meta = new Meta { Security = [SecurityLabels.CRYTOHASH] },
-                    },
-                },
-                new Bundle.EntryComponent
-                {
-                    Resource = new Observation
-                    {
-                        Id = "hashed-obs-1",
-                        Meta = new Meta { Security = [SecurityLabels.REDACT] },
-                    },
-                },
-            ],
-        };
-
-        var bundle = ProvenanceFactory.CreateBundle(originalBundle, pseudonymizedBundle, Recorded);
-
-        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
-        provenance
-            .Activity.Coding.Should()
-            .BeEquivalentTo([SecurityLabels.CRYTOHASH, SecurityLabels.REDACT]);
+        GetProvenance(bundle).Id.Should().Be(expectedId);
     }
 }
