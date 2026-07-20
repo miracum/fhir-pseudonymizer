@@ -11,22 +11,28 @@ public static class KafkaExtensions
     ///     Topics are normally bound from an array (e.g. "Kafka:Topics:0", "Kafka:Topics:1" /
     ///     a JSON array), which is awkward to set via a single environment variable. As a
     ///     convenience, this also allows "Kafka:Topics" to be set to a single comma-separated
-    ///     string (e.g. "Kafka__Topics=topic-a,topic-b") whenever no array was bound.
+    ///     string (e.g. "Kafka__Topics=topic-a,topic-b") whenever no non-blank entry was bound.
+    ///     Blank entries are dropped first (rather than simply checking <c>Count &gt; 0</c>), so
+    ///     that a lower-priority config source's topic can be effectively disabled by a
+    ///     higher-priority one overriding just that index to an empty string - overriding the
+    ///     whole array to <c>[]</c> does not work, since JSON config layering only overrides
+    ///     matching keys/indices, it cannot shrink an array a lower layer already populated.
     /// </summary>
     public static List<string> NormalizeTopics(
         IConfiguration configuration,
         List<string> boundTopics
     )
     {
-        if (boundTopics.Count > 0)
+        var topics = boundTopics.Where(topic => !string.IsNullOrWhiteSpace(topic)).ToList();
+        if (topics.Count > 0)
         {
-            return boundTopics;
+            return topics;
         }
 
         var raw = configuration["Kafka:Topics"];
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return boundTopics;
+            return topics;
         }
 
         return

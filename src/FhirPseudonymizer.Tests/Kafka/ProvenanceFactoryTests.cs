@@ -12,7 +12,8 @@ public class ProvenanceFactoryTests
     private static readonly DateTimeOffset Recorded = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private static readonly string ExpectedDeviceVersion =
-        Assembly.GetAssembly(typeof(ProvenanceFactory))!.GetName().Version?.ToString() ?? "unknown";
+        Assembly.GetAssembly(typeof(ProvenanceFactory))!.GetName().Version?.ToString(3)
+        ?? "unknown";
 
     private static readonly string ExpectedDeviceId = Convert.ToHexStringLower(
         SHA256.HashData(
@@ -65,6 +66,12 @@ public class ProvenanceFactoryTests
         device.Id.Should().Be(ExpectedDeviceId);
         device.DeviceName.Should().ContainSingle(n => n.Name == ProvenanceFactory.AgentDisplay);
         device.Version.Should().ContainSingle(v => v.Value == ExpectedDeviceVersion);
+        device
+            .Identifier.Should()
+            .ContainSingle(i =>
+                i.System == "https://miracum.github.io/fhir-pseudonymizer/identifiers/device-id"
+                && i.Value == $"fhir-pseudonymizer-v{ExpectedDeviceVersion}"
+            );
 
         deviceEntry.FullUrl.Should().Be($"Device/{device.Id}");
         deviceEntry.Request.Method.Should().Be(Bundle.HTTPVerb.PUT);

@@ -58,6 +58,15 @@ public static class ProvenanceFactory
     );
 
     /// <summary>
+    ///     The identifier system for <see cref="PseudonymizerDevice" />'s business identifier
+    ///     (distinct from its FHIR <c>id</c>, which is a content hash, see
+    ///     <see cref="BuildDeviceId" />): a project-owned URI, following the common convention of
+    ///     using a GitHub Pages URL as a canonical namespace.
+    /// </summary>
+    private const string DeviceIdentifierSystem =
+        "https://miracum.github.io/fhir-pseudonymizer/identifiers/device-id";
+
+    /// <summary>
     ///     The Device resource representing the FHIR Pseudonymizer itself, referenced by every
     ///     Provenance's <see cref="Provenance.AgentComponent.Who" /> (instead of just a display
     ///     string) and included in the same Bundle. Built once - its id is derived only from the
@@ -279,15 +288,20 @@ public static class ProvenanceFactory
 
     /// <summary>
     ///     Builds the <see cref="PseudonymizerDevice" /> resource, naming and versioning it after
-    ///     this running assembly.
+    ///     this running assembly. Only the first three fields (major.minor.build) of the assembly
+    ///     version are used, matching semver - .NET's fourth "revision" field isn't part of the
+    ///     app's actual (release-please-managed) version and would otherwise needlessly change the
+    ///     device id.
     /// </summary>
     private static Device CreatePseudonymizerDevice()
     {
-        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
+        var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        var version = assemblyVersion is null ? "unknown" : assemblyVersion.ToString(3);
 
         return new Device
         {
             Id = BuildDeviceId(AgentDisplay, version),
+            Identifier = [new Identifier(DeviceIdentifierSystem, $"fhir-pseudonymizer-v{version}")],
             DeviceName =
             [
                 new Device.DeviceNameComponent
