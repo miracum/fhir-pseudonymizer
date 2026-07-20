@@ -6,13 +6,15 @@ using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 namespace FhirPseudonymizer.Kafka;
 
 /// <summary>
-///     Builds FHIR Provenance resources documenting that a resource was pseudonymized, referencing
-///     it by its post-pseudonymization identity (its type stays the same, but its id may have
-///     changed, e.g. when cryptoHash-ing <c>Resource.id</c>), and stating which de-identification
-///     operations (redact, cryptoHash, pseudonymize, ...) were actually applied to it via
-///     <see cref="Provenance.Activity" />. Each Provenance is given a deterministic id (a SHA-256
-///     hash of the source resource's <c>identifier.system|identifier.value</c>) so that
-///     re-pseudonymizing the same resource later PUTs to the same Provenance instead of creating a
+///     Builds a FHIR Provenance resource documenting that a resource (or, for a Bundle, all of its
+///     contained resources) was pseudonymized, referencing each by its post-pseudonymization
+///     identity (its type stays the same, but its id may have changed, e.g. when cryptoHash-ing
+///     <c>Resource.id</c>), and stating which de-identification operations (redact, cryptoHash,
+///     pseudonymize, ...) were actually applied via <see cref="Provenance.Activity" />. The
+///     Provenance is given a deterministic id (a SHA-256 hash of its targets' combined identity,
+///     preferring each target's <c>Resource.id</c> and falling back to its
+///     <c>identifier.system|identifier.value</c>, see <see cref="GetIdentityToken" />) so that
+///     re-pseudonymizing the same input later PUTs to the same Provenance instead of creating a
 ///     duplicate.
 /// </summary>
 public static class ProvenanceFactory
@@ -40,15 +42,13 @@ public static class ProvenanceFactory
     };
 
     /// <summary>
-    ///     Creates a "transaction" Bundle containing one Provenance resource per pseudonymized
-    ///     resource, targeting it by its (possibly changed) post-pseudonymization
-    ///     <c>&lt;type&gt;/&lt;id&gt;</c>. If <paramref name="pseudonymized" /> is a Bundle, one
-    ///     Provenance is created per contained resource (paired by position with
-    ///     <paramref name="original" />'s entries); otherwise a single Provenance targets
-    ///     <paramref name="pseudonymized" /> itself. Returns null if there is nothing to reference
-    ///     (e.g. an empty bundle, or a resource without an id). Each entry is a PUT to
-    ///     <c>Provenance/&lt;id&gt;</c>, see <see cref="ComputeProvenanceId" /> for how that id is
-    ///     derived.
+    ///     Creates a "transaction" Bundle containing a single Provenance resource documenting the
+    ///     pseudonymization of <paramref name="pseudonymized" />. If it is a Bundle, the Provenance
+    ///     targets every contained resource (each by its possibly-changed post-pseudonymization
+    ///     <c>&lt;type&gt;/&lt;id&gt;</c>); otherwise it targets <paramref name="pseudonymized" />
+    ///     itself. Returns null if there is nothing to reference (e.g. an empty bundle, or a
+    ///     resource without an id). The entry is a PUT to <c>Provenance/&lt;id&gt;</c>, see
+    ///     <see cref="ComputeProvenanceId" /> for how that id is derived.
     /// </summary>
     public static Bundle CreateBundle(
         Resource original,
@@ -56,14 +56,13 @@ public static class ProvenanceFactory
         DateTimeOffset recorded
     )
     {
-        var provenances = GetTargets(original, pseudonymized)
-            .Select(target => CreateProvenance(target.Original, target.Pseudonymized, recorded))
-            .ToList();
-
-        if (provenances.Count == 0)
+        var targets = GetTargets(original, pseudonymized).ToList();
+        if (targets.Count == 0)
         {
             return null;
         }
+
+        var provenance = CreateProvenance(targets, recorded);
 
         var bundle = new Bundle
         {
@@ -72,21 +71,18 @@ public static class ProvenanceFactory
             Timestamp = recorded,
         };
 
-        foreach (var provenance in provenances)
-        {
-            bundle.Entry.Add(
-                new Bundle.EntryComponent
+        bundle.Entry.Add(
+            new Bundle.EntryComponent
+            {
+                FullUrl = $"Provenance/{provenance.Id}",
+                Resource = provenance,
+                Request = new Bundle.RequestComponent
                 {
-                    FullUrl = $"Provenance/{provenance.Id}",
-                    Resource = provenance,
-                    Request = new Bundle.RequestComponent
-                    {
-                        Method = Bundle.HTTPVerb.PUT,
-                        Url = $"Provenance/{provenance.Id}",
-                    },
-                }
-            );
-        }
+                    Method = Bundle.HTTPVerb.PUT,
+                    Url = $"Provenance/{provenance.Id}",
+                },
+            }
+        );
 
         return bundle;
     }
@@ -125,15 +121,18 @@ public static class ProvenanceFactory
     }
 
     private static Provenance CreateProvenance(
-        Resource original,
-        Resource target,
+        IReadOnlyList<(Resource Original, Resource Pseudonymized)> targets,
         DateTimeOffset recorded
     )
     {
         var provenance = new Provenance
         {
-            Id = ComputeProvenanceId(original, target),
-            Target = [new ResourceReference($"{target.TypeName}/{target.Id}")],
+            Id = ComputeProvenanceId(targets),
+            Target = targets
+                .Select(target => new ResourceReference(
+                    $"{target.Pseudonymized.TypeName}/{target.Pseudonymized.Id}"
+                ))
+                .ToList(),
             Recorded = recorded,
             Agent =
             [
@@ -144,7 +143,14 @@ public static class ProvenanceFactory
             ],
         };
 
-        var appliedOperations = GetNewlyAppliedAnonymizationOperations(original, target);
+        var appliedOperations = targets
+            .SelectMany(target =>
+                GetNewlyAppliedAnonymizationOperations(target.Original, target.Pseudonymized)
+            )
+            .GroupBy(coding => coding.Code, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToList();
+
         if (appliedOperations.Count > 0)
         {
             provenance.Activity = new CodeableConcept { Coding = appliedOperations };
@@ -154,27 +160,51 @@ public static class ProvenanceFactory
     }
 
     /// <summary>
-    ///     Derives a deterministic id for the Provenance about <paramref name="target" />, so that
-    ///     re-pseudonymizing the same source resource later PUTs to the same Provenance instance
-    ///     instead of accumulating duplicates: the SHA-256 hash (lowercase hex, which fits FHIR's
-    ///     64-character id limit exactly) of that resource's first identifier, formatted as
-    ///     <c>identifier.system|identifier.value</c> (matching the FHIR search token syntax).
-    ///     Prefers <paramref name="original" />'s identifier over <paramref name="target" />'s, since
-    ///     the identifier value itself may have been pseudonymized (e.g. encrypted) and an
-    ///     encryption method need not be deterministic. Falls back to a random id if neither has an
-    ///     identifier to key off of.
+    ///     Derives a deterministic id for a Provenance covering <paramref name="targets" />, so that
+    ///     re-pseudonymizing the same input later PUTs to the same Provenance instance instead of
+    ///     accumulating duplicates: the SHA-256 hash (lowercase hex, which fits FHIR's 64-character
+    ///     id limit exactly) of each target's identity token (see <see cref="GetIdentityToken" />),
+    ///     joined in order. Targets without any identity token do not contribute to the hash. Falls
+    ///     back to a random id if none of the targets have one to key off of.
     /// </summary>
-    private static string ComputeProvenanceId(Resource original, Resource target)
+    private static string ComputeProvenanceId(
+        IReadOnlyList<(Resource Original, Resource Pseudonymized)> targets
+    )
     {
-        var identifier = GetFirstIdentifier(original) ?? GetFirstIdentifier(target);
-        if (identifier is null)
+        var tokens = targets.Select(GetIdentityToken).Where(token => token is not null).ToList();
+
+        if (tokens.Count == 0)
         {
             return Guid.NewGuid().ToString();
         }
 
-        var token = $"{identifier.System}|{identifier.Value}";
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(string.Join(',', tokens)));
         return Convert.ToHexStringLower(hash);
+    }
+
+    /// <summary>
+    ///     Builds the token identifying <paramref name="target" /> for <see cref="ComputeProvenanceId" />:
+    ///     preferably <c>&lt;type&gt;/&lt;id&gt;</c> using the resource's pre-pseudonymization
+    ///     <c>Resource.id</c>. Deliberately only considers the pre-pseudonymization id, not the
+    ///     pseudonymized one: unlike the original id, the pseudonymized id is not guaranteed to be a
+    ///     deterministic function of it (e.g. it could come from a non-deterministic "substitute"
+    ///     rule), so trusting it here could break the whole point of a deterministic Provenance id.
+    ///     If there is no pre-pseudonymization id, falls back to
+    ///     <c>identifier.system|identifier.value</c> (matching the FHIR search token syntax) of the
+    ///     first identifier found - preferring the pre-pseudonymization one since an identifier value
+    ///     may itself have been pseudonymized (e.g. encrypted, which need not be deterministic).
+    ///     Returns null if the target has neither an id nor an identifier.
+    /// </summary>
+    private static string GetIdentityToken((Resource Original, Resource Pseudonymized) target)
+    {
+        if (!string.IsNullOrEmpty(target.Original?.Id))
+        {
+            return $"{target.Pseudonymized.TypeName}/{target.Original.Id}";
+        }
+
+        var identifier =
+            GetFirstIdentifier(target.Original) ?? GetFirstIdentifier(target.Pseudonymized);
+        return identifier is null ? null : $"{identifier.System}|{identifier.Value}";
     }
 
     private static Identifier GetFirstIdentifier(Resource resource)

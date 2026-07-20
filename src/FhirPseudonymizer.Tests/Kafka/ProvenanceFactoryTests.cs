@@ -133,7 +133,7 @@ public class ProvenanceFactoryTests
     }
 
     [Fact]
-    public void CreateBundle_WithBundleInput_ReturnsOneProvenancePerContainedResource()
+    public void CreateBundle_WithBundleInput_ReturnsSingleProvenanceTargetingAllContainedResources()
     {
         var bundleInput = new Bundle
         {
@@ -146,10 +146,9 @@ public class ProvenanceFactoryTests
 
         var bundle = ProvenanceFactory.CreateBundle(null, bundleInput, Recorded);
 
-        bundle.Entry.Should().HaveCount(2);
-        var targets = bundle
-            .Entry.Select(e => ((Provenance)e.Resource).Target.Single().Reference)
-            .ToList();
+        bundle.Entry.Should().ContainSingle();
+        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        var targets = provenance.Target.Select(t => t.Reference).ToList();
         targets.Should().BeEquivalentTo(["Patient/patient-1", "Observation/obs-1"]);
     }
 
@@ -301,13 +300,38 @@ public class ProvenanceFactoryTests
     }
 
     [Fact]
-    public void CreateBundle_PrefersOriginalIdentifierOverPseudonymizedResourcesIdentifier()
+    public void CreateBundle_WithOriginalResourceHavingAnId_DerivesProvenanceIdFromItOverEitherIdentifier()
+    {
+        // Resource.id takes priority over identifier; the pseudonymized id is deliberately not
+        // considered at all (only the pre-pseudonymization one), since unlike it, the pseudonymized
+        // id is not guaranteed to be a deterministic function of the original (e.g. it could come
+        // from a non-deterministic "substitute" rule)
+        var original = new Patient
+        {
+            Id = "123",
+            Identifier = [new Identifier("http://example.org/mrn", "12345")],
+        };
+        var pseudonymized = new Patient
+        {
+            Id = "hashed-123",
+            Identifier = [new Identifier("http://example.org/mrn", "ciphertext-abc")],
+        };
+        var expectedId = Convert.ToHexStringLower(
+            SHA256.HashData(Encoding.UTF8.GetBytes("Patient/123"))
+        );
+
+        var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
+
+        bundle.Entry.Single().Resource.Id.Should().Be(expectedId);
+    }
+
+    [Fact]
+    public void CreateBundle_WithOriginalResourceHavingNoId_FallsBackToPreferringOriginalsIdentifierOverPseudonymizedsIdentifier()
     {
         // the identifier value itself may have been pseudonymized (e.g. encrypted, which need
         // not be deterministic), so the id must be derived from the pre-pseudonymization identifier
         var original = new Patient
         {
-            Id = "123",
             Identifier = [new Identifier("http://example.org/mrn", "12345")],
         };
         var pseudonymized = new Patient
@@ -332,5 +356,83 @@ public class ProvenanceFactoryTests
         var bundle = ProvenanceFactory.CreateBundle(null, patient, Recorded);
 
         Guid.TryParse(bundle.Entry.Single().Resource.Id, out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public void CreateBundle_WithBundleInput_DerivesProvenanceIdFromAllContainedResourcesIdentifiers()
+    {
+        var bundleInput = new Bundle
+        {
+            Entry =
+            [
+                new Bundle.EntryComponent
+                {
+                    Resource = new Patient
+                    {
+                        Id = "patient-1",
+                        Identifier = [new Identifier("http://example.org/mrn", "111")],
+                    },
+                },
+                new Bundle.EntryComponent
+                {
+                    Resource = new Observation
+                    {
+                        Id = "obs-1",
+                        Identifier = [new Identifier("http://example.org/obs-id", "222")],
+                    },
+                },
+            ],
+        };
+        var expectedId = Convert.ToHexStringLower(
+            SHA256.HashData(
+                Encoding.UTF8.GetBytes("http://example.org/mrn|111,http://example.org/obs-id|222")
+            )
+        );
+
+        var bundle = ProvenanceFactory.CreateBundle(null, bundleInput, Recorded);
+
+        bundle.Entry.Single().Resource.Id.Should().Be(expectedId);
+    }
+
+    [Fact]
+    public void CreateBundle_WithBundleInput_UnionsAppliedOperationsAcrossAllContainedResources()
+    {
+        var originalBundle = new Bundle
+        {
+            Entry =
+            [
+                new Bundle.EntryComponent { Resource = new Patient { Id = "patient-1" } },
+                new Bundle.EntryComponent { Resource = new Observation { Id = "obs-1" } },
+            ],
+        };
+        var pseudonymizedBundle = new Bundle
+        {
+            Entry =
+            [
+                new Bundle.EntryComponent
+                {
+                    Resource = new Patient
+                    {
+                        Id = "hashed-patient-1",
+                        Meta = new Meta { Security = [SecurityLabels.CRYTOHASH] },
+                    },
+                },
+                new Bundle.EntryComponent
+                {
+                    Resource = new Observation
+                    {
+                        Id = "hashed-obs-1",
+                        Meta = new Meta { Security = [SecurityLabels.REDACT] },
+                    },
+                },
+            ],
+        };
+
+        var bundle = ProvenanceFactory.CreateBundle(originalBundle, pseudonymizedBundle, Recorded);
+
+        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        provenance
+            .Activity.Coding.Should()
+            .BeEquivalentTo([SecurityLabels.CRYTOHASH, SecurityLabels.REDACT]);
     }
 }
