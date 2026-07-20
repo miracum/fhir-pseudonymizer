@@ -12,6 +12,9 @@ namespace FhirPseudonymizer.Kafka;
 /// </summary>
 public interface IProvenancePublisher
 {
+    /// <summary>
+    ///     Publishes provenance information for a pseudonymization operation.
+    /// </summary>
     /// <param name="original">The resource as it was before pseudonymization, used to determine which security labels it gained, see <see cref="ProvenanceFactory" />.</param>
     /// <param name="pseudonymized">The resource after pseudonymization, referenced by the produced Provenance(s).</param>
     /// <param name="key">The Kafka message key to publish the provenance bundle with, if applicable (e.g. the source message's key, to preserve partition affinity); omitted when there is none, e.g. from the REST endpoint.</param>
