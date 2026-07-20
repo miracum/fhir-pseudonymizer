@@ -7,15 +7,17 @@ namespace FhirPseudonymizer.Kafka;
 
 /// <summary>
 ///     Builds a FHIR Provenance resource documenting that a resource (or, for a Bundle, all of its
-///     contained resources) was pseudonymized, referencing each by its post-pseudonymization
-///     identity (its type stays the same, but its id may have changed, e.g. when cryptoHash-ing
-///     <c>Resource.id</c>), and stating which de-identification operations (redact, cryptoHash,
-///     pseudonymize, ...) were actually applied via <see cref="Provenance.Activity" />. The
-///     Provenance is given a deterministic id (a SHA-256 hash of its targets' combined identity,
-///     preferring each target's <c>Resource.id</c> and falling back to its
-///     <c>identifier.system|identifier.value</c>, see <see cref="GetIdentityToken" />) so that
-///     re-pseudonymizing the same input later PUTs to the same Provenance instead of creating a
-///     duplicate.
+///     contained resources) was pseudonymized. <see cref="Provenance.Target" /> references what the
+///     activity produced - each resource by its post-pseudonymization identity (its type stays the
+///     same, but its id may have changed, e.g. when cryptoHash-ing <c>Resource.id</c>) - while
+///     <see cref="Provenance.Entity" /> (role <c>source</c>, see <see cref="GetSourceEntity" />)
+///     references what it was derived from - each resource's pre-pseudonymization identity. States
+///     which de-identification operations (redact, cryptoHash, pseudonymize, ...) were actually
+///     applied via <see cref="Provenance.Activity" />. The Provenance is given a deterministic id (a
+///     SHA-256 hash of its targets' combined identity, preferring each target's <c>Resource.id</c>
+///     and falling back to its <c>identifier.system|identifier.value</c>, see
+///     <see cref="GetIdentityToken" />) so that re-pseudonymizing the same input later PUTs to the
+///     same Provenance instead of creating a duplicate.
 /// </summary>
 public static class ProvenanceFactory
 {
@@ -133,6 +135,10 @@ public static class ProvenanceFactory
                     $"{target.Pseudonymized.TypeName}/{target.Pseudonymized.Id}"
                 ))
                 .ToList(),
+            Entity = targets
+                .Select(target => GetSourceEntity(target.Original))
+                .Where(entity => entity is not null)
+                .ToList(),
             Recorded = recorded,
             Agent =
             [
@@ -157,6 +163,38 @@ public static class ProvenanceFactory
         }
 
         return provenance;
+    }
+
+    /// <summary>
+    ///     Builds the <c>entity[role=source]</c> pointing back at <paramref name="original" />, the
+    ///     pre-pseudonymization resource a target was derived from (as opposed to
+    ///     <see cref="Provenance.Target" />, which points at the resource the activity produced -
+    ///     the pseudonymized one). References it by <c>&lt;type&gt;/&lt;Resource.id&gt;</c> if it had
+    ///     an id, otherwise by its first identifier (via <see cref="ResourceReference.Identifier" />,
+    ///     meant for exactly this case: no resolvable id). Returns null if
+    ///     <paramref name="original" /> is unavailable or has neither an id nor an identifier to
+    ///     reference it by.
+    /// </summary>
+    private static Provenance.EntityComponent GetSourceEntity(Resource original)
+    {
+        ResourceReference what;
+        if (!string.IsNullOrEmpty(original?.Id))
+        {
+            what = new ResourceReference($"{original.TypeName}/{original.Id}");
+        }
+        else
+        {
+            var identifier = GetFirstIdentifier(original);
+            what = identifier is null ? null : new ResourceReference { Identifier = identifier };
+        }
+
+        return what is null
+            ? null
+            : new Provenance.EntityComponent
+            {
+                Role = Provenance.ProvenanceEntityRole.Source,
+                What = what,
+            };
     }
 
     /// <summary>

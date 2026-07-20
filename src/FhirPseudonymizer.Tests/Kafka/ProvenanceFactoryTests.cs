@@ -41,6 +41,78 @@ public class ProvenanceFactoryTests
     }
 
     [Fact]
+    public void CreateBundle_WithOriginalResourceHavingAnId_SetsSourceEntityReferencingItByTypeSlashId()
+    {
+        var original = new Patient { Id = "123" };
+        var pseudonymized = new Patient { Id = "hashed-123" };
+
+        var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
+
+        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        provenance.Entity.Should().ContainSingle();
+        var entity = provenance.Entity.Single();
+        entity.Role.Should().Be(Provenance.ProvenanceEntityRole.Source);
+        entity.What.Reference.Should().Be("Patient/123");
+    }
+
+    [Fact]
+    public void CreateBundle_WithOriginalResourceHavingNoId_SetsSourceEntityReferencingItByIdentifier()
+    {
+        var original = new Patient
+        {
+            Identifier = [new Identifier("http://example.org/mrn", "12345")],
+        };
+        var pseudonymized = new Patient { Id = "hashed-123" };
+
+        var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, Recorded);
+
+        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        var entity = provenance.Entity.Single();
+        entity.Role.Should().Be(Provenance.ProvenanceEntityRole.Source);
+        entity.What.Reference.Should().BeNull();
+        entity.What.Identifier.System.Should().Be("http://example.org/mrn");
+        entity.What.Identifier.Value.Should().Be("12345");
+    }
+
+    [Fact]
+    public void CreateBundle_WithNoOriginalIdOrIdentifierAvailable_OmitsSourceEntity()
+    {
+        var pseudonymized = new Patient { Id = "hashed-123" };
+
+        var bundle = ProvenanceFactory.CreateBundle(null, pseudonymized, Recorded);
+
+        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        provenance.Entity.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CreateBundle_WithBundleInput_SetsOneSourceEntityPerContainedResource()
+    {
+        var originalBundle = new Bundle
+        {
+            Entry =
+            [
+                new Bundle.EntryComponent { Resource = new Patient { Id = "patient-1" } },
+                new Bundle.EntryComponent { Resource = new Observation { Id = "obs-1" } },
+            ],
+        };
+        var pseudonymizedBundle = new Bundle
+        {
+            Entry =
+            [
+                new Bundle.EntryComponent { Resource = new Patient { Id = "hashed-patient-1" } },
+                new Bundle.EntryComponent { Resource = new Observation { Id = "hashed-obs-1" } },
+            ],
+        };
+
+        var bundle = ProvenanceFactory.CreateBundle(originalBundle, pseudonymizedBundle, Recorded);
+
+        var provenance = bundle.Entry.Single().Resource.Should().BeOfType<Provenance>().Subject;
+        var sources = provenance.Entity.Select(e => e.What.Reference).ToList();
+        sources.Should().BeEquivalentTo(["Patient/patient-1", "Observation/obs-1"]);
+    }
+
+    [Fact]
     public void CreateBundle_WithSecurityLabelsNewlyAddedByPseudonymization_SetsActivityFromThem()
     {
         var original = new Patient { Id = "123" };
