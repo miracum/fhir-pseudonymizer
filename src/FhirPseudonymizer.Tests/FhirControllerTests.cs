@@ -1,5 +1,6 @@
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Controllers;
+using FhirPseudonymizer.Kafka;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -26,7 +27,8 @@ public class FhirControllerTests
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
-            A.Fake<IDePseudonymizerEngine>()
+            A.Fake<IDePseudonymizerEngine>(),
+            A.Fake<IProvenancePublisher>()
         );
 
         var parameters = new Parameters()
@@ -54,7 +56,8 @@ public class FhirControllerTests
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
-            A.Fake<IDePseudonymizerEngine>()
+            A.Fake<IDePseudonymizerEngine>(),
+            A.Fake<IProvenancePublisher>()
         );
 
         var parameters = new Parameters()
@@ -77,7 +80,8 @@ public class FhirControllerTests
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
-            A.Fake<IDePseudonymizerEngine>()
+            A.Fake<IDePseudonymizerEngine>(),
+            A.Fake<IProvenancePublisher>()
         );
 
         var response = await controller.DeIdentify(new Bundle());
@@ -85,6 +89,62 @@ public class FhirControllerTests
         response.StatusCode.Should().Be(500);
 
         response.Value.Should().BeOfType<OperationOutcome>();
+    }
+
+    [Fact]
+    public async Task DeIdentify_PublishesProvenanceForTheOriginalAndAnonymizedResource()
+    {
+        var original = new Patient { Id = "123" };
+        var anonymized = new Patient { Id = "hashed-123" };
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+            .Returns(anonymized);
+
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+
+        var controller = new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            anonymizer,
+            A.Fake<IDePseudonymizerEngine>(),
+            provenancePublisher
+        );
+
+        await controller.DeIdentify(original);
+
+        A.CallTo(() => provenancePublisher.Publish(original, anonymized, null))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task DePseudonymize_DoesNotPublishProvenance()
+    {
+        var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
+        A.CallTo(() =>
+                dePseudonymizer.DePseudonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._)
+            )
+            .Returns(new Patient());
+
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+
+        var controller = new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            A.Fake<IAnonymizerEngine>(),
+            dePseudonymizer,
+            provenancePublisher
+        );
+
+        await controller.DePseudonymize(new Patient { Id = "123" });
+
+        A.CallTo(() =>
+                provenancePublisher.Publish(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Confluent.Kafka.Headers>._
+                )
+            )
+            .MustNotHaveHappened();
     }
 
     [Fact]
@@ -100,7 +160,8 @@ public class FhirControllerTests
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
             A.Fake<IAnonymizerEngine>(),
-            dePseudonymizer
+            dePseudonymizer,
+            A.Fake<IProvenancePublisher>()
         );
 
         var response = await controller.DePseudonymize(new Bundle());

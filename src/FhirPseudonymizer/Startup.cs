@@ -78,10 +78,26 @@ public class Startup
 
         services.AddAnonymizerEngine(appConfig);
 
+        services.AddSingleton(_ => appConfig.Kafka);
+
+        var provenanceEnabled = !string.IsNullOrWhiteSpace(appConfig.Kafka.ProvenanceTopic);
+        if (appConfig.Kafka.Topics.Count > 0 || provenanceEnabled)
+        {
+            services.AddKafkaProducer(appConfig.Kafka);
+        }
+
         if (appConfig.Kafka.Topics.Count > 0)
         {
-            services.AddSingleton(_ => appConfig.Kafka);
             services.AddKafkaConsumer(appConfig.Kafka);
+        }
+
+        if (provenanceEnabled)
+        {
+            services.AddSingleton<IProvenancePublisher, KafkaProvenancePublisher>();
+        }
+        else
+        {
+            services.AddSingleton<IProvenancePublisher, NoopProvenancePublisher>();
         }
 
         services.AddRequestDecompression();

@@ -7,3 +7,4 @@ src/**/obj
 !tests/chaos
 !LICENSE
 !global.json
+!*.slnx

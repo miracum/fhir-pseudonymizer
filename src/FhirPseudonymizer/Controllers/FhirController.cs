@@ -1,5 +1,6 @@
 using System.Globalization;
 using FhirPseudonymizer.Config;
+using FhirPseudonymizer.Kafka;
 using Hl7.Fhir.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -39,19 +40,22 @@ namespace FhirPseudonymizer.Controllers
         private readonly IAnonymizerEngine anonymizer;
         private readonly AnonymizationConfig config;
         private readonly IDePseudonymizerEngine dePseudonymizer;
+        private readonly IProvenancePublisher provenancePublisher;
         private readonly ILogger<FhirController> logger;
 
         public FhirController(
             AnonymizationConfig config,
             ILogger<FhirController> logger,
             IAnonymizerEngine anonymizer,
-            IDePseudonymizerEngine dePseudonymizer
+            IDePseudonymizerEngine dePseudonymizer,
+            IProvenancePublisher provenancePublisher
         )
         {
             this.config = config;
             this.logger = logger;
             this.anonymizer = anonymizer;
             this.dePseudonymizer = dePseudonymizer;
+            this.provenancePublisher = provenancePublisher;
 
             BadRequestOutcome = new();
             BadRequestOutcome.Issue.Add(
@@ -135,7 +139,12 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                return Ok(await anonymizer.AnonymizeResourceAsync(resource, anonymizerSettings));
+                var anonymized = await anonymizer.AnonymizeResourceAsync(
+                    resource,
+                    anonymizerSettings
+                );
+                provenancePublisher.Publish(resource, anonymized);
+                return Ok(anonymized);
             }
             catch (Exception exc)
             {

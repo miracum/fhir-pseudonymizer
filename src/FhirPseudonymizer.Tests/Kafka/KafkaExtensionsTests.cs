@@ -178,4 +178,28 @@ public class KafkaExtensionsTests
 
         topics.Should().Equal("topic-a", "topic-b");
     }
+
+    [Fact]
+    public void NormalizeTopics_DropsBlankEntries()
+    {
+        // lets a higher-priority config layer (e.g. appsettings.Test.json) disable a topic bound
+        // by a lower-priority one (e.g. appsettings.Development.json) by overriding just its index
+        // to an empty string - overriding the whole array to [] does not work, since config
+        // layering can't shrink an array a lower layer already populated, see NormalizeTopics
+        var configuration = new ConfigurationBuilder().Build();
+
+        var topics = KafkaExtensions.NormalizeTopics(configuration, ["topic-a", "", "  ", null]);
+
+        topics.Should().Equal("topic-a");
+    }
+
+    [Fact]
+    public void NormalizeTopics_WithOnlyBlankEntriesAndNoRawFallback_ReturnsEmpty()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+
+        var topics = KafkaExtensions.NormalizeTopics(configuration, ["", "  "]);
+
+        topics.Should().BeEmpty();
+    }
 }
