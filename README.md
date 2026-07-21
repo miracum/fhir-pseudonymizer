@@ -68,6 +68,56 @@ fhirPathRules:
     otherValues: keep
 ```
 
+#### Projects — per-project anonymization configs
+
+A single deployment can serve more than one anonymization ruleset. Mount a directory of config files and point `ProjectConfigsDirectory` at it; each `<name>.yaml` (or `<name>.yml`) file defines a _project_ named after the file (`study-a.yaml` → project `study-a`). A request then selects one by name.
+
+```sh
+docker run --rm -p 8080:8080 \
+  -e ProjectConfigsDirectory="/etc/projects" \
+  -v "$(pwd)/projects:/etc/projects:ro" \
+  ghcr.io/miracum/fhir-pseudonymizer:latest
+```
+
+Select a project by adding a `project` parameter to a `Parameters` request body (alongside the `resource`, and any [dynamic `settings`](#dynamic-rule-settings)):
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    { "name": "project", "valueString": "study-a" },
+    {
+      "name": "resource",
+      "resource": { "resourceType": "Patient", "id": "123" }
+    }
+  ]
+}
+```
+
+A request that names no project — including any bare (non-`Parameters`) resource — is served with the server's own `anonymization.yaml`, exactly as before. Naming a project applies _its_ rules **instead of** the server's, not on top of them.
+
+Project config files are the operator's own, so:
+
+- A project config **carries its own keys**: a config using `encrypt`, `cryptoHash` or `dateShift` must provide the matching `parameters.*Key`. Projects do not inherit the server's `Anonymization__EncryptKey` / `__CryptoHashKey`, so a missing key is answered with a `400` rather than silently falling back to a shared secret.
+- Config files are **re-read and hashed on every request**, so editing a file (e.g. updating a mounted `ConfigMap`) takes effect on the next request naming that project — no restart — while an unchanged file is served from cache. `ProjectCache__SizeLimit` bounds how many built project engines are cached (`0` = unbounded).
+- Project names are limited to letters, digits, `.`, `_` and `-`, up to 64 characters.
+
+The response depends on what was named:
+
+| Situation                                              | Response                                                    |
+| ------------------------------------------------------ | ----------------------------------------------------------- |
+| `project` names a mounted, valid config                | `200`, served with that project's rules                     |
+| `project` names no mounted file                        | `400`                                                       |
+| `project`'s config file is not a usable config         | `400`, with an `OperationOutcome` explaining why            |
+| no `project` named, server has its own config          | `200`, served with the server config                        |
+| no `project` named, server has **no** config of its own | `400`, issue code `required`                                |
+
+`$de-pseudonymize` always uses the server's own config; a project cannot be selected there.
+
+##### Projects-only deployments
+
+Leaving both `AnonymizationEngineConfigPath` and `AnonymizationEngineConfigInline` blank while setting `ProjectConfigsDirectory` starts the server with **no config of its own**: every `$de-identify` request must then name a project, and one that names none is answered with `400` (issue code `required`) rather than falling back. The server logs a warning at startup in this mode. It refuses to start if _neither_ a server config nor a project directory is configured, and — because a consumed message names no project — it refuses to start a [Kafka consumer](#reading-directly-from-kafka) without a server config of its own.
+
 #### `$de-pseudonymize`
 
 The `/fhir/$de-pseudonymize` operation is used to revert the `pseudonymize` and `encrypt` methods applied to any resource.
@@ -112,6 +162,8 @@ Additionally, there are some optional configuration values that can be set as en
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
 | `AnonymizationEngineConfigPath`       | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                                                                                     | `"/etc/anonymization.yaml"` |
 | `AnonymizationEngineConfigInline`     | The `anonymization.yaml` as an inline YAML string instead of a separate file. Takes precedence if both `Path` and `Inline` are set.                                                                                      | `""`                        |
+| `ProjectConfigsDirectory`             | Directory of per-project anonymization configs, one `<name>.yaml`/`.yml` per project, selected per request via a `project` parameter. See [Projects](#projects--per-project-anonymization-configs). Unset ⇒ no projects. | `""`                        |
+| `ProjectCache__SizeLimit`             | How many built project engines to cache. Configs are re-read and hashed each request, so this only bounds memory, never staleness. `0` = unbounded.                                                                     | `128`                       |
 | `ApiKey`                              | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                 | `""`                        |
 | `UseSystemTextJsonFhirSerializer`     | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4> | `false`                     |
 | `PseudonymizationService`             | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `entici`, `None`                                                                                                                              | `"gPAS"`                    |

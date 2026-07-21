@@ -7,10 +7,25 @@ public record AppConfig
 {
     public string AnonymizationEngineConfigPath { get; init; }
     public string AnonymizationEngineConfigInline { get; set; }
+
+    /// <summary>
+    ///     Directory of per-Project anonymization configs, one <c>&lt;name&gt;.yaml</c> (or
+    ///     <c>.yml</c>) file per Project. A <c>$de-identify</c> request selects one by naming it in
+    ///     the request. Left unset, no Projects are served and every request uses the startup config.
+    /// </summary>
+    public string ProjectConfigsDirectory { get; init; }
     public bool UseSystemTextJsonFhirSerializer { get; init; }
     public string ApiKey { get; init; }
     public PseudonymizationServiceType PseudonymizationService { get; init; }
     public CacheConfig Cache { get; init; } = new();
+
+    /// <summary>
+    ///     Bounds the cache of built Project engines. <c>SizeLimit</c> 0 means unbounded; the
+    ///     expirations default to 0 (disabled), because a Project should stay usable for as long as
+    ///     it fits. Each lookup re-reads and re-hashes the file, so a stale entry can only serve a
+    ///     config the file no longer holds until the next request for that Project — never past it.
+    /// </summary>
+    public CacheConfig ProjectCache { get; init; } = new();
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
     public EnticiConfig Entici { get; init; } = new();
