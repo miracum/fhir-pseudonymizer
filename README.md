@@ -75,6 +75,56 @@ Accessing this endpoint requires authentication. So make sure to set the `APIKEY
 
 > ⚠ if decryption or de-pseudonymization of a value fails, then the original value is returned. This behavior may change or be made configurable in the future.
 
+#### `/projects` — per-project anonymization rules
+
+By default every request is de-identified with the single `anonymization.yaml` the server was started with. A **project** lets a caller register a second set of rules at runtime and select it per request, so one deployment can serve several studies without one config per instance.
+
+Register a config by `PUT`ting the YAML to `/projects/<name>`:
+
+```sh
+curl -X PUT "http://localhost:8080/projects/my-study" \
+  -H "x-api-key: ${APIKEY}" \
+  -H "Content-Type: application/yaml" \
+  --data-binary @my-study-anonymization.yaml
+```
+
+`201` means it was registered, `200` that it replaced an earlier config of the same name. `400` means the config is unusable — it is parsed and its engines are built during registration, so mistakes surface here rather than on the first resource. `503` means the registry is full (see `ProjectCache__SizeLimit` below); registration triggers a compaction, so retry shortly.
+
+Then select the project by wrapping the resource in a `Parameters` body carrying a `project` parameter, alongside the `resource` to de-identify:
+
+```sh
+curl -X POST "http://localhost:8080/fhir/\$de-identify" \
+  -H "Content-Type: application/fhir+json" \
+  -d '{
+        "resourceType": "Parameters",
+        "parameter": [
+          { "name": "project", "valueString": "my-study" },
+          { "name": "resource", "resource": { "resourceType": "Patient", "id": "example" } }
+        ]
+      }'
+```
+
+Selection applies to `$de-identify` only. Send a bare resource, or a `Parameters` body without a `project`, and the server's own config is used, exactly as before — projects are purely additive. `$de-pseudonymize` is always served with the server's own config.
+
+A `project` parameter that is present but carries no usable name — a value that is not a `valueString`, an empty one, or a name outside the character set below — is answered with `400`, never served with the server's config. Selecting a project and silently getting different rules would be indistinguishable, in the response, from getting the ones you asked for.
+
+`DELETE /projects/<name>` releases a project. It is idempotent and always answers `204`.
+
+**A project is cached, not stored.** The registry is a bounded in-memory cache, held per replica and lost on restart. A request naming a project this replica does not know is answered with `404` and an `OperationOutcome` telling the caller to register it again — which is the expected way to recover after a restart, a scale-out to a fresh replica, or an eviction. **Clients must handle `404` by re-registering and retrying**, not by treating it as a fatal error. The `400` above is the opposite case and must not be retried: no registration could make an unusable name resolve.
+
+Reaching `ProjectCache__SizeLimit` evicts exactly one project to make room for the one being registered, so an overflow costs one other caller a re-registration rather than a share of the whole registry.
+
+Two consequences of that design:
+
+- **Projects do not apply to the Kafka consumer path**, which always uses the server's config. A consumer has no caller to return a `404` to and no client that could re-register, so a project-scoped message could never heal itself.
+- **A project's config must carry its own keys.** `encrypt` and `cryptoHash` rules need `parameters.encryptKey` / `parameters.cryptoHashKey` inside the project's own YAML; nothing is inherited from `Anonymization__EncryptKey` or the server's config. A config using one of those methods without its key is rejected with `400`. This is what keeps one project from decrypting another's data. (`$de-pseudonymize` is served only with the server's own config, so a project's ciphertext cannot be reversed through this API at all.)
+
+Registration and deletion require the `x-api-key` header whenever `ApiKey` is set. If `ApiKey` is empty, they are open — as is the rest of the API in that configuration.
+
+Project names are limited to letters, digits, `.`, `_` and `-`, up to 64 characters, and are matched case-sensitively. They appear in server logs, so avoid encoding cohort, site, or patient information in a project name.
+
+The server still requires an anonymization config of its own: projects are an addition to it, not a replacement, so a deployment that sets neither `AnonymizationEngineConfigPath` nor `AnonymizationEngineConfigInline` refuses to start.
+
 #### `:8081/metrics`
 
 While not part of the "user" API, the application exposes metrics in the Prometheus format at the `/metrics` endpoint on port `8081`.
@@ -119,6 +169,9 @@ Additionally, there are some optional configuration values that can be set as en
 | `Anonymization__CryptoHashKey`        | Sets the key used by the HMAC SHA256 algorithm. This is an alternative to setting it inside the anonymization.yaml's `parameters` section and useful to more securely set sensitive information.                         | `""`                        |
 | `Anonymization__EncryptKey`           | Sets the AES encryption key. This is an alternative to setting it inside the anonymization.yaml's `parameters` section and useful to more securely set sensitive information.                                            | `""`                        |
 | `Anonymization__ShouldAddSecurityTag` | Whether the `Resource.meta.security` element should be filled with information about the de-identification methods applied to the resource.                                                                              | `true`                      |
+| `ProjectCache__SizeLimit`             | How many [projects](#projects--per-project-anonymization-rules) may be registered at once. Registration beyond this answers `503`. Bounds the memory an unauthenticated caller can claim, so it is not optional.         | `128`                       |
+| `ProjectCache__SlidingExpirationMinutes` | Drop a project this many minutes after it was last used. `0` disables expiry, which is the default: a project should stay usable for as long as it fits.                                                              | `0`                         |
+| `ProjectCache__AbsoluteExpirationMinutes` | Drop a project this many minutes after it was registered, used or not. `0` disables expiry.                                                                                                                          | `0`                         |
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
 

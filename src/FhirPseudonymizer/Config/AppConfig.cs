@@ -11,6 +11,15 @@ public record AppConfig
     public string ApiKey { get; init; }
     public PseudonymizationServiceType PseudonymizationService { get; init; }
     public CacheConfig Cache { get; init; } = new();
+
+    /// <summary>
+    ///     Bounds the Project registry. The size limit is carried here and not left to
+    ///     appsettings.json alone: a deployment that does not layer that file would otherwise bind
+    ///     the zero a <see cref="CacheConfig" /> starts at, which the registry refuses. The
+    ///     expirations do default to 0, because that disables them — a Project should stay usable
+    ///     for as long as it fits.
+    /// </summary>
+    public CacheConfig ProjectCache { get; init; } = new() { SizeLimit = 128 };
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
     public EnticiConfig Entici { get; init; } = new();
