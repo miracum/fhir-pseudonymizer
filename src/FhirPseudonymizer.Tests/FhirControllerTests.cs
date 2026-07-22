@@ -92,6 +92,24 @@ public class FhirControllerTests
     }
 
     [Fact]
+    public async Task DeIdentify_WithParametersCarryingNoResource_ShouldReturnBadRequest()
+    {
+        var controller = new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            A.Fake<IAnonymizerEngine>(),
+            A.Fake<IDePseudonymizerEngine>(),
+            A.Fake<IProvenancePublisher>()
+        );
+
+        var response = await controller.DeIdentify(new Parameters());
+
+        response.StatusCode.Should().Be(400);
+
+        response.Value.Should().BeOfType<OperationOutcome>();
+    }
+
+    [Fact]
     public async Task DeIdentify_PublishesProvenanceForTheOriginalAndAnonymizedResource()
     {
         var original = new Patient { Id = "123" };
