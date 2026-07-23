@@ -1,8 +1,8 @@
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Controllers;
 using FhirPseudonymizer.Kafka;
+using FhirPseudonymizer.Projects;
 using Hl7.Fhir.Model;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
@@ -11,6 +11,14 @@ namespace FhirPseudonymizer.Tests;
 
 public class FhirControllerTests
 {
+    private static ServerEngines ServerEnginesOf(
+        IAnonymizerEngine anonymizer,
+        IDePseudonymizerEngine dePseudonymizer
+    )
+    {
+        return new ServerEngines(new ProjectEngines(anonymizer, dePseudonymizer));
+    }
+
     [Fact]
     public async Task DeIdentify_ParsesDynamicSettings()
     {
@@ -26,9 +34,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectConfigProvider>()
         );
 
         var parameters = new Parameters()
@@ -55,9 +63,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectConfigProvider>()
         );
 
         var parameters = new Parameters()
@@ -79,9 +87,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectConfigProvider>()
         );
 
         var response = await controller.DeIdentify(new Bundle());
@@ -105,9 +113,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            provenancePublisher
+            ServerEnginesOf(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            provenancePublisher,
+            A.Fake<IProjectConfigProvider>()
         );
 
         await controller.DeIdentify(original);
@@ -130,9 +138,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            A.Fake<IAnonymizerEngine>(),
-            dePseudonymizer,
-            provenancePublisher
+            ServerEnginesOf(A.Fake<IAnonymizerEngine>(), dePseudonymizer),
+            provenancePublisher,
+            A.Fake<IProjectConfigProvider>()
         );
 
         await controller.DePseudonymize(new Patient { Id = "123" });
@@ -159,9 +167,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            A.Fake<IAnonymizerEngine>(),
-            dePseudonymizer,
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(A.Fake<IAnonymizerEngine>(), dePseudonymizer),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectConfigProvider>()
         );
 
         var response = await controller.DePseudonymize(new Bundle());

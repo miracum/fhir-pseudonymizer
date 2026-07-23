@@ -1,5 +1,5 @@
 using FhirPseudonymizer.Config;
-using FhirPseudonymizer.Pseudonymization;
+using FhirPseudonymizer.Projects;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 
 namespace FhirPseudonymizer;
@@ -11,67 +11,52 @@ public static class AnonymizerEngineExtensions
         AppConfig appConfig
     )
     {
+        // Registers the FHIRPath symbols every Engine's rules are written against, so it runs
+        // even when this server has no Config of its own.
         AnonymizerEngine.InitializeFhirPathExtensionSymbols();
 
-        var configFilePath = appConfig.AnonymizationEngineConfigPath;
-
-        AnonymizerConfigurationManager anonConfigManager = null;
-        if (!string.IsNullOrEmpty(appConfig.AnonymizationEngineConfigInline))
+        if (!HasStartupConfig(appConfig))
         {
-            anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigString(
+            services.AddSingleton(_ => ServerEngines.None);
+            return services;
+        }
+
+        var anonConfigManager = !string.IsNullOrEmpty(appConfig.AnonymizationEngineConfigInline)
+            ? AnonymizerConfigurationManager.CreateFromYamlConfigString(
                 appConfig.AnonymizationEngineConfigInline,
                 appConfig.Anonymization
-            );
-        }
-        else if (!string.IsNullOrEmpty(configFilePath))
-        {
-            anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigFile(
-                configFilePath,
+            )
+            : AnonymizerConfigurationManager.CreateFromYamlConfigFile(
+                appConfig.AnonymizationEngineConfigPath,
                 appConfig.Anonymization
             );
-        }
-        else
-        {
-            throw new InvalidOperationException(
-                "Anonymization config not set. Specify either a path or an inline config."
-            );
-        }
 
-        // add the anon config as an additional service to allow mocking it
+        // Exposed for mocking, and shared by the singletons below.
         services.AddSingleton(_ => anonConfigManager);
 
+        services.AddSingleton(sp =>
+            sp.GetRequiredService<IAnonymizerEngineFactory>()
+                .Create(sp.GetRequiredService<AnonymizerConfigurationManager>())
+        );
+
+        // The Kafka consumer path only ever runs the server's own rules, so it depends on this
+        // single engine rather than resolving a Project.
         services.AddSingleton<IAnonymizerEngine>(sp =>
-        {
-            var anonConfig = sp.GetRequiredService<AnonymizerConfigurationManager>();
-            var engine = new AnonymizerEngine(anonConfig);
+            sp.GetRequiredService<ProjectEngines>().Anonymizer
+        );
 
-            var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor(
-                "pseudonymize",
-                new PseudonymizationProcessor(psnClient, appConfig.Features)
-            );
-
-            return engine;
-        });
-
-        services.AddSingleton<IDePseudonymizerEngine>(sp =>
-        {
-            var anonConfig = sp.GetRequiredService<AnonymizerConfigurationManager>();
-            var engine = new DePseudonymizerEngine(anonConfig);
-
-            var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor(
-                "pseudonymize",
-                new DePseudonymizationProcessor(psnClient, appConfig.Features)
-            );
-
-            engine.AddProcessor(
-                "encrypt",
-                new DecryptProcessor(anonConfig.GetParameterConfiguration().EncryptKey)
-            );
-            return engine;
-        });
+        services.AddSingleton(sp => new ServerEngines(sp.GetRequiredService<ProjectEngines>()));
 
         return services;
+    }
+
+    /// <summary>
+    ///     Whether the server was given a Config of its own. Both settings left blank asks for a
+    ///     Projects-only deployment, in which every request selects a mounted Project's Config.
+    /// </summary>
+    public static bool HasStartupConfig(AppConfig appConfig)
+    {
+        return !string.IsNullOrEmpty(appConfig.AnonymizationEngineConfigInline)
+            || !string.IsNullOrEmpty(appConfig.AnonymizationEngineConfigPath);
     }
 }
