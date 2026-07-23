@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.30.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.29.0...v2.30.0) (2026-07-23)
+
+
+### Features
+
+* **playground:** added share button, dark mode, and nicer editors ([#350](https://github.com/miracum/fhir-pseudonymizer/issues/350)) ([140f332](https://github.com/miracum/fhir-pseudonymizer/commit/140f33298022eb5c40f634b654a9682b0f43598f))
+* support for publishing provenance resources to a Kafka topic ([#354](https://github.com/miracum/fhir-pseudonymizer/issues/354)) ([89777b0](https://github.com/miracum/fhir-pseudonymizer/commit/89777b04d244c9cdd92720cbc399ae055a043458))
+
+
+### Bug Fixes
+
+* answer 400 instead of 500 for a Parameters body without a resource ([#357](https://github.com/miracum/fhir-pseudonymizer/issues/357)) ([53d9389](https://github.com/miracum/fhir-pseudonymizer/commit/53d9389999349b90ce93f643a303cddd2d698f05)), closes [#356](https://github.com/miracum/fhir-pseudonymizer/issues/356)
+* playground theming/rendering order issue ([#352](https://github.com/miracum/fhir-pseudonymizer/issues/352)) ([9630b8c](https://github.com/miracum/fhir-pseudonymizer/commit/9630b8cf21dc2641e8373fa6ca8188c97ace0be2))
+* **playground:** render race condition ([#353](https://github.com/miracum/fhir-pseudonymizer/issues/353)) ([2da9276](https://github.com/miracum/fhir-pseudonymizer/commit/2da927627a4b37d05ada2fc0838881ec7cc41995))
+
 ## [2.29.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.28.0...v2.29.0) (2026-07-05)
 
 
