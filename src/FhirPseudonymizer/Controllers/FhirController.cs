@@ -116,7 +116,16 @@ namespace FhirPseudonymizer.Controllers
                     );
                 }
 
-                return await Anonymize(param.GetSingle("resource").Resource, settings);
+                var innerResource = param.GetSingle("resource")?.Resource;
+                if (innerResource is null)
+                {
+                    logger.LogWarning(
+                        "Bad Request: received Parameters carry no 'resource' parameter."
+                    );
+                    return BadRequest(BadRequestOutcome);
+                }
+
+                return await Anonymize(innerResource, settings);
             }
 
             return await Anonymize(resource, settings);
