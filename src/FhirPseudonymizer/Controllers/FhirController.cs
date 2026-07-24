@@ -106,14 +106,19 @@ namespace FhirPseudonymizer.Controllers
 
             if (resource is Parameters param)
             {
-                // parse dynamic rule settings
+                // parse dynamic rule settings. Parts without a name are ignored (there is no
+                // setting to apply them to) and duplicate names keep the last occurrence's value,
+                // matching the "last one wins" precedence already used when merging these into a
+                // rule's own settings (see AnonymizationVisitor.MergeSettings) - both are needed
+                // since a caller fully controls this list and either would otherwise throw
+                // (ToDictionary rejects null and duplicate keys alike).
                 var dynamicSettings = param.GetSingle("settings")?.Part;
                 if (dynamicSettings?.Any() == true)
                 {
-                    settings.DynamicRuleSettings = dynamicSettings.ToDictionary(
-                        p => p.Name,
-                        p => p.Value as object
-                    );
+                    settings.DynamicRuleSettings = dynamicSettings
+                        .Where(p => !string.IsNullOrEmpty(p.Name))
+                        .GroupBy(p => p.Name)
+                        .ToDictionary(g => g.Key, g => g.Last().Value as object);
                 }
 
                 var innerResource = param.GetSingle("resource")?.Resource;
