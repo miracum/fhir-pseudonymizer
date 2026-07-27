@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@6dd82c72c638213b8b8dac2e93fc71e06a7bf349 # v1.22.3
+    uses: miracum/.github/.github/workflows/standard-build.yaml@56f97afca6189a2fafd4e5d7cbabc6c9b83c8a85 # v1.22.4
     permissions:
       contents: write
       id-token: write
@@ -108,7 +108,7 @@ jobs:
           thresholds: "50 50"
 
       - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         # when running from a fork, the CI token doesn't have enough permissions to create PR comments
         if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
         with:
@@ -209,7 +209,7 @@ jobs:
           } >> iter8-output.md
 
       - name: Append sticky comment with iter8 report
-        uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         # when running from a fork, the CI token doesn't have enough permissions to create PR comments
         if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
         with:
@@ -239,7 +239,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@3bfac3980e60d6a95007eba4117cd7fd0054b0e2 # v1.22.2
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@56f97afca6189a2fafd4e5d7cbabc6c9b83c8a85 # v1.22.4
     permissions:
       contents: read
       pull-requests: write
