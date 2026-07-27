@@ -251,6 +251,60 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
+    public async Task PostDeIdentify_WithCryptoHashKeyContextSet_ShouldDeriveDifferentKeyPerContext()
+    {
+        var inlineConfig =
+            @"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Resource.id
+                method: cryptoHash
+        ";
+
+        async Task<string> DeIdentifyAndGetHashedIdAsync(string cryptoHashKeyContext)
+        {
+            var settings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+                ["Anonymization:CryptoHashKey"] = "test",
+            };
+
+            if (cryptoHashKeyContext is not null)
+            {
+                settings["Anonymization:CryptoHashKeyContext"] = cryptoHashKeyContext;
+            }
+
+            var factory = new CustomWebApplicationFactory<Startup>
+            {
+                CustomInMemorySettings = settings,
+            };
+
+            var fhirClient = new FhirClient(
+                "http://localhost/fhir",
+                factory.CreateClient(),
+                settings: new() { PreferredFormat = ResourceFormat.Json }
+            );
+
+            var fhirParser = new FhirJsonParser();
+            var input = await fhirParser.ParseAsync<Resource>(fhirBundleJson);
+            var parameters = new Parameters().Add("resource", input);
+            var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
+
+            return ((Bundle)response).Entry[0].Resource.Id;
+        }
+
+        var withoutContext = await DeIdentifyAndGetHashedIdAsync(null);
+        var withContextA = await DeIdentifyAndGetHashedIdAsync("project-a");
+        var withContextARepeated = await DeIdentifyAndGetHashedIdAsync("project-a");
+        var withContextB = await DeIdentifyAndGetHashedIdAsync("project-b");
+
+        withContextA.Should().NotBe(withoutContext);
+        withContextA.Should().NotBe(withContextB);
+        withContextA.Should().Be(withContextARepeated);
+    }
+
+    [Fact]
     public async Task PostDeIdentify_WithShouldAddSecurityTagSetToFalse_ShouldNotAddSecurityMetaDataToResult()
     {
         var inlineConfig =

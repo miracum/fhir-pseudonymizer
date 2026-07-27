@@ -32,6 +32,17 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
                 {
                     configuration.Parameters.EncryptKey = anonymizationConfig.EncryptKey;
                 }
+
+                if (
+                    !string.IsNullOrWhiteSpace(configuration.Parameters.CryptoHashKey)
+                    && !string.IsNullOrWhiteSpace(anonymizationConfig.CryptoHashKeyContext)
+                )
+                {
+                    configuration.Parameters.CryptoHashKey = CryptoHashKeyDerivation.Derive(
+                        configuration.Parameters.CryptoHashKey,
+                        anonymizationConfig.CryptoHashKeyContext
+                    );
+                }
             }
 
             configuration.GenerateDefaultParametersIfNotConfigured();
