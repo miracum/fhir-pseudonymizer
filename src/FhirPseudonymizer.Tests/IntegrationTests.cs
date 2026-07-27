@@ -280,7 +280,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                 CustomInMemorySettings = settings,
             };
 
-            var fhirClient = new FhirClient(
+            using var fhirClient = new FhirClient(
                 "http://localhost/fhir",
                 factory.CreateClient(),
                 settings: new() { PreferredFormat = ResourceFormat.Json }
@@ -332,7 +332,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
 
         var client = factory.CreateClient();
 
-        var fhirClient = new FhirClient(
+        using var fhirClient = new FhirClient(
             "http://localhost/fhir",
             client,
             settings: new() { PreferredFormat = ResourceFormat.Json }
