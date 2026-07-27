@@ -35,5 +35,10 @@
       Include="..\FhirPseudonymizer\Microsoft.Health.Fhir.Anonymizer.R4.Core\**\*.cs"
       LinkBase="Engine\R4.Core"
     />
+    <!-- AnonymizerConfigurationManager (linked above) calls CryptoHashKeyDerivation.Derive -->
+    <Compile
+      Include="..\FhirPseudonymizer\Config\CryptoHashKeyDerivation.cs"
+      LinkBase="Engine\Config"
+    />
   </ItemGroup>
 </Project>
