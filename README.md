@@ -122,15 +122,19 @@ Additionally, there are some optional configuration values that can be set as en
 | `Anonymization__EncryptKey`           | Sets the AES encryption key. This is an alternative to setting it inside the anonymization.yaml's `parameters` section and useful to more securely set sensitive information.                                                                                                                                                                                                                                                                                                                             | `""`                        |
 | `Anonymization__ShouldAddSecurityTag` | Whether the `Resource.meta.security` element should be filled with information about the de-identification methods applied to the resource.                                                                                                                                                                                                                                                                                                                                                               | `true`                      |
 
-`Anonymization__CryptoHashKey` should be a randomly generated 32-byte (256-bit) secret - this matches the key size HMAC-SHA256 is designed for, whether it's used directly or as the HKDF master key when `Anonymization__CryptoHashKeyContext` is set. Generate one with:
-
-```sh
-openssl rand -hex 32
-```
+> [!WARNING]
+> `Anonymization__CryptoHashKey` should be a randomly generated 32-byte (256-bit)
+> secret. This matches the key size HMAC-SHA256 is designed for, whether
+> it's used directly or as the HKDF master key when
+> `Anonymization__CryptoHashKeyContext` is set. Generate one with:
+>
+> ```sh
+> openssl rand -hex 32
+> ```
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
 
-The application supports pseudonymization using either [gPAS](https://www.ths-greifswald.de/forscher/gpas/) or [Vfps](https://github.com/miracum/vfps) which can be configured via the `PseudonymizationService` setting.
+The application supports pseudonymization using either [gPAS](https://www.ths-greifswald.de/forscher/gpas/), [Vfps](https://github.com/miracum/vfps) or Entici which can be configured via the `PseudonymizationService` setting.
 Service-specific configuration settings are listed below.
 
 ### gPAS
