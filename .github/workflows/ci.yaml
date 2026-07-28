@@ -25,6 +25,7 @@ jobs:
       actions: read
       security-events: write
       attestations: write
+      artifact-metadata: write
     with:
       enable-build-test-layer: true
       enable-upload-test-image: true
@@ -251,6 +252,6 @@ jobs:
       codeql-languages: '["csharp"]'
       enable-codeql: true
       enable-verify-base-image-signature: false
-      dotnet-version: "9.0.x"
+      dotnet-version: "10.0.x"
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
