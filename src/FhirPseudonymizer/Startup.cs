@@ -1,6 +1,7 @@
 using System.Reflection;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
+using FhirPseudonymizer.Projects;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Entici;
 using FhirPseudonymizer.Pseudonymization.GPas;
@@ -48,6 +49,7 @@ public class Startup
         services.AddSingleton(_ => appConfig.Anonymization);
 
         services.AddApiKeyAuth(appConfig.ApiKey);
+        services.AddProjectRegistrationAuth(appConfig.ApiKey);
 
         // Required by the OAuth implementation. Could be used for all cache implementations later.
         services.AddDistributedMemoryCache();
@@ -75,6 +77,15 @@ public class Startup
                 services.AddTransient<IPseudonymServiceClient, NoopPseudonymServiceClient>();
                 break;
         }
+
+        services.AddSingleton<IAnonymizerEngineFactory, AnonymizerEngineFactory>();
+
+        // Constructed by hand because it owns its own MemoryCache and CacheConfig, which the
+        // container cannot tell apart from the pseudonym cache's by type.
+        services.AddSingleton<IProjectRegistry>(sp => new ProjectRegistry(
+            sp.GetRequiredService<IAnonymizerEngineFactory>(),
+            appConfig.ProjectCache
+        ));
 
         services.AddAnonymizerEngine(appConfig);
 
@@ -153,6 +164,12 @@ public class Startup
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+        // Built here rather than on the first request that needs it: the registry rejects a size
+        // limit it cannot store anything in, and FhirController takes it as a dependency, so a
+        // bad limit would otherwise let the server report itself healthy and then fail every
+        // $de-identify — including on deployments that never register a project.
+        app.ApplicationServices.GetRequiredService<IProjectRegistry>();
+
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();

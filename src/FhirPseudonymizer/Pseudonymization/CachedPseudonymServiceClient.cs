@@ -39,7 +39,7 @@ public class CachedPseudonymServiceClient(
                 TotalPseudonymizationRequestCacheMisses
                     .WithLabels(nameof(GetOrCreatePseudonymFor))
                     .Inc();
-                ApplyCacheConfig(entry);
+                entry.ApplyCacheConfig(cacheConfig);
                 return await innerClient.GetOrCreatePseudonymFor(value, domain, settings);
             }
         );
@@ -60,7 +60,7 @@ public class CachedPseudonymServiceClient(
                 TotalPseudonymizationRequestCacheMisses
                     .WithLabels(nameof(GetOriginalValueFor))
                     .Inc();
-                ApplyCacheConfig(entry);
+                entry.ApplyCacheConfig(cacheConfig);
                 return await innerClient.GetOriginalValueFor(pseudonym, domain, settings);
             }
         );
@@ -74,22 +74,5 @@ public class CachedPseudonymServiceClient(
         }
 
         return JsonSerializer.Serialize(settings);
-    }
-
-    private void ApplyCacheConfig(ICacheEntry entry)
-    {
-        entry.SetSize(1);
-
-        if (cacheConfig.SlidingExpirationMinutes > 0)
-        {
-            entry.SetSlidingExpiration(TimeSpan.FromMinutes(cacheConfig.SlidingExpirationMinutes));
-        }
-
-        if (cacheConfig.AbsoluteExpirationMinutes > 0)
-        {
-            entry.SetAbsoluteExpiration(
-                TimeSpan.FromMinutes(cacheConfig.AbsoluteExpirationMinutes)
-            );
-        }
     }
 }

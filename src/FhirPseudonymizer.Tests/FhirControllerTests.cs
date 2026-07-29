@@ -1,8 +1,8 @@
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Controllers;
 using FhirPseudonymizer.Kafka;
+using FhirPseudonymizer.Projects;
 using Hl7.Fhir.Model;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
@@ -11,6 +11,14 @@ namespace FhirPseudonymizer.Tests;
 
 public class FhirControllerTests
 {
+    private static ProjectEngines ServerEnginesOf(
+        IAnonymizerEngine anonymizer,
+        IDePseudonymizerEngine dePseudonymizer
+    )
+    {
+        return new ProjectEngines(anonymizer, dePseudonymizer);
+    }
+
     [Fact]
     public async Task DeIdentify_ParsesDynamicSettings()
     {
@@ -26,9 +34,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectRegistry>()
         );
 
         var parameters = new Parameters()
@@ -55,9 +63,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectRegistry>()
         );
 
         var parameters = new Parameters()
@@ -67,6 +75,78 @@ public class FhirControllerTests
         await controller.DeIdentify(parameters);
 
         ruleSettings.Should().ContainKey(settingKey).WhoseValue.Should().Be(settingValue);
+    }
+
+    /// <summary>
+    ///     A name the registration endpoint would reject cannot name a registered Project, so
+    ///     <c>$de-identify</c> refuses it outright. That keeps it out of the log and out of the
+    ///     response, which is what bounds both: nothing but the body size limit bounds the name a
+    ///     Parameters body carries.
+    /// </summary>
+    [Theory]
+    [InlineData("innocent\nERROR: forged log entry", "a line break would forge a second log entry")]
+    [InlineData("has a space", "a space is outside the allowed set")]
+    public async Task DeIdentify_WithAnUnusableProjectName_ShouldRejectItWithoutRepeatingIt(
+        string projectName,
+        string because
+    )
+    {
+        var logger = new RecordingLogger<FhirController>();
+        var controller = ControllerWith(logger);
+
+        var parameters = new Parameters()
+            .Add("project", new FhirString(projectName))
+            .Add("resource", new Patient());
+
+        var response = await controller.DeIdentify(parameters);
+
+        response.StatusCode.Should().Be(400, because);
+        logger.Messages.Should().OnlyContain(message => !message.Contains('\n'));
+        response
+            .Value.Should()
+            .BeOfType<OperationOutcome>()
+            .Which.Issue.Should()
+            .ContainSingle()
+            .Which.Diagnostics.Should()
+            .NotContain(projectName, "a rejected name is the caller's, not something to echo");
+    }
+
+    [Fact]
+    public async Task DeIdentify_WithAFloodingProjectName_ShouldNotFloodTheLogOrTheResponse()
+    {
+        var logger = new RecordingLogger<FhirController>();
+        var controller = ControllerWith(logger);
+
+        var parameters = new Parameters()
+            .Add("project", new FhirString(new string('a', 10_000)))
+            .Add("resource", new Patient());
+
+        var response = await controller.DeIdentify(parameters);
+
+        response.StatusCode.Should().Be(400, "10 000 characters is past the 64 a name may hold");
+        logger.Messages.Should().OnlyContain(message => message.Length < 200);
+        response
+            .Value.Should()
+            .BeOfType<OperationOutcome>()
+            .Which.Issue.Should()
+            .ContainSingle()
+            .Which.Diagnostics.Length.Should()
+            .BeLessThan(500, "a caller must not be able to size the response from the body");
+    }
+
+    /// <summary>
+    ///     A Project-less controller: its registry holds nothing, so any name reaching it is
+    ///     unknown.
+    /// </summary>
+    private static FhirController ControllerWith(RecordingLogger<FhirController> logger)
+    {
+        return new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            logger,
+            ServerEnginesOf(A.Fake<IAnonymizerEngine>(), A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectRegistry>()
+        );
     }
 
     [Fact]
@@ -79,9 +159,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectRegistry>()
         );
 
         var response = await controller.DeIdentify(new Bundle());
@@ -97,9 +177,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            A.Fake<IAnonymizerEngine>(),
-            A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(A.Fake<IAnonymizerEngine>(), A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectRegistry>()
         );
 
         var response = await controller.DeIdentify(new Parameters());
@@ -123,9 +203,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            provenancePublisher
+            ServerEnginesOf(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            provenancePublisher,
+            A.Fake<IProjectRegistry>()
         );
 
         await controller.DeIdentify(original);
@@ -148,9 +228,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            A.Fake<IAnonymizerEngine>(),
-            dePseudonymizer,
-            provenancePublisher
+            ServerEnginesOf(A.Fake<IAnonymizerEngine>(), dePseudonymizer),
+            provenancePublisher,
+            A.Fake<IProjectRegistry>()
         );
 
         await controller.DePseudonymize(new Patient { Id = "123" });
@@ -177,9 +257,9 @@ public class FhirControllerTests
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            A.Fake<IAnonymizerEngine>(),
-            dePseudonymizer,
-            A.Fake<IProvenancePublisher>()
+            ServerEnginesOf(A.Fake<IAnonymizerEngine>(), dePseudonymizer),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectRegistry>()
         );
 
         var response = await controller.DePseudonymize(new Bundle());

@@ -1,5 +1,5 @@
 using FhirPseudonymizer.Config;
-using FhirPseudonymizer.Pseudonymization;
+using FhirPseudonymizer.Projects;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 
 namespace FhirPseudonymizer;
@@ -11,11 +11,11 @@ public static class AnonymizerEngineExtensions
         AppConfig appConfig
     )
     {
+        // Registers the FHIRPath symbols every Engine's rules are written against, the Projects'
+        // as much as the server's own.
         AnonymizerEngine.InitializeFhirPathExtensionSymbols();
 
-        var configFilePath = appConfig.AnonymizationEngineConfigPath;
-
-        AnonymizerConfigurationManager anonConfigManager = null;
+        AnonymizerConfigurationManager anonConfigManager;
         if (!string.IsNullOrEmpty(appConfig.AnonymizationEngineConfigInline))
         {
             anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigString(
@@ -23,10 +23,10 @@ public static class AnonymizerEngineExtensions
                 appConfig.Anonymization
             );
         }
-        else if (!string.IsNullOrEmpty(configFilePath))
+        else if (!string.IsNullOrEmpty(appConfig.AnonymizationEngineConfigPath))
         {
             anonConfigManager = AnonymizerConfigurationManager.CreateFromYamlConfigFile(
-                configFilePath,
+                appConfig.AnonymizationEngineConfigPath,
                 appConfig.Anonymization
             );
         }
@@ -37,40 +37,21 @@ public static class AnonymizerEngineExtensions
             );
         }
 
-        // add the anon config as an additional service to allow mocking it
+        // Exposed for mocking, and shared by the singletons below.
         services.AddSingleton(_ => anonConfigManager);
 
+        // The Engines built from the server's own Config, which every request that names no
+        // Project is served with. A Project's are built the same way, by the same factory.
+        services.AddSingleton(sp =>
+            sp.GetRequiredService<IAnonymizerEngineFactory>()
+                .Create(sp.GetRequiredService<AnonymizerConfigurationManager>())
+        );
+
+        // The Kafka consumer path only ever runs the server's own rules, so it depends on this
+        // single engine rather than resolving a Project.
         services.AddSingleton<IAnonymizerEngine>(sp =>
-        {
-            var anonConfig = sp.GetRequiredService<AnonymizerConfigurationManager>();
-            var engine = new AnonymizerEngine(anonConfig);
-
-            var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor(
-                "pseudonymize",
-                new PseudonymizationProcessor(psnClient, appConfig.Features)
-            );
-
-            return engine;
-        });
-
-        services.AddSingleton<IDePseudonymizerEngine>(sp =>
-        {
-            var anonConfig = sp.GetRequiredService<AnonymizerConfigurationManager>();
-            var engine = new DePseudonymizerEngine(anonConfig);
-
-            var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor(
-                "pseudonymize",
-                new DePseudonymizationProcessor(psnClient, appConfig.Features)
-            );
-
-            engine.AddProcessor(
-                "encrypt",
-                new DecryptProcessor(anonConfig.GetParameterConfiguration().EncryptKey)
-            );
-            return engine;
-        });
+            sp.GetRequiredService<ProjectEngines>().Anonymizer
+        );
 
         return services;
     }

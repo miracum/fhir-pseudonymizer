@@ -5,6 +5,39 @@ namespace FhirPseudonymizer;
 
 public static class ApiKeyExtensions
 {
+    /// <summary>
+    ///     Guards Project registration: a Config carries crypto keys, and unbounded registration
+    ///     is a memory-exhaustion vector.
+    /// </summary>
+    public const string ProjectRegistrationPolicy = "ProjectRegistration";
+
+    /// <summary>
+    ///     Requires the API key for Project registration, but only when one is configured, so a
+    ///     deployment that sets no key stays reachable.
+    /// </summary>
+    public static IServiceCollection AddProjectRegistrationAuth(
+        this IServiceCollection services,
+        string apiKey
+    )
+    {
+        return services.AddAuthorization(options =>
+            options.AddPolicy(
+                ProjectRegistrationPolicy,
+                policy =>
+                {
+                    if (string.IsNullOrWhiteSpace(apiKey))
+                    {
+                        policy.RequireAssertion(_ => true);
+                        return;
+                    }
+
+                    policy.AddAuthenticationSchemes(ApiKeyDefaults.AuthenticationScheme);
+                    policy.RequireAuthenticatedUser();
+                }
+            )
+        );
+    }
+
     public static IServiceCollection AddApiKeyAuth(this IServiceCollection services, string apiKey)
     {
         services

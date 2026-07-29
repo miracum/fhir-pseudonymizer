@@ -1,6 +1,7 @@
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Controllers;
 using FhirPseudonymizer.Kafka;
+using FhirPseudonymizer.Projects;
 using FsCheck;
 using FsCheck.Xunit;
 using Hl7.Fhir.Model;
@@ -25,9 +26,9 @@ public class FhirControllerFuzzTests
         new(
             A.Fake<AnonymizationConfig>(),
             A.Fake<ILogger<FhirController>>(),
-            anonymizer,
-            A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            new ProjectEngines(anonymizer, A.Fake<IDePseudonymizerEngine>()),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IProjectRegistry>()
         );
 
     private static Parameters BuildRequest(IEnumerable<Tuple<string, Base>> settingsParts) =>
