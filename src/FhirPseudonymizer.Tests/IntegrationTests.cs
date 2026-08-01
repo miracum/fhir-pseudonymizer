@@ -75,6 +75,65 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
+    public async Task PostV2AlphaDeIdentify_WithInvalidContent_ShouldReturnBadRequest()
+    {
+        var content = new StringContent("asd");
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/v2alpha1/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostV2AlphaDeIdentify_WithParametersButNoResource_ShouldReturnBadRequest()
+    {
+        var parameters = new Parameters().Add("fhirVersion", new Code("R4"));
+
+        var content = new StringContent(parameters.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/v2alpha1/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostV2AlphaDeIdentify_WithInlineRulesAndResource_ShouldReturnNotImplemented()
+    {
+        var parameters = new Parameters()
+            .Add("fhirVersion", new Code("R4"))
+            .Add(
+                "fhirPathRules",
+                new[]
+                {
+                    Tuple.Create<string, Base>("path", new FhirString("Patient.name")),
+                    Tuple.Create<string, Base>("method", new Code("redact")),
+                }
+            )
+            .Add("resource", new Patient { Id = "example" });
+
+        var content = new StringContent(parameters.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/v2alpha1/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotImplemented);
+    }
+
+    [Fact]
     public async Task PostDeIdentify_WithoutApiKeyHeader_ShouldBeAllowed()
     {
         var patient =

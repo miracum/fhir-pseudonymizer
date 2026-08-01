@@ -4,7 +4,7 @@ using Hl7.Fhir.Model;
 namespace FhirPseudonymizer.Pseudonymization.Entici;
 
 [GenerateFhirParameters]
-public class EnticiPseudonymizationRequest
+public partial class EnticiPseudonymizationRequest
 {
     public Identifier Identifier { get; set; }
     public Code ResourceType { get; set; }

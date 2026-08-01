@@ -38,9 +38,9 @@
       },
       "FhirParametersGenerator": {
         "type": "Direct",
-        "requested": "[0.5.0, )",
-        "resolved": "0.5.0",
-        "contentHash": "+UKji9iH2WgPBIGloAyxqCIP0VduvgXbny+0CppZKBSgjOmJMnKFLomlfrjnFqeTO5u5xzoyWvPQzxrXtl3nKA=="
+        "requested": "[0.7.4, )",
+        "resolved": "0.7.4",
+        "contentHash": "KE+1697gbmmS7e1uZTfURUM5Hv98NgnI8K7I+wUOWq1z1V/2vVgtsA5nh4FzzVeKyLGK5w+3oTgerL1E5X2K0g=="
       },
       "Google.Protobuf": {
         "type": "Direct",
