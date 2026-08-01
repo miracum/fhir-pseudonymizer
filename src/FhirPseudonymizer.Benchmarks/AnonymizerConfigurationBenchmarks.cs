@@ -15,10 +15,10 @@ public class AnonymizerConfigurationBenchmarks
         AnonymizerEngine.InitializeFhirPathExtensionSymbols();
 
         anonymizationYaml = File.ReadAllText(
-            Path.Combine(AppContext.BaseDirectory, "anonymization.yaml")
+            Path.Join(AppContext.BaseDirectory, "anonymization.yaml")
         );
         hipaaAnonymizationYaml = File.ReadAllText(
-            Path.Combine(AppContext.BaseDirectory, "hipaa-anonymization.yaml")
+            Path.Join(AppContext.BaseDirectory, "hipaa-anonymization.yaml")
         );
     }
 
