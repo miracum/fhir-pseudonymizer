@@ -138,7 +138,7 @@ public record FeatureManagement
 public record AnonymizationConfig
 {
     public string CryptoHashKey { get; set; }
-    public string CryptoHashKeyContext { get; set; }
+    public string KeyDerivationContext { get; set; }
     public string EncryptKey { get; set; }
     public bool ShouldAddSecurityTag { get; set; } = true;
 }

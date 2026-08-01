@@ -1,3 +1,4 @@
+using System.Text;
 using FhirPseudonymizer.Config;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Newtonsoft.Json;
@@ -12,6 +13,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
         private readonly AnonymizerConfiguration _configuration;
         private readonly AnonymizerConfigurationValidator _validator =
             new AnonymizerConfigurationValidator();
+        private readonly byte[] _derivedEncryptKey;
 
         public AnonymizerConfigurationManager(
             AnonymizerConfiguration configuration,
@@ -24,6 +26,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             {
                 configuration.Parameters ??= new ParameterConfiguration();
 
+                // Static keys win as-is regardless of source (YAML `parameters:` or
+                // Anonymization__* env/config) - only once resolved does KeyDerivationContext
+                // decide whether that resolved value is used directly or as an HKDF master key.
                 if (string.IsNullOrWhiteSpace(configuration.Parameters.CryptoHashKey))
                 {
                     configuration.Parameters.CryptoHashKey = anonymizationConfig.CryptoHashKey;
@@ -33,15 +38,27 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
                     configuration.Parameters.EncryptKey = anonymizationConfig.EncryptKey;
                 }
 
-                if (
-                    !string.IsNullOrWhiteSpace(configuration.Parameters.CryptoHashKey)
-                    && !string.IsNullOrWhiteSpace(anonymizationConfig.CryptoHashKeyContext)
-                )
+                var keyDerivationContext = anonymizationConfig.KeyDerivationContext;
+                if (!string.IsNullOrWhiteSpace(keyDerivationContext))
                 {
-                    configuration.Parameters.CryptoHashKey = CryptoHashKeyDerivation.Derive(
-                        configuration.Parameters.CryptoHashKey,
-                        anonymizationConfig.CryptoHashKeyContext
-                    );
+                    // Each key derives from its own resolved value as its own master key - not
+                    // from one another - so CryptoHashKey and EncryptKey stay independent
+                    // secrets even when both are being stretched via the same context.
+                    if (!string.IsNullOrWhiteSpace(configuration.Parameters.CryptoHashKey))
+                    {
+                        configuration.Parameters.CryptoHashKey = KeyDerivation.DeriveCryptoHashKey(
+                            configuration.Parameters.CryptoHashKey,
+                            keyDerivationContext
+                        );
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(configuration.Parameters.EncryptKey))
+                    {
+                        _derivedEncryptKey = KeyDerivation.DeriveEncryptKey(
+                            configuration.Parameters.EncryptKey,
+                            keyDerivationContext
+                        );
+                    }
                 }
             }
 
@@ -133,6 +150,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
         public ParameterConfiguration GetParameterConfiguration()
         {
             return _configuration.Parameters;
+        }
+
+        /// <summary>
+        ///     The AES key for the encrypt/decrypt methods, as raw bytes. Returns the derived
+        ///     key (from KeyDerivationContext) if one was computed, otherwise falls back to the
+        ///     UTF-8 bytes of the static <see cref="ParameterConfiguration.EncryptKey" /> string -
+        ///     matching how the vendored EncryptProcessor/DecryptProcessor convert it today.
+        /// </summary>
+        public byte[] GetEncryptKeyBytes()
+        {
+            return _derivedEncryptKey
+                ?? Encoding.UTF8.GetBytes(_configuration.Parameters.EncryptKey);
         }
 
         public void SetDateShiftKeyPrefix(string prefix)
