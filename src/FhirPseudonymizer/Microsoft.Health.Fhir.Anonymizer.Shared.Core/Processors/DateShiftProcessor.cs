@@ -11,12 +11,14 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         public DateShiftProcessor(
             string dateShiftKey,
             string dateShiftKeyPrefix,
-            bool enablePartialDatesForRedact
+            bool enablePartialDatesForRedact,
+            int? dateShiftFixedOffsetInDays = null
         )
         {
             DateShiftKey = dateShiftKey;
             DateShiftKeyPrefix = dateShiftKeyPrefix;
             EnablePartialDatesForRedact = enablePartialDatesForRedact;
+            DateShiftFixedOffsetInDays = dateShiftFixedOffsetInDays;
         }
 
         public string DateShiftKey { get; set; } = string.Empty;
@@ -24,6 +26,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         public string DateShiftKeyPrefix { get; set; } = string.Empty;
 
         public bool EnablePartialDatesForRedact { get; set; }
+
+        public int? DateShiftFixedOffsetInDays { get; set; }
 
         public Task<ProcessResult> ProcessAsync(
             ElementNode node,
@@ -37,7 +41,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 return System.Threading.Tasks.Task.FromResult(processResult);
             }
 
-            var fixedOffsetInDays = ExtractFixedOffsetInDays(settings);
+            var fixedOffsetInDays =
+                ExtractFixedOffsetInDays(settings) ?? DateShiftFixedOffsetInDays;
 
             if (node.IsDateNode())
             {
@@ -91,7 +96,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             return new DateShiftProcessor(
                 parameters.DateShiftKey,
                 parameters.DateShiftKeyPrefix,
-                parameters.EnablePartialDatesForRedact
+                parameters.EnablePartialDatesForRedact,
+                parameters.DateShiftFixedOffsetInDays
             );
         }
     }
