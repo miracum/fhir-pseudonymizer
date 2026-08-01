@@ -154,4 +154,47 @@ public class DateShiftProcessorTests
 
         birthDateNode.Value.ToString().Should().Be("1990-02-14");
     }
+
+    [Fact]
+    public async Task Process_WithConfiguredFixedOffsetAndNoRequestSetting_UsesConfiguredOffset()
+    {
+        var processor = new DateShiftProcessor(
+            dateShiftKey: "test-key",
+            dateShiftKeyPrefix: "test-prefix",
+            enablePartialDatesForRedact: false,
+            dateShiftFixedOffsetInDays: 30
+        );
+
+        var patient = new Patient { BirthDate = "1990-01-15" };
+        var node = ElementNode.FromElement(patient.ToTypedElement());
+        var birthDateNode = node.Children("birthDate").CastElementNodes().First();
+
+        await processor.ProcessAsync(birthDateNode, settings: null);
+
+        birthDateNode.Value.ToString().Should().Be("1990-02-14");
+    }
+
+    [Fact]
+    public async Task Process_WithConfiguredFixedOffsetAndRequestSetting_RequestSettingTakesPrecedence()
+    {
+        var processor = new DateShiftProcessor(
+            dateShiftKey: "test-key",
+            dateShiftKeyPrefix: "test-prefix",
+            enablePartialDatesForRedact: false,
+            dateShiftFixedOffsetInDays: 30
+        );
+
+        var patient = new Patient { BirthDate = "1990-01-15" };
+        var node = ElementNode.FromElement(patient.ToTypedElement());
+        var birthDateNode = node.Children("birthDate").CastElementNodes().First();
+
+        var settings = new Dictionary<string, object>
+        {
+            { "dateShiftFixedOffsetInDays", new Integer(-10) },
+        };
+
+        await processor.ProcessAsync(birthDateNode, settings: settings);
+
+        birthDateNode.Value.ToString().Should().Be("1990-01-05");
+    }
 }

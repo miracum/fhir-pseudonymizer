@@ -343,6 +343,15 @@ The following request body and the (fixed) configuration settings above will res
 
 Note: The domain name could also have been replaced completely by overriding the `domain` setting with the desired value. This works for all rule settings regardless of the `method` value.
 
+### Date shift offset config
+
+`dateShiftFixedOffsetInDays` can be set in two places, and both can be used at the same time:
+
+- statically, as a `dateShiftFixedOffsetInDays` key in the `anonymization.yaml`'s `parameters` section, applying to every request.
+- dynamically, as a per-request `settings` value on the `dateshift` rule (see [Dynamic rule settings](#dynamic-rule-settings) above), applying only to that request.
+
+If both are set, the dynamic, per-request value takes precedence over the static config value. If neither is set, dates are shifted by the default hash-derived offset instead of a fixed one.
+
 ## Development
 
 ### Start Development Fixtures (optional)
