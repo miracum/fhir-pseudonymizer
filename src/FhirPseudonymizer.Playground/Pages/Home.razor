@@ -82,7 +82,11 @@
       var resource = _fhirParser.Parse<Hl7.Fhir.Model.Resource>(json);
       return resource.ToJson(new FhirJsonSerializationSettings { Pretty = true });
     }
-    catch
+    catch (FormatException)
+    {
+      return json;
+    }
+    catch (JsonException)
     {
       return json;
     }
