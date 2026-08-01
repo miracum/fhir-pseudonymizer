@@ -3,6 +3,7 @@
 @using System.Text
 @using System.Text.Json
 @using FhirPseudonymizer.Playground
+@using Hl7.Fhir.Serialization
 @using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 @inject NavigationManager Nav
 @inject IJSRuntime JS
@@ -72,6 +73,21 @@
   private StandaloneCodeEditor? _inputEditor;
   private StandaloneDiffEditor? _diffEditor;
 
+  private static readonly FhirJsonParser _fhirParser = new();
+
+  private static string FormatFhirJson(string json)
+  {
+    try
+    {
+      var resource = _fhirParser.Parse<Hl7.Fhir.Model.Resource>(json);
+      return resource.ToJson(new FhirJsonSerializationSettings { Pretty = true });
+    }
+    catch
+    {
+      return json;
+    }
+  }
+
   protected override void OnInitialized()
   {
     // IJSInProcessRuntime is always available in Blazor WASM; read theme before
@@ -85,6 +101,7 @@
       rulesYaml = rules;
       inputJson = input;
     }
+    inputJson = FormatFhirJson(inputJson);
     // Compute output synchronously so DiffEditorOnDidInit can use the result
     ComputeOutput();
   }
@@ -131,6 +148,14 @@
       rulesYaml = await _rulesEditor.GetValue();
     if (_inputEditor != null)
       inputJson = await _inputEditor.GetValue();
+
+    var normalized = FormatFhirJson(inputJson);
+    if (normalized != inputJson)
+    {
+      inputJson = normalized;
+      if (_inputEditor != null)
+        await _inputEditor.SetValue(inputJson);
+    }
 
     ComputeOutput();
 
