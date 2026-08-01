@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <CodeAnalysisRuleSet>..\..\stylecop.ruleset.xml</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FhirPseudonymizer\FhirPseudonymizer.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="..\..\.stylecop.json" />
+    <None Include="..\..\.editorconfig" Link=".editorconfig" />
+    <None
+      Include="..\FhirPseudonymizer\anonymization.yaml;..\FhirPseudonymizer\hipaa-anonymization.yaml"
+      CopyToOutputDirectory="PreserveNewest"
+    />
+  </ItemGroup>
+</Project>
