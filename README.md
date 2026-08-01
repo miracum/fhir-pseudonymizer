@@ -42,7 +42,7 @@ The server provides a `/fhir/$de-identify` operation to de-identfiy received FHI
 
 The service comes with a sample configuration file to help meet the requirements of HIPAA Safe Harbor Method (2)(i): [hipaa-anonymization.yaml](src/FhirPseudonymizer/hipaa-anonymization.yaml).This configuration can be used by setting `AnonymizationEngineConfigPath=/etc/hipaa-anonymization.yaml`.
 
-A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses either [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/), [Vfps](https://github.com/miracum/vfps), or entici to create pseudonyms and replace the values in the resource with them.
+A new `pseudonymize` method was added to the default list of anonymization methods linked above. It uses either [gPAS](https://www.ths-greifswald.de/en/researchers-general-public/gpas/), [Vfps](https://github.com/miracum/vfps), or [entici](https://www.entici.org/) to create pseudonyms and replace the values in the resource with them.
 For example, the following rule replaces all identifiers of type `http://terminology.hl7.org/CodeSystem/v2-0203|MR` with a pseudonym generated in the `PATIENT` domain.
 
 ```yaml
@@ -139,7 +139,7 @@ Additionally, there are some optional configuration values that can be set as en
 
 See [appsettings.json](src/FhirPseudonymizer/appsettings.json) for additional options.
 
-The application supports pseudonymization using either [gPAS](https://www.ths-greifswald.de/forscher/gpas/), [Vfps](https://github.com/miracum/vfps) or Entici which can be configured via the `PseudonymizationService` setting.
+The application supports pseudonymization using either [gPAS](https://www.ths-greifswald.de/forscher/gpas/), [Vfps](https://github.com/miracum/vfps) or [entici](https://www.entici.org/) which can be configured via the `PseudonymizationService` setting.
 Service-specific configuration settings are listed below.
 
 ### gPAS
