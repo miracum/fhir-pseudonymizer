@@ -669,4 +669,73 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             .Id.Should()
             .Be(CryptoHashUtility.ComputeHmacSHA256Hash("observation-1", cryptoHashKey));
     }
+
+    [Theory]
+    [InlineData("redact")]
+    [InlineData("remove")]
+    public async Task PostDeIdentify_WithRedactOrRemoveTargetingComplexElement_BothRemoveTheWholeElement(
+        string method
+    )
+    {
+        var observationJson = """
+            {
+              "resourceType": "Observation",
+              "id": "observation-1",
+              "status": "final",
+              "code": {
+                "coding": [
+                  { "system": "http://loinc.org", "code": "29463-7", "display": "Body Weight" }
+                ],
+                "text": "Body Weight"
+              },
+              "valueQuantity": {
+                "value": 72.5,
+                "unit": "kg"
+              }
+            }
+            """;
+
+        var inlineConfig =
+            $@"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Observation.code
+                method: {method}
+        ";
+
+        var factory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+            },
+        };
+
+        var client = factory.CreateClient();
+
+        var content = new StringContent(observationJson);
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var responseContent = await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var deIdentified = new FhirJsonParser().Parse<Observation>(responseContent);
+
+        // the whole code element is gone - not just cleared - while sibling elements survive,
+        // and both methods tag the resource the same way ("REDACTED" - remove reuses that code
+        // rather than a dedicated one)
+        deIdentified.Code.Should().BeNull();
+        deIdentified.Status.Should().Be(ObservationStatus.Final);
+        deIdentified.Value.Should().NotBeNull();
+        deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REDACTED");
+    }
 }
