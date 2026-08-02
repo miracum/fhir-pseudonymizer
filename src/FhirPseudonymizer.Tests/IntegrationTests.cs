@@ -79,7 +79,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     [Fact]
     public async Task PostV3AlphaDeIdentify_WithInvalidContent_ShouldReturnBadRequest()
     {
-        var content = new StringContent("asd");
+        using var content = new StringContent("asd");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
