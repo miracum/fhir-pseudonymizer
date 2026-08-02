@@ -68,13 +68,16 @@ fhirPathRules:
     otherValues: keep
 ```
 
-Another addition is the `remove` method. The existing `redact` only ever clears scalar values, and for a composite/backbone element instead recurses into and clears each of its child fields individually. `remove` deletes the matched node outright, including anything nested within it. This makes it possible to drop entire resources from a Bundle, which `redact` cannot do. For example, to remove every `Patient` entry from a Bundle:
+Another addition is the `remove` method. The existing `redact` only ever clears scalar values, and for a composite/backbone element instead recurses into and clears each of its child fields individually. `remove` deletes the matched node outright, including anything nested within it. This makes it possible to drop entire resources from a Bundle, or target contained resources, which `redact` cannot do. For example, to remove every `Patient` entry from a Bundle:
 
 ```yaml
 fhirPathRules:
   - path: Bundle.entry.where(resource is Patient)
     method: remove
 ```
+
+> [!WARNING]
+> `remove` is experimental and may change or be removed in a future version.
 
 #### `$de-pseudonymize`
 
