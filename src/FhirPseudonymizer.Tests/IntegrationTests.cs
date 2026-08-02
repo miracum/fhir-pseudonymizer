@@ -291,4 +291,78 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
 
         await Verify(response.ToJson(new() { Pretty = true }), "json").UseDirectory("Snapshots");
     }
+
+    [Fact]
+    public async Task PostDeIdentify_WithRemoveMethodTargetingWholeBundleEntries_RemovesThoseEntries()
+    {
+        var bundleJson = """
+            {
+              "resourceType": "Bundle",
+              "type": "collection",
+              "entry": [
+                {
+                  "resource": {
+                    "resourceType": "Patient",
+                    "id": "patient-1",
+                    "name": [{ "family": "Doe", "given": ["John"] }]
+                  }
+                },
+                {
+                  "resource": {
+                    "resourceType": "Patient",
+                    "id": "patient-2",
+                    "name": [{ "family": "Smith", "given": ["Jane"] }]
+                  }
+                },
+                {
+                  "resource": {
+                    "resourceType": "Observation",
+                    "id": "observation-1",
+                    "status": "final",
+                    "code": { "text": "Body Weight" }
+                  }
+                }
+              ]
+            }
+            """;
+
+        var inlineConfig =
+            @"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Bundle.entry.where(resource is Patient)
+                method: remove
+        ";
+
+        var factory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+            },
+        };
+
+        var client = factory.CreateClient();
+
+        var content = new StringContent(bundleJson);
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var responseContent = await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+
+        deIdentified.Entry.Should().ContainSingle();
+        deIdentified.Entry[0].Resource.Should().BeOfType<Observation>();
+        deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REMOVED");
+    }
 }

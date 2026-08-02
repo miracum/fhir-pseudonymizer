@@ -108,7 +108,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                 }
                 else
                 {
-                    matchNodes = node.Select(rule.Expression).CastElementNodes();
+                    // Materialized eagerly: a Remove processor mutates the tree by detaching the
+                    // matched node from its parent's child list, which - for a rule matching
+                    // multiple siblings (e.g. Bundle.entry.where(...)) - is the same list the
+                    // FHIRPath query below lazily enumerates. Without ToList(), removing one match
+                    // while a later match is still being lazily computed throws
+                    // "Collection was modified; enumeration operation may not execute."
+                    matchNodes = node.Select(rule.Expression).CastElementNodes().ToList();
                 }
 
                 foreach (var matchNode in matchNodes)

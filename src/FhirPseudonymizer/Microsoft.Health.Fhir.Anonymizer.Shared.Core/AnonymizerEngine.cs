@@ -144,6 +144,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             _processors[AnonymizerMethod.Keep.ToString().ToUpperInvariant()] = new KeepProcessor();
             _processors[AnonymizerMethod.Generalize.ToString().ToUpperInvariant()] =
                 new GeneralizeProcessor();
+            _processors[AnonymizerMethod.Remove.ToString().ToUpperInvariant()] =
+                new RemoveProcessor();
         }
 
         public void ClearProcessors()
