@@ -251,6 +251,210 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
+    public async Task PostDeIdentify_WithKeyDerivationContextSet_ShouldDeriveDifferentCryptoHashKeyPerContext()
+    {
+        var inlineConfig =
+            @"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Resource.id
+                method: cryptoHash
+        ";
+
+        async Task<string> DeIdentifyAndGetHashedIdAsync(string keyDerivationContext)
+        {
+            var settings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+                ["Anonymization:CryptoHashKey"] = "test",
+            };
+
+            if (keyDerivationContext is not null)
+            {
+                settings["Anonymization:KeyDerivationContext"] = keyDerivationContext;
+            }
+
+            var factory = new CustomWebApplicationFactory<Startup>
+            {
+                CustomInMemorySettings = settings,
+            };
+
+            using var fhirClient = new FhirClient(
+                "http://localhost/fhir",
+                factory.CreateClient(),
+                settings: new() { PreferredFormat = ResourceFormat.Json }
+            );
+
+            var fhirParser = new FhirJsonParser();
+            var input = await fhirParser.ParseAsync<Resource>(fhirBundleJson);
+            var parameters = new Parameters().Add("resource", input);
+            var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
+
+            return ((Bundle)response).Entry[0].Resource.Id;
+        }
+
+        var withoutContext = await DeIdentifyAndGetHashedIdAsync(null);
+        var withContextA = await DeIdentifyAndGetHashedIdAsync("project-a");
+        var withContextARepeated = await DeIdentifyAndGetHashedIdAsync("project-a");
+        var withContextB = await DeIdentifyAndGetHashedIdAsync("project-b");
+
+        withContextA.Should().NotBe(withoutContext);
+        withContextA.Should().NotBe(withContextB);
+        withContextA.Should().Be(withContextARepeated);
+    }
+
+    [Fact]
+    public async Task PostDeIdentifyThenDePseudonymize_WithKeyDerivationContextAndNoStaticEncryptKey_ShouldRoundTripEncryptedValue()
+    {
+        var inlineConfig =
+            @"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Patient.identifier.value
+                method: encrypt
+        ";
+
+        var patient =
+            @"{
+                ""resourceType"": ""Patient"",
+                ""id"": ""glossy"",
+                ""identifier"": [
+                    { ""value"": ""123456"" }
+                ]
+            }";
+
+        using var factory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+                ["Anonymization:CryptoHashKey"] = "test-crypto-hash-master",
+                ["Anonymization:EncryptKey"] = "test-encrypt-master",
+                ["Anonymization:KeyDerivationContext"] = "project-a",
+            },
+        };
+
+        using var factoryClient = factory.CreateClient();
+
+        var encryptContent = new StringContent(patient);
+        encryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        var encryptResponse = await factoryClient.PostAsync(
+            "/fhir/$de-identify",
+            encryptContent,
+            TestContext.Current.CancellationToken
+        );
+        encryptResponse.EnsureSuccessStatusCode();
+
+        var encryptedPatientJson = await encryptResponse.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var encryptedPatient = new FhirJsonParser().Parse<Patient>(encryptedPatientJson);
+
+        encryptedPatient.Identifier[0].Value.Should().NotBe("123456");
+
+        var decryptContent = new StringContent(encryptedPatientJson);
+        decryptContent.Headers.Add("x-api-key", "dev");
+        decryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        var decryptResponse = await factoryClient.PostAsync(
+            "/fhir/$de-pseudonymize",
+            decryptContent,
+            TestContext.Current.CancellationToken
+        );
+        decryptResponse.EnsureSuccessStatusCode();
+
+        var decryptedPatientJson = await decryptResponse.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var decryptedPatient = new FhirJsonParser().Parse<Patient>(decryptedPatientJson);
+
+        decryptedPatient.Identifier[0].Value.Should().Be("123456");
+    }
+
+    [Fact]
+    public async Task PostDeIdentifyThenDePseudonymize_WithSameKeyDerivationContextButDifferentEncryptMasterKey_ShouldNotDecryptWithEachOthersKey()
+    {
+        var inlineConfig =
+            @"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Patient.identifier.value
+                method: encrypt
+        ";
+
+        var patient =
+            @"{
+                ""resourceType"": ""Patient"",
+                ""id"": ""glossy"",
+                ""identifier"": [
+                    { ""value"": ""123456"" }
+                ]
+            }";
+
+        // Same CryptoHashKey and KeyDerivationContext for both - only EncryptKey differs - to
+        // prove EncryptKey derives from itself as master, not from CryptoHashKey.
+        using var encryptingFactory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+                ["Anonymization:CryptoHashKey"] = "shared-crypto-hash-master",
+                ["Anonymization:EncryptKey"] = "encrypt-master-one",
+                ["Anonymization:KeyDerivationContext"] = "project-a",
+            },
+        };
+
+        using var decryptingFactory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+                ["Anonymization:CryptoHashKey"] = "shared-crypto-hash-master",
+                ["Anonymization:EncryptKey"] = "encrypt-master-two",
+                ["Anonymization:KeyDerivationContext"] = "project-a",
+            },
+        };
+
+        using var encryptingClient = encryptingFactory.CreateClient();
+        using var decryptingClient = decryptingFactory.CreateClient();
+
+        var encryptContent = new StringContent(patient);
+        encryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        var encryptResponse = await encryptingClient.PostAsync(
+            "/fhir/$de-identify",
+            encryptContent,
+            TestContext.Current.CancellationToken
+        );
+        encryptResponse.EnsureSuccessStatusCode();
+
+        var encryptedPatientJson = await encryptResponse.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+
+        var decryptContent = new StringContent(encryptedPatientJson);
+        decryptContent.Headers.Add("x-api-key", "dev");
+        decryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        var decryptResponse = await decryptingClient.PostAsync(
+            "/fhir/$de-pseudonymize",
+            decryptContent,
+            TestContext.Current.CancellationToken
+        );
+        decryptResponse.EnsureSuccessStatusCode();
+
+        var decryptedPatientJson = await decryptResponse.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var decryptedPatient = new FhirJsonParser().Parse<Patient>(decryptedPatientJson);
+
+        // DecryptProcessor swallows AES/padding errors and returns the (still encrypted) input
+        // unchanged, so a mismatched key surfaces as "didn't decrypt back to the original".
+        decryptedPatient.Identifier[0].Value.Should().NotBe("123456");
+    }
+
+    [Fact]
     public async Task PostDeIdentify_WithShouldAddSecurityTagSetToFalse_ShouldNotAddSecurityMetaDataToResult()
     {
         var inlineConfig =
@@ -278,7 +482,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
 
         var client = factory.CreateClient();
 
-        var fhirClient = new FhirClient(
+        using var fhirClient = new FhirClient(
             "http://localhost/fhir",
             client,
             settings: new() { PreferredFormat = ResourceFormat.Json }
