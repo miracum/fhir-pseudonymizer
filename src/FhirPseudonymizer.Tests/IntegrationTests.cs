@@ -77,7 +77,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostV2AlphaDeIdentify_WithInvalidContent_ShouldReturnBadRequest()
+    public async Task PostV3AlphaDeIdentify_WithInvalidContent_ShouldReturnBadRequest()
     {
         var content = new StringContent("asd");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
@@ -92,7 +92,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostV2AlphaDeIdentify_WithParametersButNoResource_ShouldReturnBadRequest()
+    public async Task PostV3AlphaDeIdentify_WithParametersButNoResource_ShouldReturnBadRequest()
     {
         var parameters = new Parameters().Add(
             "config",
@@ -116,7 +116,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostV2AlphaDeIdentify_WithResourceButNoConfig_ShouldReturnBadRequest()
+    public async Task PostV3AlphaDeIdentify_WithResourceButNoConfig_ShouldReturnBadRequest()
     {
         var parameters = new Parameters().Add("resource", new Patient { Id = "example" });
 
