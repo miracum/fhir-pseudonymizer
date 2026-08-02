@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
@@ -254,6 +255,79 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             .ContainSingle()
             .Which.Subject.Reference.Should()
             .Be("Patient/patient-1");
+    }
+
+    [Fact]
+    public async Task PostV3AlphaDeIdentify_WithKeyDerivationContextInRequestConfig_ShouldUseDerivedCryptoHashKeyInsteadOfStaticKey()
+    {
+        const string staticCryptoHashKey = "static-master-key";
+        const string keyDerivationContext = "project-a";
+        const string patientId = "example";
+
+        var factory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["Anonymization:CryptoHashKey"] = staticCryptoHashKey,
+                ["EnableMetrics"] = "false",
+            },
+        };
+
+        var client = factory.CreateClient();
+
+        var inlineConfig = $"""
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Resource.id
+                method: cryptoHash
+            parameters:
+              keyDerivationContext: {keyDerivationContext}
+            """;
+
+        var parameters = new Parameters()
+            .Add(
+                "config",
+                new Attachment
+                {
+                    ContentType = "application/yaml",
+                    Data = Encoding.UTF8.GetBytes(inlineConfig),
+                }
+            )
+            .Add("resource", new Patient { Id = patientId });
+
+        var content = new StringContent(parameters.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/v3alpha1/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var responseContent = await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
+
+        var derivedKey = KeyDerivation.DeriveCryptoHashKey(
+            staticCryptoHashKey,
+            keyDerivationContext
+        );
+        var expectedHashWithDerivedKey = CryptoHashUtility.ComputeHmacSHA256Hash(
+            patientId,
+            derivedKey
+        );
+        var hashWithStaticKeyDirectly = CryptoHashUtility.ComputeHmacSHA256Hash(
+            patientId,
+            staticCryptoHashKey
+        );
+
+        expectedHashWithDerivedKey.Should().NotBe(hashWithStaticKeyDirectly);
+
+        deIdentified.Id.Should().Be(expectedHashWithDerivedKey);
+        deIdentified.Id.Should().NotBe(hashWithStaticKeyDirectly);
     }
 
     [Fact]
