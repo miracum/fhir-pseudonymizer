@@ -65,10 +65,7 @@ public static class AnonymizerEngineExtensions
                 new DePseudonymizationProcessor(psnClient, appConfig.Features)
             );
 
-            engine.AddProcessor(
-                "encrypt",
-                new DecryptProcessor(anonConfig.GetParameterConfiguration().EncryptKey)
-            );
+            engine.AddProcessor("encrypt", new DecryptProcessor(anonConfig.GetEncryptKeyBytes()));
             return engine;
         });
 

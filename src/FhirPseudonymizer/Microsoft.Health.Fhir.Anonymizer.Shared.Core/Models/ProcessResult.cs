@@ -22,6 +22,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Models
         public bool IsPseudonymized =>
             ProcessRecords.ContainsKey(AnonymizationOperations.Pseudonymize);
 
+        public bool IsRemoved => ProcessRecords.ContainsKey(AnonymizationOperations.Remove);
+
         public Dictionary<string, HashSet<ITypedElement>> ProcessRecords { get; } =
             new Dictionary<string, HashSet<ITypedElement>>();
 

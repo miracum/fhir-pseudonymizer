@@ -81,7 +81,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 return reference;
             }
 
-            if (reference.StartsWith(InternalReferencePrefix))
+            if (reference.StartsWith(InternalReferencePrefix, StringComparison.Ordinal))
             {
                 var internalId = reference[InternalReferencePrefix.Length..];
                 var newReference = $"{InternalReferencePrefix}{transformation(internalId)}";
@@ -117,7 +117,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 return reference;
             }
 
-            if (reference.StartsWith(InternalReferencePrefix))
+            if (reference.StartsWith(InternalReferencePrefix, StringComparison.Ordinal))
             {
                 var internalId = reference[InternalReferencePrefix.Length..];
                 var newReference =
