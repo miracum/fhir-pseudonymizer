@@ -10,5 +10,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         public const string Substitute = "SUBSTITUTE";
         public const string Generalize = "GENERALIZE";
         public const string Pseudonymize = "PSEUDED";
+        public const string Remove = "REMOVE";
     }
 }

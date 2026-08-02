@@ -11,5 +11,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
         Keep,
         Generalize,
         Pseudonymize,
+        Remove,
     }
 }
