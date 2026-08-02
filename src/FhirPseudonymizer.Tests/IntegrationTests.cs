@@ -103,7 +103,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             }
         );
 
-        var content = new StringContent(parameters.ToJson());
+        using var content = new StringContent(parameters.ToJson());
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
