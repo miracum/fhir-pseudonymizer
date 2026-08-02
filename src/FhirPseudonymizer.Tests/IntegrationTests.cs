@@ -363,6 +363,6 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
 
         deIdentified.Entry.Should().ContainSingle();
         deIdentified.Entry[0].Resource.Should().BeOfType<Observation>();
-        deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REMOVED");
+        deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REDACTED");
     }
 }
