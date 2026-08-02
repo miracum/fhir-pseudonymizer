@@ -18,6 +18,7 @@ namespace FhirPseudonymizer
         public static IHostBuilder CreateHostBuilder(string[] args)
         {
             return Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration(AddSecretsDirectory)
                 .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<Startup>())
                 .ConfigureLogging(builder =>
                     builder.AddSimpleConsole(options =>
@@ -27,6 +28,18 @@ namespace FhirPseudonymizer
                         options.TimestampFormat = "yyyy-MM-ddTHH:mm:ssZ ";
                     })
                 );
+        }
+
+        public static void AddSecretsDirectory(
+            HostBuilderContext context,
+            IConfigurationBuilder config
+        )
+        {
+            var secretsDirectory = context.Configuration.GetValue(
+                "SecretsDirectory",
+                "/run/secrets"
+            );
+            config.AddKeyPerFile(secretsDirectory, optional: true, reloadOnChange: true);
         }
     }
 }

@@ -15,6 +15,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             _key = Encoding.UTF8.GetBytes(encryptKey);
         }
 
+        public EncryptProcessor(byte[] encryptKey)
+        {
+            _key = encryptKey;
+        }
+
         public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,

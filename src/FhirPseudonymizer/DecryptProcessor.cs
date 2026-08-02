@@ -17,6 +17,11 @@ namespace FhirPseudonymizer
             _key = Encoding.UTF8.GetBytes(decryptKey);
         }
 
+        public DecryptProcessor(byte[] decryptKey)
+        {
+            _key = decryptKey;
+        }
+
         public Task<ProcessResult> ProcessAsync(
             ElementNode node,
             ProcessContext context = null,

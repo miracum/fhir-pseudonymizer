@@ -136,7 +136,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
                     configurationManager.GetParameterConfiguration().CryptoHashKey
                 );
             _processors[AnonymizerMethod.Encrypt.ToString().ToUpperInvariant()] =
-                new EncryptProcessor(configurationManager.GetParameterConfiguration().EncryptKey);
+                new EncryptProcessor(configurationManager.GetEncryptKeyBytes());
             _processors[AnonymizerMethod.Substitute.ToString().ToUpperInvariant()] =
                 new SubstituteProcessor();
             _processors[AnonymizerMethod.Perturb.ToString().ToUpperInvariant()] =
