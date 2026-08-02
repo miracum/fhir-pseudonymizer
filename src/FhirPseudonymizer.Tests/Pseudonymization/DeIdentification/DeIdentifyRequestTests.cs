@@ -1,93 +1,54 @@
-using FhirPseudonymizer.Pseudonymization.DeIdentification;
+using System.Text;
+using FhirPseudonymizer.Controllers;
 using Hl7.Fhir.Model;
 
 namespace FhirPseudonymizer.Tests.Pseudonymization.DeIdentification;
 
 public class DeIdentifyRequestTests
 {
+    private const string SampleYamlConfig = """
+        fhirVersion: R4
+        fhirPathRules:
+          - path: Patient.name
+            method: redact
+        """;
+
     [Fact]
     public void FromFhirParameters_WithFullRequest_ParsesAllParts()
     {
+        var configBytes = Encoding.UTF8.GetBytes(SampleYamlConfig);
         var parameters = new Parameters()
-            .Add("fhirVersion", new FhirString("R4"))
-            .Add(
-                "fhirPathRules",
-                new[]
-                {
-                    Tuple.Create<string, Base>("path", new FhirString("Patient.name")),
-                    Tuple.Create<string, Base>("method", new FhirString("redact")),
-                }
-            )
-            .Add(
-                "fhirPathRules",
-                new[]
-                {
-                    Tuple.Create<string, Base>("path", new FhirString("Resource.id")),
-                    Tuple.Create<string, Base>("method", new FhirString("cryptoHash")),
-                }
-            )
-            .Add(
-                "parameters",
-                new[]
-                {
-                    Tuple.Create<string, Base>("dateShiftKey", new FhirString("secret")),
-                    Tuple.Create<string, Base>("dateShiftScope", new FhirString("resource")),
-                    Tuple.Create<string, Base>("dateShiftFixedOffsetInDays", new FhirDecimal(30)),
-                    Tuple.Create<string, Base>("cryptoHashKey", new FhirString("hash-key")),
-                    Tuple.Create<string, Base>("encryptKey", new FhirString("encrypt-key")),
-                    Tuple.Create<string, Base>("enablePartialAgesForRedact", new FhirBoolean(true)),
-                    Tuple.Create<string, Base>(
-                        "restrictedZipCodeTabulationAreas",
-                        new FhirString("036")
-                    ),
-                    Tuple.Create<string, Base>(
-                        "restrictedZipCodeTabulationAreas",
-                        new FhirString("059")
-                    ),
-                }
-            )
+            .Add("config", new Attachment { ContentType = "application/yaml", Data = configBytes })
             .Add("resource", new Patient { Id = "example" });
 
         var request = DeIdentifyRequest.FromFhirParameters(parameters);
 
-        request.FhirVersion.Should().Be("R4");
-
-        request.FhirPathRules.Should().HaveCount(2);
-        request.FhirPathRules[0].Path.Should().Be("Patient.name");
-        request.FhirPathRules[0].Method.Should().Be("redact");
-        request.FhirPathRules[1].Path.Should().Be("Resource.id");
-        request.FhirPathRules[1].Method.Should().Be("cryptoHash");
-
-        request.Parameters.Should().NotBeNull();
-        request.Parameters.DateShiftKey.Should().Be("secret");
-        request.Parameters.DateShiftScope.Should().Be("resource");
-        request.Parameters.DateShiftFixedOffsetInDays.Should().Be(30);
-        request.Parameters.CryptoHashKey.Should().Be("hash-key");
-        request.Parameters.EncryptKey.Should().Be("encrypt-key");
-        request.Parameters.EnablePartialAgesForRedact.Should().BeTrue();
-        request.Parameters.RestrictedZipCodeTabulationAreas.Should().Equal("036", "059");
+        request.Config.Should().NotBeNull();
+        request.Config.ContentType.Should().Be("application/yaml");
+        request.Config.Data.Should().Equal(configBytes);
 
         request.Resource.Should().BeOfType<Patient>();
         ((Patient)request.Resource).Id.Should().Be("example");
     }
 
     [Fact]
-    public void FromFhirParameters_WithoutOptionalParts_LeavesThemAtTheirDefault()
+    public void FromFhirParameters_WithoutConfig_LeavesConfigNull()
     {
         var parameters = new Parameters().Add("resource", new Patient());
 
         var request = DeIdentifyRequest.FromFhirParameters(parameters);
 
-        request.FhirVersion.Should().BeEmpty();
-        request.FhirPathRules.Should().BeEmpty();
-        request.Parameters.Should().BeNull();
+        request.Config.Should().BeNull();
         request.Resource.Should().NotBeNull();
     }
 
     [Fact]
     public void FromFhirParameters_WithoutResourcePart_LeavesResourceNull()
     {
-        var parameters = new Parameters().Add("fhirVersion", new FhirString("R4"));
+        var parameters = new Parameters().Add(
+            "config",
+            new Attachment { ContentType = "application/yaml" }
+        );
 
         var request = DeIdentifyRequest.FromFhirParameters(parameters);
 
@@ -107,22 +68,10 @@ public class DeIdentifyRequestTests
     {
         var original = new DeIdentifyRequest
         {
-            FhirVersion = "R4",
-            FhirPathRules =
-            [
-                new FhirPathRuleParameter { Path = "Patient.name", Method = "redact" },
-            ],
-            Parameters = new DeIdentifyParametersConfig
+            Config = new Attachment
             {
-                DateShiftKey = "secret",
-                DateShiftScope = "resource",
-                DateShiftFixedOffsetInDays = 30,
-                CryptoHashKey = "hash-key",
-                EncryptKey = "encrypt-key",
-                EnablePartialAgesForRedact = true,
-                EnablePartialDatesForRedact = false,
-                EnablePartialZipCodesForRedact = true,
-                RestrictedZipCodeTabulationAreas = ["036", "059"],
+                ContentType = "application/yaml",
+                Data = Encoding.UTF8.GetBytes(SampleYamlConfig),
             },
             Resource = new Patient { Id = "example" },
         };

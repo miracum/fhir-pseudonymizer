@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
@@ -93,7 +94,14 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     [Fact]
     public async Task PostV2AlphaDeIdentify_WithParametersButNoResource_ShouldReturnBadRequest()
     {
-        var parameters = new Parameters().Add("fhirVersion", new Code("R4"));
+        var parameters = new Parameters().Add(
+            "config",
+            new Attachment
+            {
+                ContentType = "application/yaml",
+                Data = Encoding.UTF8.GetBytes("fhirVersion: R4\nfhirPathRules: []\n"),
+            }
+        );
 
         var content = new StringContent(parameters.ToJson());
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
@@ -108,19 +116,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostV2AlphaDeIdentify_WithInlineRulesAndResource_ShouldReturnNotImplemented()
+    public async Task PostV2AlphaDeIdentify_WithResourceButNoConfig_ShouldReturnBadRequest()
     {
-        var parameters = new Parameters()
-            .Add("fhirVersion", new Code("R4"))
-            .Add(
-                "fhirPathRules",
-                new[]
-                {
-                    Tuple.Create<string, Base>("path", new FhirString("Patient.name")),
-                    Tuple.Create<string, Base>("method", new Code("redact")),
-                }
-            )
-            .Add("resource", new Patient { Id = "example" });
+        var parameters = new Parameters().Add("resource", new Patient { Id = "example" });
 
         var content = new StringContent(parameters.ToJson());
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
@@ -131,7 +129,131 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             TestContext.Current.CancellationToken
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotImplemented);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostV3AlphaDeIdentify_WithInlineConfigAndResource_ShouldReturnDeIdentifiedResource()
+    {
+        var parameters = new Parameters()
+            .Add(
+                "config",
+                new Attachment
+                {
+                    ContentType = "application/yaml",
+                    Data = Encoding.UTF8.GetBytes(
+                        "fhirVersion: R4\nfhirPathRules:\n  - path: Patient.name\n    method: redact\n"
+                    ),
+                }
+            )
+            .Add(
+                "resource",
+                new Patient
+                {
+                    Id = "example",
+                    Name = [new HumanName { Family = "Doe", Given = ["John"] }],
+                }
+            );
+
+        var content = new StringContent(parameters.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/v3alpha1/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var responseContent = await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
+
+        deIdentified.Name.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task PostV3AlphaDeIdentify_WithBundleContainingMultipleResources_ShouldDeIdentifyAllEntries()
+    {
+        var bundleJson = """
+            {
+              "resourceType": "Bundle",
+              "type": "collection",
+              "entry": [
+                {
+                  "resource": {
+                    "resourceType": "Patient",
+                    "id": "patient-1",
+                    "name": [{ "family": "Doe", "given": ["John"] }]
+                  }
+                },
+                {
+                  "resource": {
+                    "resourceType": "Patient",
+                    "id": "patient-2",
+                    "name": [{ "family": "Smith", "given": ["Jane"] }]
+                  }
+                },
+                {
+                  "resource": {
+                    "resourceType": "Observation",
+                    "id": "observation-1",
+                    "status": "final",
+                    "code": { "text": "Body Weight" },
+                    "subject": { "reference": "Patient/patient-1" }
+                  }
+                }
+              ]
+            }
+            """;
+
+        var bundle = await new FhirJsonParser().ParseAsync<Bundle>(bundleJson);
+
+        var parameters = new Parameters()
+            .Add(
+                "config",
+                new Attachment
+                {
+                    ContentType = "application/yaml",
+                    Data = Encoding.UTF8.GetBytes(
+                        "fhirVersion: R4\nfhirPathRules:\n  - path: Patient.name\n    method: redact\n"
+                    ),
+                }
+            )
+            .Add("resource", bundle);
+
+        var content = new StringContent(parameters.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/v3alpha1/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var responseContent = await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+
+        deIdentified.Entry.Should().HaveCount(3);
+        deIdentified
+            .Entry.Select(e => e.Resource)
+            .OfType<Patient>()
+            .Should()
+            .HaveCount(2)
+            .And.AllSatisfy(patient => patient.Name.Should().BeEmpty());
+        deIdentified
+            .Entry.Select(e => e.Resource)
+            .OfType<Observation>()
+            .Should()
+            .ContainSingle()
+            .Which.Subject.Reference.Should()
+            .Be("Patient/patient-1");
     }
 
     [Fact]
