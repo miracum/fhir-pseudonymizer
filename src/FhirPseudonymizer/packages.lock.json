@@ -80,9 +80,9 @@
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
-        "requested": "[5.13.4, )",
-        "resolved": "5.13.4",
-        "contentHash": "UXeWvf7gQdpViZZm21yfqI5e+Xt04BX78qZRPQsqTh55H2DrvQCnhjGRZUTvOVBcIWjA4EGZ14uyr4h5/FKtZg==",
+        "requested": "[6.3.0, )",
+        "resolved": "6.3.0",
+        "contentHash": "k8XIzJftud7yqRXyBQKnJmKifjkGqICMk1SjfbEWunsf24cpOm1ThgTJBYt1Vixh1dBixV/NT7bih58gOdWfgw==",
         "dependencies": {
           "Fhir.Metrics": "1.3.1",
           "Newtonsoft.Json": "13.0.4",
@@ -91,11 +91,11 @@
       },
       "Hl7.Fhir.R4": {
         "type": "Direct",
-        "requested": "[5.13.4, )",
-        "resolved": "5.13.4",
-        "contentHash": "Nxw/zPtaVhAwpvyKnnvrQljUAL4BQ3HQ/VExDk9baLoIVvmBtmqiynEqYlyFt5kgM9umV8eWy/Tqn3J/cyOH4g==",
+        "requested": "[6.3.0, )",
+        "resolved": "6.3.0",
+        "contentHash": "eS3DJvxtA+Sy1AGSv6x415pV89AYhCB20OdUgcImM2obpUdiGPV4eiS4AclBMwNeD+6PrREQ2X9XVJ6Dicw/rg==",
         "dependencies": {
-          "Hl7.Fhir.Conformance": "5.13.4"
+          "Hl7.Fhir.Conformance": "6.3.0"
         }
       },
       "MathNet.Numerics": {
@@ -265,10 +265,10 @@
       },
       "Hl7.Fhir.Conformance": {
         "type": "Transitive",
-        "resolved": "5.13.4",
-        "contentHash": "Hkp7+2mtPzUAj+OMI3oI6H5LZ9jRG0HHu+gEYFAvzWxc/A5zkY1fdh+yOGr9IPaNlA6/g/UdvG8FwhniD+wrdw==",
+        "resolved": "6.3.0",
+        "contentHash": "1kjNxkaw9/0/nrqd0jn8sw9aDRjto4iCwsFMKFejp2CBM8ythmRUVQFBXxhVuawLtBUbQpT5ABrTOi2xOvKBjA==",
         "dependencies": {
-          "Hl7.Fhir.Base": "5.13.4"
+          "Hl7.Fhir.Base": "6.3.0"
         }
       },
       "librdkafka.redist": {

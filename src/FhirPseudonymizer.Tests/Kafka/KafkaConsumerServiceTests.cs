@@ -2,6 +2,7 @@ using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
 using Hl7.Fhir.Model;
+using Hl7.Fhir.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
@@ -62,7 +63,7 @@ public class KafkaConsumerServiceTests
         var service = CreateService(anonymizer, A.Fake<IProducer<byte[], string>>());
 
         var patient = new Patient { Id = "123" };
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(patient);
+        var json = new FhirJsonSerializer().SerializeToString(patient);
 
         var output = await service.AnonymizeMessageAsync("input-topic", json);
 
@@ -79,9 +80,7 @@ public class KafkaConsumerServiceTests
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(anonymizer, producer);
 
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
+        var json = new FhirJsonSerializer().SerializeToString(new Patient { Id = "123" });
         var result = CreateConsumeResult("input-topic", 0, 0, json);
 
         await service.ProcessResultAsync(result);
@@ -106,9 +105,7 @@ public class KafkaConsumerServiceTests
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(anonymizer, producer);
 
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
+        var json = new FhirJsonSerializer().SerializeToString(new Patient { Id = "123" });
         var key = "patient-123"u8.ToArray();
         var result = CreateConsumeResult("input-topic", 0, 0, json, key);
 
@@ -143,9 +140,7 @@ public class KafkaConsumerServiceTests
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(anonymizer, producer);
 
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
+        var json = new FhirJsonSerializer().SerializeToString(new Patient { Id = "123" });
         var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
         var result = CreateConsumeResult("input-topic", 0, 0, json, headers: headers);
 
@@ -309,9 +304,7 @@ public class KafkaConsumerServiceTests
             provenancePublisher: provenancePublisher
         );
 
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
+        var json = new FhirJsonSerializer().SerializeToString(new Patient { Id = "123" });
         var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
         var result = CreateConsumeResult("input-topic", 0, 0, json, headers: headers);
 
