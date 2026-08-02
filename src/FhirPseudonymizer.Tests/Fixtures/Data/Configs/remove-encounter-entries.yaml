@@ -1,0 +1,4 @@
+fhirVersion: R4
+fhirPathRules:
+  - path: Bundle.entry.where(resource is Encounter)
+    method: remove

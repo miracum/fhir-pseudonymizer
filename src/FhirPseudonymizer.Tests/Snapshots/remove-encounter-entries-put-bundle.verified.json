@@ -1,0 +1,131 @@
+{
+  "resourceType": "Bundle",
+  "meta": {
+    "security": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationValue",
+        "code": "REDACTED",
+        "display": "redacted"
+      }
+    ]
+  },
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "Patient/pid.999",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "pid.999",
+        "meta": {
+          "source": "#p21"
+        },
+        "identifier": [
+          {
+            "use": "usual",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "MR"
+                }
+              ]
+            },
+            "system": "https://miracum.org/fhir/NamingSystem/identifier/PatientId",
+            "value": "pid.999"
+          },
+          {
+            "use": "official",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://fhir.de/CodeSystem/identifier-type-de-basis",
+                  "code": "GKV"
+                }
+              ]
+            },
+            "system": "http://fhir.de/NamingSystem/gkv/kvid-10",
+            "value": "5678",
+            "assigner": {
+              "identifier": {
+                "use": "official",
+                "system": "http://fhir.de/NamingSystem/arge-ik/iknr",
+                "value": "109905113"
+              }
+            }
+          }
+        ],
+        "name": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                "valueCode": "unsupported"
+              }
+            ]
+          }
+        ],
+        "gender": "unknown",
+        "birthDate": "1941-01-01",
+        "deceasedDateTime": "2018-08-05T21:28:00+02:00",
+        "address": [
+          {
+            "type": "physical",
+            "city": "Buschau",
+            "postalCode": "12365"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Patient/pid.999"
+      }
+    },
+    {
+      "fullUrl": "Task/fm-example5",
+      "resource": {
+        "resourceType": "Task",
+        "id": "fm-example5",
+        "identifier": [
+          {
+            "use": "official",
+            "system": "http:/happyvalley.com/task",
+            "value": "20181012-001"
+          }
+        ],
+        "status": "requested",
+        "intent": "order",
+        "priority": "stat",
+        "code": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/financialtaskcode",
+              "code": "status"
+            }
+          ]
+        },
+        "focus": {
+          "identifier": {
+            "system": "http://happyvalley.com/claim",
+            "value": "1500"
+          }
+        },
+        "authoredOn": "2018-10-04T08:25:05+10:00",
+        "lastModified": "2018-10-04T08:25:05+10:00",
+        "requester": {
+          "reference": "Organization/example",
+          "display": "Happy Valley Clinic"
+        },
+        "owner": {
+          "identifier": {
+            "system": "http://nationalinsurers.com/identifiers",
+            "value": "12345"
+          }
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Task/fm-example5"
+      }
+    }
+  ]
+}

@@ -199,7 +199,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             result = await processor.ProcessAsync(node, context, settings);
             _visitedNodes.Add(node);
 
-            foreach (var child in node.Children().CastElementNodes())
+            // Materialized eagerly for the same reason as the top-level match list in
+            // ProcessResourceNodeAsync: if `node` has multiple non-resource children that all
+            // match this rule (e.g. a removed Bundle.entry's "fullUrl" and "request"), a Remove
+            // processor detaches each one from `node`'s own child list as it's visited, which
+            // would otherwise invalidate this same enumeration mid-loop.
+            foreach (var child in node.Children().CastElementNodes().ToList())
             {
                 if (child.IsFhirResource())
                 {
