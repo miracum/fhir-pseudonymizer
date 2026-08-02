@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.3.7@sha256:7e9392f57499ed5b50aacdf3960f2ca126d3b5bfb5a35989d28ba21ccb3b52c0
+    image: ghcr.io/miracum/vfps:v1.9.1@sha256:6c8645d9d8a26c9f222b0187b2d9cc967bd79c532cf70f7702bb847d12918689
     restart: unless-stopped
     deploy:
       resources:
@@ -101,7 +101,7 @@ services:
       - ./hack/mocks:/config:ro
 
   kafka:
-    image: docker.io/apache/kafka:4.3.0@sha256:0be4c9eb3565733612d2836d65636fd611a219ebcf5b4162e5ac259ea0ecb907
+    image: docker.io/apache/kafka:4.3.1@sha256:77e3df9054047a88b520d0cc46e16696d3b22022e1d580aeccd2632df6532837
     restart: unless-stopped
     cap_drop:
       - ALL
@@ -144,7 +144,7 @@ services:
       - kafka
 
   mock-data-loader:
-    image: docker.io/confluentinc/cp-kcat:8.2.1@sha256:21df66a65d2d6b5b9c6669e4c0f49f7f5570afb7dddf53a1b4c2ba4654493fd1
+    image: docker.io/confluentinc/cp-kcat:8.2.2@sha256:66889260e24491424ea6066f63d6c091aa50b995a1a4cbfdd902322546d1e69e
     entrypoint: ["/bin/bash", "-c"]
     restart: on-failure
     command:
@@ -157,7 +157,7 @@ services:
       - kafka
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.6.4@sha256:0aae0de7fca85525f727d3354df17896092de8bb26ae4c12d89c77e5df8cbce4
+    image: quay.io/keycloak/keycloak:26.7.0@sha256:0f198be292568439d700cdbfb893e69a6009bb43a94a06a945b1d3d506c76b13
     restart: unless-stopped
     profiles:
       - keycloak
