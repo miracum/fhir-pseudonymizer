@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.30.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.29.0...v2.30.0) (2026-08-02)
+
+
+### Features
+
+* added `remove` method for nested resource removal/redaction ([#368](https://github.com/miracum/fhir-pseudonymizer/issues/368)) ([bb5f9e9](https://github.com/miracum/fhir-pseudonymizer/commit/bb5f9e9e976f4f647e4d4410731ab5c5aebbbaa7))
+* per-context cryptoHash and encrypt key derivation ([#361](https://github.com/miracum/fhir-pseudonymizer/issues/361)) ([62c12b5](https://github.com/miracum/fhir-pseudonymizer/commit/62c12b597d82b6a4415153b0a3e046a17ace029a))
+* **playground:** added share button, dark mode, and nicer editors ([#350](https://github.com/miracum/fhir-pseudonymizer/issues/350)) ([140f332](https://github.com/miracum/fhir-pseudonymizer/commit/140f33298022eb5c40f634b654a9682b0f43598f))
+* support for publishing provenance resources to a Kafka topic ([#354](https://github.com/miracum/fhir-pseudonymizer/issues/354)) ([89777b0](https://github.com/miracum/fhir-pseudonymizer/commit/89777b04d244c9cdd92720cbc399ae055a043458))
+* support for static dateShiftFixedOffsetInDays config ([#363](https://github.com/miracum/fhir-pseudonymizer/issues/363)) ([8c6fbfa](https://github.com/miracum/fhir-pseudonymizer/commit/8c6fbfad15e732171142422c250de4fcf5541eea))
+
+
+### Bug Fixes
+
+* answer 400 instead of 500 for a Parameters body without a resource ([#357](https://github.com/miracum/fhir-pseudonymizer/issues/357)) ([53d9389](https://github.com/miracum/fhir-pseudonymizer/commit/53d9389999349b90ce93f643a303cddd2d698f05)), closes [#356](https://github.com/miracum/fhir-pseudonymizer/issues/356)
+* keyDerivationContext also as dynamic config ([#369](https://github.com/miracum/fhir-pseudonymizer/issues/369)) ([e8cb6d3](https://github.com/miracum/fhir-pseudonymizer/commit/e8cb6d379a19f65db9a96e66f6d48fad3312cbe0))
+* playground theming/rendering order issue ([#352](https://github.com/miracum/fhir-pseudonymizer/issues/352)) ([9630b8c](https://github.com/miracum/fhir-pseudonymizer/commit/9630b8cf21dc2641e8373fa6ca8188c97ace0be2))
+* **playground:** format fhir json before display ([#364](https://github.com/miracum/fhir-pseudonymizer/issues/364)) ([c5bbc41](https://github.com/miracum/fhir-pseudonymizer/commit/c5bbc41ce6cbd46f1b246e09cc1226808b4f5ab3))
+* **playground:** render race condition ([#353](https://github.com/miracum/fhir-pseudonymizer/issues/353)) ([2da9276](https://github.com/miracum/fhir-pseudonymizer/commit/2da927627a4b37d05ada2fc0838881ec7cc41995))
+
+
+### Miscellaneous Chores
+
+* **deps:** update all digest updates ([#370](https://github.com/miracum/fhir-pseudonymizer/issues/370)) ([31fe140](https://github.com/miracum/fhir-pseudonymizer/commit/31fe1401ec82bce8cd406adcd9c696c3dd10d5e2))
+* **deps:** update all non-major dependencies ([#372](https://github.com/miracum/fhir-pseudonymizer/issues/372)) ([76f5575](https://github.com/miracum/fhir-pseudonymizer/commit/76f55753930269e7d42fc467b7b5f484c401023d))
+* **deps:** update github-actions ([#359](https://github.com/miracum/fhir-pseudonymizer/issues/359)) ([9d7e9ec](https://github.com/miracum/fhir-pseudonymizer/commit/9d7e9ec4d2dd2469388fe9a5f6d9b14e25b311e7))
+* **deps:** update github-actions ([#360](https://github.com/miracum/fhir-pseudonymizer/issues/360)) ([fd2614e](https://github.com/miracum/fhir-pseudonymizer/commit/fd2614ee14e2c17c1211c730dcf1e62338f1cca2))
+
 ## [2.29.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.28.0...v2.29.0) (2026-07-05)
 
 
