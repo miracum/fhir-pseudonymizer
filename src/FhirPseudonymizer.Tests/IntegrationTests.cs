@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
+using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 namespace FhirPseudonymizer.Tests;
 
@@ -568,5 +569,104 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         deIdentified.Entry.Should().ContainSingle();
         deIdentified.Entry[0].Resource.Should().BeOfType<Observation>();
         deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REDACTED");
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PostDeIdentify_WithRemoveCombinedWithRedactAndCryptoHashOnSameResource_RemovesResourceRegardlessOfRuleOrder(
+        bool removeRuleFirst
+    )
+    {
+        const string cryptoHashKey = "test";
+
+        // Patient.name (redact) and Resource.id (cryptoHash, a general rule that also matches
+        // the Patient) both target fields on the very same Patient the other rule removes
+        // wholesale. Since the removed entry - and everything nested in it - is excised from the
+        // Bundle before the traversal descends into it, these should never actually run against
+        // the Patient, regardless of which rule the config lists first.
+        var inlineConfig = removeRuleFirst
+            ? @"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Bundle.entry.where(resource is Patient)
+                method: remove
+              - path: Patient.name
+                method: redact
+              - path: Resource.id
+                method: cryptoHash
+        "
+            : @"
+            fhirVersion: R4
+            fhirPathRules:
+              - path: Patient.name
+                method: redact
+              - path: Resource.id
+                method: cryptoHash
+              - path: Bundle.entry.where(resource is Patient)
+                method: remove
+        ";
+
+        var bundleJson = """
+            {
+              "resourceType": "Bundle",
+              "type": "collection",
+              "entry": [
+                {
+                  "resource": {
+                    "resourceType": "Patient",
+                    "id": "patient-1",
+                    "name": [{ "family": "Doe", "given": ["John"] }]
+                  }
+                },
+                {
+                  "resource": {
+                    "resourceType": "Observation",
+                    "id": "observation-1",
+                    "status": "final",
+                    "code": { "text": "Body Weight" }
+                  }
+                }
+              ]
+            }
+            """;
+
+        var factory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigInline"] = inlineConfig,
+                ["EnableMetrics"] = "false",
+                ["Anonymization:CryptoHashKey"] = cryptoHashKey,
+            },
+        };
+
+        var client = factory.CreateClient();
+
+        var content = new StringContent(bundleJson);
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var responseContent = await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+
+        // the Patient - and the redact/cryptoHash rules that would have applied to it - are gone
+        deIdentified.Entry.Should().ContainSingle();
+        deIdentified.Entry[0].Resource.Should().BeOfType<Observation>();
+
+        // the surviving Observation is still cryptoHashed normally, unaffected by the remove rule
+        var remaining = (Observation)deIdentified.Entry[0].Resource;
+        remaining
+            .Id.Should()
+            .Be(CryptoHashUtility.ComputeHmacSHA256Hash("observation-1", cryptoHashKey));
     }
 }
