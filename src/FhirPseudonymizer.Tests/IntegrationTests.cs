@@ -82,7 +82,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
-            "/v2alpha1/fhir/$de-identify",
+            "/v3alpha1/fhir/$de-identify",
             content,
             TestContext.Current.CancellationToken
         );
@@ -99,7 +99,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
-            "/v2alpha1/fhir/$de-identify",
+            "/v3alpha1/fhir/$de-identify",
             content,
             TestContext.Current.CancellationToken
         );
@@ -126,7 +126,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
-            "/v2alpha1/fhir/$de-identify",
+            "/v3alpha1/fhir/$de-identify",
             content,
             TestContext.Current.CancellationToken
         );

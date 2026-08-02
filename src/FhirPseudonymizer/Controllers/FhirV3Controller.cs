@@ -6,25 +6,20 @@ using Microsoft.AspNetCore.Mvc;
 namespace FhirPseudonymizer.Controllers;
 
 /// <summary>
-///     Experimental v2alpha1 FHIR operations. These endpoints are still under development and may
+///     Experimental v3alpha1 FHIR operations. These endpoints are still under development and may
 ///     change or be removed without notice.
 /// </summary>
 /// <response code="500">An unexpected internal error occurred</response>
 /// <response code="400">Invalid or missing Parameters resource in POST body received</response>
 [ApiController]
-[Route("v2alpha1/fhir")]
+[Route("v3alpha1/fhir")]
 [Produces("application/fhir+json")]
 [Consumes("application/fhir+json", "application/json")]
 [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 [ProducesResponseType(StatusCodes.Status400BadRequest)]
-public class FhirV2Alpha1Controller : ControllerBase
+public class FhirV3Controller(ILogger<FhirV3Controller> logger) : ControllerBase
 {
-    private readonly ILogger<FhirV2Alpha1Controller> logger;
-
-    public FhirV2Alpha1Controller(ILogger<FhirV2Alpha1Controller> logger)
-    {
-        this.logger = logger;
-    }
+    private readonly ILogger<FhirV3Controller> logger = logger;
 
     /// <summary>
     ///     Apply de-identification rules supplied inline in the request body - the same rules and
@@ -45,7 +40,7 @@ public class FhirV2Alpha1Controller : ControllerBase
     [ProducesResponseType(StatusCodes.Status501NotImplemented)]
     public ActionResult DeIdentify([FromBody] Parameters parameters)
     {
-        if (parameters == null)
+        if (parameters is null)
         {
             logger.LogWarning("Bad Request: received request body is empty.");
             return BadRequest(
@@ -75,13 +70,13 @@ public class FhirV2Alpha1Controller : ControllerBase
             );
         }
 
-        if (request.Resource == null)
+        if (request.Resource is null)
         {
-            logger.LogWarning("Bad Request: received Parameters carry no 'resource' parameter.");
+            logger.LogWarning("Bad Request: received Parameters has no 'resource' parameter.");
             return BadRequest(
                 CreateOutcome(
                     OperationOutcome.IssueSeverity.Error,
-                    "Received Parameters carry no 'resource' parameter"
+                    "Received Parameters has no 'resource' parameter"
                 )
             );
         }

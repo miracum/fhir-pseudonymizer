@@ -4,7 +4,7 @@ using Hl7.Fhir.Model;
 namespace FhirPseudonymizer.Pseudonymization.DeIdentification;
 
 /// <summary>
-///     Request body for the /v2alpha1/fhir/$de-identify operation. Bundles the same de-identification
+///     Request body for the /v3alpha1/fhir/$de-identify operation. Bundles the same de-identification
 ///     rules that are otherwise supplied via an anonymization.yaml config file (see e.g.
 ///     hipaa-anonymization.yaml) together with the FHIR resource they should be applied to, all
 ///     carried as parts of a single FHIR Parameters resource.
