@@ -18,8 +18,8 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = ElementNode.FromElement(patient.ToTypedElement());
-        var birthDateNode = node.Children("birthDate").CastElementNodes().First();
+        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var birthDateNode = node.ChildrenByName("birthDate").First();
 
         var settings = new Dictionary<string, object>
         {
@@ -28,7 +28,7 @@ public class DateShiftProcessorTests
 
         await processor.ProcessAsync(birthDateNode, settings: settings);
 
-        birthDateNode.Value.ToString().Should().Be("1990-02-14");
+        birthDateNode.GetValue().ToString().Should().Be("1990-02-14");
     }
 
     [Fact]
@@ -41,8 +41,8 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = ElementNode.FromElement(patient.ToTypedElement());
-        var birthDateNode = node.Children("birthDate").CastElementNodes().First();
+        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var birthDateNode = node.ChildrenByName("birthDate").First();
 
         var settings = new Dictionary<string, object>
         {
@@ -51,7 +51,7 @@ public class DateShiftProcessorTests
 
         await processor.ProcessAsync(birthDateNode, settings: settings);
 
-        birthDateNode.Value.ToString().Should().Be("1990-01-05");
+        birthDateNode.GetValue().ToString().Should().Be("1990-01-05");
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = ElementNode.FromElement(patient.ToTypedElement());
-        var birthDateNode = node.Children("birthDate").CastElementNodes().First();
+        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var birthDateNode = node.ChildrenByName("birthDate").First();
 
         var settings = new Dictionary<string, object>
         {
@@ -74,7 +74,7 @@ public class DateShiftProcessorTests
 
         await processor.ProcessAsync(birthDateNode, settings: settings);
 
-        birthDateNode.Value.ToString().Should().Be("1990-01-15");
+        birthDateNode.GetValue().ToString().Should().Be("1990-01-15");
     }
 
     [Fact]
@@ -95,18 +95,18 @@ public class DateShiftProcessorTests
         );
 
         var patient1 = new Patient { BirthDate = "1990-01-15" };
-        var node1 = ElementNode.FromElement(patient1.ToTypedElement());
-        var birthDateNode1 = node1.Children("birthDate").CastElementNodes().First();
+        var node1 = (PocoNode)PocoNodeOrList.Root(patient1);
+        var birthDateNode1 = node1.ChildrenByName("birthDate").First();
 
         var patient2 = new Patient { BirthDate = "1990-01-15" };
-        var node2 = ElementNode.FromElement(patient2.ToTypedElement());
-        var birthDateNode2 = node2.Children("birthDate").CastElementNodes().First();
+        var node2 = (PocoNode)PocoNodeOrList.Root(patient2);
+        var birthDateNode2 = node2.ChildrenByName("birthDate").First();
 
         await processor1.ProcessAsync(birthDateNode1, settings: null);
         await processor2.ProcessAsync(birthDateNode2, settings: null);
 
         // Different prefixes should yield different shifted dates (hash-based behavior)
-        birthDateNode1.Value.ToString().Should().NotBe(birthDateNode2.Value.ToString());
+        birthDateNode1.GetValue().ToString().Should().NotBe(birthDateNode2.GetValue().ToString());
     }
 
     [Fact]
@@ -120,8 +120,8 @@ public class DateShiftProcessorTests
 
         // Use Condition.recordedDate which is a non-polymorphic dateTime field
         var condition = new Condition { RecordedDate = "2020-06-15T10:30:00+02:00" };
-        var node = ElementNode.FromElement(condition.ToTypedElement());
-        var recordedDateNode = node.Children("recordedDate").CastElementNodes().First();
+        var node = (PocoNode)PocoNodeOrList.Root(condition);
+        var recordedDateNode = node.ChildrenByName("recordedDate").First();
 
         var settings = new Dictionary<string, object>
         {
@@ -131,7 +131,7 @@ public class DateShiftProcessorTests
         await processor.ProcessAsync(recordedDateNode, settings: settings);
 
         // Date shifted by 5 days, time zeroed out per existing behavior
-        recordedDateNode.Value.ToString().Should().Be("2020-06-20T00:00:00+02:00");
+        recordedDateNode.GetValue().ToString().Should().Be("2020-06-20T00:00:00+02:00");
     }
 
     [Fact]
@@ -144,15 +144,15 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = ElementNode.FromElement(patient.ToTypedElement());
-        var birthDateNode = node.Children("birthDate").CastElementNodes().First();
+        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var birthDateNode = node.ChildrenByName("birthDate").First();
 
         // Using raw int instead of FHIR Integer
         var settings = new Dictionary<string, object> { { "dateShiftFixedOffsetInDays", 30 } };
 
         await processor.ProcessAsync(birthDateNode, settings: settings);
 
-        birthDateNode.Value.ToString().Should().Be("1990-02-14");
+        birthDateNode.GetValue().ToString().Should().Be("1990-02-14");
     }
 
     [Fact]
@@ -166,12 +166,12 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = ElementNode.FromElement(patient.ToTypedElement());
-        var birthDateNode = node.Children("birthDate").CastElementNodes().First();
+        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var birthDateNode = node.ChildrenByName("birthDate").First();
 
         await processor.ProcessAsync(birthDateNode, settings: null);
 
-        birthDateNode.Value.ToString().Should().Be("1990-02-14");
+        birthDateNode.GetValue().ToString().Should().Be("1990-02-14");
     }
 
     [Fact]
@@ -185,8 +185,8 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = ElementNode.FromElement(patient.ToTypedElement());
-        var birthDateNode = node.Children("birthDate").CastElementNodes().First();
+        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var birthDateNode = node.ChildrenByName("birthDate").First();
 
         var settings = new Dictionary<string, object>
         {
@@ -195,6 +195,6 @@ public class DateShiftProcessorTests
 
         await processor.ProcessAsync(birthDateNode, settings: settings);
 
-        birthDateNode.Value.ToString().Should().Be("1990-01-05");
+        birthDateNode.GetValue().ToString().Should().Be("1990-01-05");
     }
 }

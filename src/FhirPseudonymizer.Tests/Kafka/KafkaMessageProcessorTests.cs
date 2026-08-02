@@ -258,23 +258,24 @@ public class KafkaMessageProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_WithAResourceOnlyTheLegacyParserAccepts_StillProcessesIt()
+    public async Task ProcessAsync_WithAResourceThatIsNotValidFhir_SendsItToTheDeadLetterTopic()
     {
-        // ids may only contain [A-Za-z0-9\-\.] as per the FHIR spec, which the System.Text.Json
-        // based deserializer validates, but the legacy parser did not
+        // ids may only contain [A-Za-z0-9\-\.] as per the FHIR spec, which is validated while
+        // parsing
+        var json = """{"resourceType":"Patient","id":"pid_1"}""";
         var producer = CreateProducer(out var produced);
         var processor = CreateProcessor(CreatePassThroughAnonymizer(), producer);
 
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
-            CreateConsumeResult("""{"resourceType":"Patient","id":"pid_1"}"""),
+            CreateConsumeResult(json),
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
 
-        produced.Single().Topic.Should().Be(OutputTopic);
-        produced.Single().Message.Value.Should().Contain("\"id\":\"pid_1\"");
-        outcomes.Should().Equal(KafkaMessageOutcome.Produced);
+        produced.Single().Topic.Should().Be(DeadLetterTopic);
+        produced.Single().Message.Value.Should().Be(json);
+        outcomes.Should().Equal(KafkaMessageOutcome.DeadLettered);
     }
 
     [Fact]
