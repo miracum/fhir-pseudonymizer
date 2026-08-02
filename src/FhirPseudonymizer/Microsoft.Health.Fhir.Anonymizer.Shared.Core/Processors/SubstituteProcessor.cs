@@ -1,23 +1,19 @@
 using EnsureThat;
-using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
-using Hl7.Fhir.Specification;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public class SubstituteProcessor : IAnonymizerProcessor
     {
-        private static readonly PocoStructureDefinitionSummaryProvider s_provider =
-            new PocoStructureDefinitionSummaryProvider();
-
-        private readonly FhirJsonParser _parser = new FhirJsonParser();
+        private readonly FhirJsonDeserializer _parser = new FhirJsonDeserializer();
 
         public Task<ProcessResult> ProcessAsync(
-            ElementNode node,
+            PocoNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
         )
@@ -27,9 +23,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             EnsureArg.IsNotNull(settings);
 
             var substituteSetting = SubstituteSetting.CreateFromRuleSettings(settings);
-            ElementNode replacementNode;
+            PocoNode replacementNode;
             // Get replacementNode for substitution
-            if (ModelInfo.IsPrimitive(node.InstanceType))
+            if (ModelInfo.IsPrimitive(node.GetInstanceType()))
             {
                 // Handle replaceWith value of string
                 replacementNode = GetPrimitiveNode(substituteSetting.ReplaceWith);
@@ -37,7 +33,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             else
             {
                 // Handle replaceWith value of json object
-                var replacementNodeType = ModelInfo.GetTypeForFhirType(node.InstanceType);
+                var replacementNodeType = ModelInfo.GetTypeForFhirType(node.GetInstanceType());
                 if (replacementNodeType == null)
                 {
                     // Shall never throws here
@@ -46,13 +42,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
                 // Convert null object to empty object
                 var replaceWith = substituteSetting.ReplaceWith ?? "{}";
-                var replaceElement = _parser
-                    .Parse(replaceWith, replacementNodeType)
-                    .ToTypedElement();
-                replacementNode = ElementNode.FromElement(replaceElement);
+                var replacementPoco = (Base)
+                    _parser.DeserializeObject(replacementNodeType, replaceWith);
+                replacementNode = PocoNodeExtension.CreateRootNode(replacementPoco);
             }
 
-            var keepNodes = new HashSet<ElementNode>();
+            var keepNodes = new HashSet<PocoNode>(PocoNodeIdentityComparer.Instance);
             // Retrieve all nodes that have been processed before to keep
             _ = GenerateKeepNodeSetForSubstitution(node, context.VisitedNodes, keepNodes);
             var processResult = SubstituteNode(
@@ -67,10 +62,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         }
 
         private ProcessResult SubstituteNode(
-            ElementNode node,
-            ElementNode replacementNode,
-            HashSet<ElementNode> visitedNodes,
-            HashSet<ElementNode> keepNodes
+            PocoNode node,
+            PocoNode replacementNode,
+            HashSet<PocoNode> visitedNodes,
+            HashSet<PocoNode> keepNodes
         )
         {
             var processResult = new ProcessResult();
@@ -82,12 +77,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             // children names to replace, multiple to multiple replacement
             var replaceChildrenNames = replacementNode
                 .Children()
+                .CastPocoNodes()
                 .Select(element => element.Name)
                 .ToHashSet();
             foreach (var name in replaceChildrenNames)
             {
-                var children = node.Children(name).CastElementNodes().ToList();
-                var targetChildren = replacementNode.Children(name).CastElementNodes().ToList();
+                var children = node.ChildrenByName(name).ToList();
+                var targetChildren = replacementNode.ChildrenByName(name).ToList();
 
                 var i = 0;
                 foreach (var child in children)
@@ -110,21 +106,23 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                     else
                     {
                         // Remove source node when no target node available and we don't need to keep the source node
-                        node.Remove(child);
+                        node.RemoveChild(child);
                     }
                 }
 
                 while (i < targetChildren.Count)
                 {
-                    // Add extra target nodes, create a new copy before adding
-                    node.Add(s_provider, ElementNode.FromElement(targetChildren[i++]));
+                    // Add extra target nodes - borrow the POCO straight out of the (otherwise
+                    // disconnected) replacement template and splice it into the live tree; the
+                    // template isn't used for anything else afterward, so aliasing it here is safe.
+                    node.AddChild(name, targetChildren[i++].Poco);
                 }
             }
 
             // children nodes not presented in replacement value, we need either remove or keep a dummy copy
             var nonReplacementChildren = node.Children()
+                .CastPocoNodes()
                 .Where(element => !replaceChildrenNames.Contains(element.Name))
-                .CastElementNodes()
                 .ToList();
             foreach (var child in nonReplacementChildren)
             {
@@ -135,25 +133,32 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 }
                 else
                 {
-                    node.Remove(child);
+                    node.RemoveChild(child);
                 }
             }
 
-            node.Value = replacementNode.Value;
+            // Only primitive leaves carry a settable value; composite nodes' Poco isn't a
+            // PrimitiveType, so this mirrors the old ElementNode.Value setter's no-op behaviour
+            // for them instead of an invalid cast.
+            if (node.Poco is PrimitiveType)
+            {
+                node.SetPrimitiveValue(replacementNode.GetValue());
+            }
+
             processResult.AddProcessRecord(AnonymizationOperations.Substitute, node);
             return processResult;
         }
 
         // To keep consistent anonymization changes made by preceding rules, we should figure out whether a node can be removed during substitution
         private bool GenerateKeepNodeSetForSubstitution(
-            ElementNode node,
-            HashSet<ElementNode> visitedNodes,
-            HashSet<ElementNode> keepNodes
+            PocoNode node,
+            HashSet<PocoNode> visitedNodes,
+            HashSet<PocoNode> keepNodes
         )
         {
             var shouldKeep = false;
             // If a child (no matter how deep) has been modified, this node should be kept
-            foreach (var child in node.Children().CastElementNodes())
+            foreach (var child in node.Children().CastPocoNodes())
             {
                 shouldKeep |= GenerateKeepNodeSetForSubstitution(child, visitedNodes, keepNodes);
             }
@@ -169,31 +174,28 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         }
 
         // Post-process to mark all substituted children nodes as visited
-        private void MarkSubstitutedFragmentAsVisited(
-            ElementNode node,
-            HashSet<ElementNode> visitedNodes
-        )
+        private void MarkSubstitutedFragmentAsVisited(PocoNode node, HashSet<PocoNode> visitedNodes)
         {
             visitedNodes.Add(node);
-            foreach (var child in node.Children().CastElementNodes())
+            foreach (var child in node.Children().CastPocoNodes())
             {
                 MarkSubstitutedFragmentAsVisited(child, visitedNodes);
             }
         }
 
-        private ElementNode GetPrimitiveNode(string value)
+        private PocoNode GetPrimitiveNode(string value)
         {
-            var node = ElementNode.FromElement(ElementNode.ForPrimitive(value ?? string.Empty));
+            var node = PocoNode.ForAnyPrimitive(value ?? string.Empty);
             if (value == null)
             {
                 // Set empty node value to null to ensure a correct serialization result
-                node.Value = null;
+                node.SetPrimitiveValue(null);
             }
 
             return node;
         }
 
-        private ElementNode GetDummyNode()
+        private PocoNode GetDummyNode()
         {
             var dummy = GetPrimitiveNode(null);
             return dummy;

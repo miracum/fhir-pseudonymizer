@@ -48,15 +48,15 @@ public class CryptoHashProcessorTests
     {
         var processor = new CryptoHashProcessor("test");
 
-        var node = ElementNode.FromElement(element.ToTypedElement());
-        while (!node.HasValue())
+        var node = (PocoNode)PocoNodeOrList.Root(element);
+        while (node.GetValue() == null)
         {
-            node = node.Children().CastElementNodes().First();
+            node = node.Children().CastPocoNodes().First();
         }
 
         await processor.ProcessAsync(node);
 
-        node.Value.ToString().Should().Be(expected);
+        node.GetValue().ToString().Should().Be(expected);
     }
 
     [Theory]
@@ -68,10 +68,10 @@ public class CryptoHashProcessorTests
     {
         var processor = new CryptoHashProcessor("test");
 
-        var node = ElementNode.FromElement(element.ToTypedElement());
-        while (!node.HasValue())
+        var node = (PocoNode)PocoNodeOrList.Root(element);
+        while (node.GetValue() == null)
         {
-            node = node.Children().CastElementNodes().First();
+            node = node.Children().CastPocoNodes().First();
         }
 
         await processor.ProcessAsync(
@@ -79,6 +79,6 @@ public class CryptoHashProcessorTests
             settings: new Dictionary<string, object>() { { "truncateToMaxLength", 32 } }
         );
 
-        node.Value.ToString().Should().Be(expected);
+        node.GetValue().ToString().Should().Be(expected);
     }
 }

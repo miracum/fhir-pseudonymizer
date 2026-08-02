@@ -1,9 +1,9 @@
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Models
 {
     public class ProcessContext
     {
-        public HashSet<ElementNode> VisitedNodes { get; set; }
+        public HashSet<PocoNode> VisitedNodes { get; set; }
     }
 }

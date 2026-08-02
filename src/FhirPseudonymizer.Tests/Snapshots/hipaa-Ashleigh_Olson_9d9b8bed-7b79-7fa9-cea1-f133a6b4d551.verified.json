@@ -447,7 +447,7 @@
           "reference": "urn:uuid:4a68d83d916a39528006c132ce51bcaa39b7a3391cc3af5920704fa18458a8ef"
         },
         "effectiveDateTime": "2012-03-04T00:00:00+00:00",
-        "issued": "2012-03-04T00:00:00+00:00",
+        "issued": "2012-03-04T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -516,7 +516,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2012-03-04T00:00:00+00:00",
+        "date": "2012-03-04T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -935,7 +935,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00"
+        "issued": "2012-10-05T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -987,7 +987,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00"
+        "issued": "2012-10-05T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -1043,7 +1043,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00"
+        "issued": "2012-10-05T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -1099,7 +1099,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00"
+        "issued": "2012-10-05T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -1154,7 +1154,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00"
+        "issued": "2012-10-05T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -1210,7 +1210,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00",
+        "issued": "2012-10-05T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -1286,7 +1286,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00"
+        "issued": "2012-10-05T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -1342,7 +1342,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00"
+        "issued": "2012-10-05T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -1397,7 +1397,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00"
+        "issued": "2012-10-05T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -1683,7 +1683,7 @@
           "reference": "urn:uuid:1333800dbebe37bf78c0d3504ad5b1abf594cea329eb9513517b732fc9b00759"
         },
         "effectiveDateTime": "2012-10-05T00:00:00+00:00",
-        "issued": "2012-10-05T00:00:00+00:00",
+        "issued": "2012-10-05T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -1752,7 +1752,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2012-10-05T00:00:00+00:00",
+        "date": "2012-10-05T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -2828,7 +2828,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -2880,7 +2880,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -2936,7 +2936,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -2992,7 +2992,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3047,7 +3047,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3103,7 +3103,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00",
+        "issued": "2013-10-11T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -3179,7 +3179,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3235,7 +3235,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3290,7 +3290,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3345,7 +3345,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3400,7 +3400,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3455,7 +3455,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3510,7 +3510,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3565,7 +3565,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3620,7 +3620,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3675,7 +3675,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3730,7 +3730,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3785,7 +3785,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3840,7 +3840,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -3895,7 +3895,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00"
+        "issued": "2013-10-11T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -4042,7 +4042,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00",
+        "issued": "2013-10-11T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Organization?identifier=https://github.com/synthetichealth/synthea|82b62d24d280edba9dc2e99c8272e5d6b2f2b61a269ffc20a642b3a03c5447b1"
@@ -4143,7 +4143,7 @@
           "reference": "urn:uuid:90467f2feba4d786edbe26442a16b3c0ae6939201df20324547ee2ee83bb46b0"
         },
         "effectiveDateTime": "2013-10-11T00:00:00+00:00",
-        "issued": "2013-10-11T00:00:00+00:00",
+        "issued": "2013-10-11T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -4212,7 +4212,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2013-10-11T00:00:00+00:00",
+        "date": "2013-10-11T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -5021,7 +5021,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00"
+        "issued": "2014-10-17T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -5073,7 +5073,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00"
+        "issued": "2014-10-17T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -5129,7 +5129,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00"
+        "issued": "2014-10-17T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -5185,7 +5185,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00"
+        "issued": "2014-10-17T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -5240,7 +5240,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00"
+        "issued": "2014-10-17T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -5296,7 +5296,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00",
+        "issued": "2014-10-17T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -5372,7 +5372,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00"
+        "issued": "2014-10-17T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -5428,7 +5428,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00"
+        "issued": "2014-10-17T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -5483,7 +5483,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00"
+        "issued": "2014-10-17T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -5636,7 +5636,7 @@
           "reference": "urn:uuid:5b1d79076b7e7c3e60c6f95259cb7f6536b431496c99a4e17fa99d3a9009d466"
         },
         "effectiveDateTime": "2014-10-17T00:00:00+00:00",
-        "issued": "2014-10-17T00:00:00+00:00",
+        "issued": "2014-10-17T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -5705,7 +5705,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2014-10-17T00:00:00+00:00",
+        "date": "2014-10-17T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -6383,7 +6383,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00"
+        "issued": "2015-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -6435,7 +6435,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00"
+        "issued": "2015-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -6491,7 +6491,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00"
+        "issued": "2015-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -6547,7 +6547,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00"
+        "issued": "2015-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -6602,7 +6602,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00"
+        "issued": "2015-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -6658,7 +6658,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00",
+        "issued": "2015-10-23T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -6734,7 +6734,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00"
+        "issued": "2015-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -6790,7 +6790,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00"
+        "issued": "2015-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -6845,7 +6845,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00"
+        "issued": "2015-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -6951,7 +6951,7 @@
           "reference": "urn:uuid:7f759483f57747a22a95cb3aecdfe60bc77195cc4452201554691777a1d24666"
         },
         "effectiveDateTime": "2015-10-23T00:00:00+00:00",
-        "issued": "2015-10-23T00:00:00+00:00",
+        "issued": "2015-10-23T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -7020,7 +7020,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2015-10-23T00:00:00+00:00",
+        "date": "2015-10-23T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -7572,7 +7572,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00"
+        "issued": "2016-10-28T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -7624,7 +7624,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00"
+        "issued": "2016-10-28T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -7680,7 +7680,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00"
+        "issued": "2016-10-28T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -7736,7 +7736,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00"
+        "issued": "2016-10-28T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -7791,7 +7791,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00"
+        "issued": "2016-10-28T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -7847,7 +7847,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00",
+        "issued": "2016-10-28T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -7923,7 +7923,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00"
+        "issued": "2016-10-28T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -7979,7 +7979,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00"
+        "issued": "2016-10-28T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -8034,7 +8034,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00"
+        "issued": "2016-10-28T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -8187,7 +8187,7 @@
           "reference": "urn:uuid:6fd9bb3e442dbe144f30788263a9cfa1647fa70a5d9326778aa2b8745831a147"
         },
         "effectiveDateTime": "2016-10-28T00:00:00+00:00",
-        "issued": "2016-10-28T00:00:00+00:00",
+        "issued": "2016-10-28T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -8256,7 +8256,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2016-10-28T00:00:00+00:00",
+        "date": "2016-10-28T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -9017,7 +9017,7 @@
           "reference": "urn:uuid:fb185f4c71ce69fa18ce66215c9bca5a128c8896ed8c7a063c4b0588f03d0285"
         },
         "effectiveDateTime": "2017-03-13T00:00:00+00:00",
-        "issued": "2017-03-13T00:00:00+00:00",
+        "issued": "2017-03-13T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -9086,7 +9086,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2017-03-13T00:00:00+00:00",
+        "date": "2017-03-13T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -9567,7 +9567,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00"
+        "issued": "2017-11-03T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -9619,7 +9619,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00"
+        "issued": "2017-11-03T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -9675,7 +9675,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00"
+        "issued": "2017-11-03T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -9731,7 +9731,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00"
+        "issued": "2017-11-03T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -9786,7 +9786,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00"
+        "issued": "2017-11-03T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -9842,7 +9842,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00",
+        "issued": "2017-11-03T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -9918,7 +9918,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00"
+        "issued": "2017-11-03T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -9974,7 +9974,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00"
+        "issued": "2017-11-03T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -10029,7 +10029,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00"
+        "issued": "2017-11-03T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -10182,7 +10182,7 @@
           "reference": "urn:uuid:dd63d62eaee3cec1af56b040c8b048b63cdd57e020ade0ac1c80e68afee0f010"
         },
         "effectiveDateTime": "2017-11-03T00:00:00+00:00",
-        "issued": "2017-11-03T00:00:00+00:00",
+        "issued": "2017-11-03T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -10251,7 +10251,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2017-11-03T00:00:00+00:00",
+        "date": "2017-11-03T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -11081,7 +11081,7 @@
           "reference": "urn:uuid:421e9c4880b9259105cb0ffd53978df0a9a3a52a1c177930ddffcc11d081cb25"
         },
         "effectiveDateTime": "2018-08-22T00:00:00+00:00",
-        "issued": "2018-08-22T00:00:00+00:00",
+        "issued": "2018-08-22T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -11150,7 +11150,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2018-08-22T00:00:00+00:00",
+        "date": "2018-08-22T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -11841,7 +11841,7 @@
           "reference": "urn:uuid:528fcf15a45150569e9d10de76000d15ca5d9d824db30f0a1c89434ff5acb727"
         },
         "effectiveDateTime": "2018-10-23T00:00:00+00:00",
-        "issued": "2018-10-23T00:00:00+00:00"
+        "issued": "2018-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -11897,7 +11897,7 @@
           "reference": "urn:uuid:528fcf15a45150569e9d10de76000d15ca5d9d824db30f0a1c89434ff5acb727"
         },
         "effectiveDateTime": "2018-10-23T00:00:00+00:00",
-        "issued": "2018-10-23T00:00:00+00:00"
+        "issued": "2018-10-23T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -12062,7 +12062,7 @@
           "reference": "urn:uuid:528fcf15a45150569e9d10de76000d15ca5d9d824db30f0a1c89434ff5acb727"
         },
         "effectiveDateTime": "2018-10-23T00:00:00+00:00",
-        "issued": "2018-10-23T00:00:00+00:00",
+        "issued": "2018-10-23T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -12131,7 +12131,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2018-10-23T00:00:00+00:00",
+        "date": "2018-10-23T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -12920,7 +12920,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -12972,7 +12972,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13028,7 +13028,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13084,7 +13084,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13139,7 +13139,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13195,7 +13195,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00",
+        "issued": "2018-11-09T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -13271,7 +13271,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13327,7 +13327,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13382,7 +13382,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13437,7 +13437,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13492,7 +13492,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13547,7 +13547,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13602,7 +13602,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13657,7 +13657,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13712,7 +13712,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13767,7 +13767,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13822,7 +13822,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13877,7 +13877,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13932,7 +13932,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -13987,7 +13987,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00"
+        "issued": "2018-11-09T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -14222,7 +14222,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00",
+        "issued": "2018-11-09T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Organization?identifier=https://github.com/synthetichealth/synthea|82b62d24d280edba9dc2e99c8272e5d6b2f2b61a269ffc20a642b3a03c5447b1"
@@ -14323,7 +14323,7 @@
           "reference": "urn:uuid:d7142bd4f2c7c34b16f5739c54f5edb2da19f6fe40792e5315208c99b43c77bd"
         },
         "effectiveDateTime": "2018-11-09T00:00:00+00:00",
-        "issued": "2018-11-09T00:00:00+00:00",
+        "issued": "2018-11-09T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -14392,7 +14392,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2018-11-09T00:00:00+00:00",
+        "date": "2018-11-09T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -15468,7 +15468,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -15520,7 +15520,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -15576,7 +15576,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -15632,7 +15632,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -15687,7 +15687,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -15743,7 +15743,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00",
+        "issued": "2019-11-15T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -15819,7 +15819,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -15875,7 +15875,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -15930,7 +15930,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -15982,7 +15982,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -16034,7 +16034,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00"
+        "issued": "2019-11-15T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -16367,7 +16367,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00",
+        "issued": "2019-11-15T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Organization?identifier=https://github.com/synthetichealth/synthea|82b62d24d280edba9dc2e99c8272e5d6b2f2b61a269ffc20a642b3a03c5447b1"
@@ -16432,7 +16432,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00",
+        "issued": "2019-11-15T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Organization?identifier=https://github.com/synthetichealth/synthea|82b62d24d280edba9dc2e99c8272e5d6b2f2b61a269ffc20a642b3a03c5447b1"
@@ -16503,7 +16503,7 @@
           "reference": "urn:uuid:1f3724191e058191ba31899b123c495e3ae1975a62bb78034e3a43471bdca138"
         },
         "effectiveDateTime": "2019-11-15T00:00:00+00:00",
-        "issued": "2019-11-15T00:00:00+00:00",
+        "issued": "2019-11-15T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -16572,7 +16572,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2019-11-15T00:00:00+00:00",
+        "date": "2019-11-15T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -18015,7 +18015,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18067,7 +18067,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18123,7 +18123,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18179,7 +18179,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18234,7 +18234,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18290,7 +18290,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00",
+        "issued": "2020-11-20T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -18366,7 +18366,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18422,7 +18422,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18477,7 +18477,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18529,7 +18529,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00"
+        "issued": "2020-11-20T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -18909,7 +18909,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00",
+        "issued": "2020-11-20T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Organization?identifier=https://github.com/synthetichealth/synthea|82b62d24d280edba9dc2e99c8272e5d6b2f2b61a269ffc20a642b3a03c5447b1"
@@ -18980,7 +18980,7 @@
           "reference": "urn:uuid:36f2e7f8f87da961acc2b24e2cb172def87a3c6aa231ab9e1bb7af7a3978abbf"
         },
         "effectiveDateTime": "2020-11-20T00:00:00+00:00",
-        "issued": "2020-11-20T00:00:00+00:00",
+        "issued": "2020-11-20T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -19049,7 +19049,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2020-11-20T00:00:00+00:00",
+        "date": "2020-11-20T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -21557,7 +21557,7 @@
           "reference": "urn:uuid:8405f25e6da51e539147319f59fafddaa07d2a540fed1af9c641e4f1e38c4574"
         },
         "effectiveDateTime": "2021-07-01T00:00:00+00:00",
-        "issued": "2021-07-01T00:00:00+00:00",
+        "issued": "2021-07-01T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -21626,7 +21626,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2021-07-01T00:00:00+00:00",
+        "date": "2021-07-01T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -22371,7 +22371,7 @@
           "reference": "urn:uuid:48a85f47efcdf7f593c309261272a431dd2acbb908343c2a5ab458829dd5efb6"
         },
         "effectiveDateTime": "2021-08-16T00:00:00+00:00",
-        "issued": "2021-08-16T00:00:00+00:00",
+        "issued": "2021-08-16T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -22440,7 +22440,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2021-08-16T00:00:00+00:00",
+        "date": "2021-08-16T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -22909,7 +22909,7 @@
           "reference": "urn:uuid:08c8a1ab9c1b20d0bd72eb7c89a9f3ff5da697cf58a18169e665bcd3afc057dc"
         },
         "effectiveDateTime": "2021-09-24T00:00:00+00:00",
-        "issued": "2021-09-24T00:00:00+00:00",
+        "issued": "2021-09-24T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -22978,7 +22978,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2021-09-24T00:00:00+00:00",
+        "date": "2021-09-24T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -23580,7 +23580,7 @@
           "reference": "urn:uuid:1c9b786cc8fba2a64b36e2432f8e9c84973810228589644373af6e9ad41f0731"
         },
         "effectiveDateTime": "2021-10-15T00:00:00+00:00",
-        "issued": "2021-10-15T00:00:00+00:00",
+        "issued": "2021-10-15T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -23649,7 +23649,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2021-10-15T00:00:00+00:00",
+        "date": "2021-10-15T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -24201,7 +24201,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -24253,7 +24253,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -24309,7 +24309,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -24365,7 +24365,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -24420,7 +24420,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -24476,7 +24476,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00",
+        "issued": "2021-11-26T00:00:00.000+00:00",
         "component": [
           {
             "code": {
@@ -24552,7 +24552,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -24608,7 +24608,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -24663,7 +24663,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -24715,7 +24715,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00"
+        "issued": "2021-11-26T00:00:00.000+00:00"
       },
       "request": {
         "method": "POST"
@@ -25097,7 +25097,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00",
+        "issued": "2021-11-26T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Organization?identifier=https://github.com/synthetichealth/synthea|82b62d24d280edba9dc2e99c8272e5d6b2f2b61a269ffc20a642b3a03c5447b1"
@@ -25168,7 +25168,7 @@
           "reference": "urn:uuid:6fcc1f3ccc21ff09c70b45a199be418269adaa3a69670f16a4f08ad82df2515f"
         },
         "effectiveDateTime": "2021-11-26T00:00:00+00:00",
-        "issued": "2021-11-26T00:00:00+00:00",
+        "issued": "2021-11-26T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -25237,7 +25237,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2021-11-26T00:00:00+00:00",
+        "date": "2021-11-26T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|d8571dd58f4cdeb0bb21bab08fcd1e9c4843e41ff0a2ea077242d196616bdca8"
@@ -27051,7 +27051,7 @@
           "reference": "urn:uuid:2e7130ae9a902f6f61e9725de15466a0c0a752bfa7ce5b57b9b15ba491a59100"
         },
         "effectiveDateTime": "2022-01-02T00:00:00+00:00",
-        "issued": "2022-01-02T00:00:00+00:00",
+        "issued": "2022-01-02T00:00:00.000+00:00",
         "performer": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -27120,7 +27120,7 @@
         "subject": {
           "reference": "urn:uuid:ce090f9deb8190c9bc101b75e50d6d115fd7c2ca4409e7c74a80d19d11b076cc"
         },
-        "date": "2022-01-02T00:00:00+00:00",
+        "date": "2022-01-02T00:00:00.000+00:00",
         "author": [
           {
             "reference": "Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|e6129d12b1bb2dbcccf7066ff3dc4455da4c05dc3868a9eaad7e48046c95dd8b"
@@ -28347,7 +28347,7 @@
             "reference": "urn:uuid:43c72c5598dd2a5b4e0510a8d6783bc77ef992637ebbdc1686e21f64ef19bf4d"
           }
         ],
-        "recorded": "2022-08-19T00:00:00+00:00",
+        "recorded": "2022-08-19T00:00:00.000+00:00",
         "agent": [
           {
             "type": {
