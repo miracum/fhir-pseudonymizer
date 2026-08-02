@@ -38,7 +38,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
                     configuration.Parameters.EncryptKey = anonymizationConfig.EncryptKey;
                 }
 
-                var keyDerivationContext = anonymizationConfig.KeyDerivationContext;
+                // YAML `parameters.keyDerivationContext` wins if set, otherwise falls back to the
+                // static Anonymization__KeyDerivationContext app setting.
+                var keyDerivationContext = string.IsNullOrWhiteSpace(
+                    configuration.Parameters.KeyDerivationContext
+                )
+                    ? anonymizationConfig.KeyDerivationContext
+                    : configuration.Parameters.KeyDerivationContext;
                 if (!string.IsNullOrWhiteSpace(keyDerivationContext))
                 {
                     // Each key derives from its own resolved value as its own master key - not

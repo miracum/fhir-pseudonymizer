@@ -20,6 +20,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
         [DataMember(Name = "encryptKey")]
         public string EncryptKey { get; set; }
 
+        [DataMember(Name = "keyDerivationContext")]
+        public string KeyDerivationContext { get; set; }
+
         [DataMember(Name = "enablePartialAgesForRedact")]
         public bool EnablePartialAgesForRedact { get; set; }
 
