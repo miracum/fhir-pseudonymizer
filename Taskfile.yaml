@@ -1,17 +1,6 @@
 version: "3"
 
 tasks:
-  build-stress-test-image:
-    desc: build the container image used for stress testing
-    vars:
-      BUILDKIT_PROGRESS: plain
-    cmds:
-      - docker build -t ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1 --target=stress-test --iidfile=./stress-test-iid.txt .
-    sources:
-      - src/FhirPseudonymizer.StressTests/*.cs
-    generates:
-      - ./stress-test-iid.txt
-
   install-argo-cli:
     desc: download and install the argo workflows cli
     dir: tests/chaos
@@ -35,11 +24,11 @@ tasks:
     deps:
       - create-cluster
       - install-argo-cli
-      - build-stress-test-image
     cmds:
       - helm repo add chaos-mesh https://charts.chaos-mesh.org
-      - kind load docker-image ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1
       - helm upgrade --install --create-namespace -n fhir-pseudonymizer -f fhir-pseudonymizer-values.yaml --wait fhir-pseudonymizer oci://ghcr.io/miracum/charts/fhir-pseudonymizer
+      - kubectl create configmap k6-chaos-script --from-file=k6-chaos-test.js -n fhir-pseudonymizer --dry-run=client -o yaml | kubectl apply -f -
+      - kubectl create configmap chaos-yaml --from-file=chaos.yaml -n fhir-pseudonymizer --dry-run=client -o yaml | kubectl apply -f -
       - helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh --create-namespace --wait -n chaos-mesh --set chaosDaemon.runtime=containerd --set chaosDaemon.socketPath='/run/containerd/containerd.sock'
       - kubectl apply -f chaos-mesh-rbac.yaml
       - helm upgrade --install --create-namespace -n argo-workflows -f argo-workflows-values.yaml --wait argo-workflows oci://ghcr.io/argoproj/argo-helm/argo-workflows

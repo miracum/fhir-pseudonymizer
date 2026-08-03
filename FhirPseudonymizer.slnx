@@ -7,7 +7,6 @@
   <Folder Name="/src/">
     <Project Path="src/FhirPseudonymizer.Benchmarks/FhirPseudonymizer.Benchmarks.csproj" />
     <Project Path="src/FhirPseudonymizer.Playground/FhirPseudonymizer.Playground.csproj" />
-    <Project Path="src/FhirPseudonymizer.StressTests/FhirPseudonymizer.StressTests.csproj" />
     <Project Path="src/FhirPseudonymizer.Tests/FhirPseudonymizer.Tests.csproj" />
     <Project Path="src/FhirPseudonymizer/FhirPseudonymizer.csproj" />
   </Folder>
