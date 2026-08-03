@@ -200,7 +200,7 @@ jobs:
           K6_OUTPUT=$(cat benchmark/k6/k6-output.txt)
           {
             echo -e '---';
-            echo -e '## k6 benchmark: legacy vs. v3alpha1 `$de-identify`';
+            echo -e '## k6 benchmarks';
             echo -e '```console';
             echo -e "${K6_OUTPUT}";
             echo -e '```'
