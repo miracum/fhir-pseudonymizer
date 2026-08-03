@@ -61,9 +61,10 @@ public class Startup
         var anonymizerEngineCacheConfig = appConfig.AnonymizerEngineCache;
         services.AddKeyedSingleton<IMemoryCache>(
             AnonymizerConfigCacheKeys.AnonymizerConfig,
-            new MemoryCache(
-                new MemoryCacheOptions { SizeLimit = anonymizerEngineCacheConfig.SizeLimit }
-            )
+            (_, _) =>
+                new MemoryCache(
+                    new MemoryCacheOptions { SizeLimit = anonymizerEngineCacheConfig.SizeLimit }
+                )
         );
 
         // Default entry options (size/expiration) for the AnonymizerConfigCache above, so
