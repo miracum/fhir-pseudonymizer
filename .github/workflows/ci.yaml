@@ -177,22 +177,19 @@ jobs:
           echo "container did not become ready in time" >&2
           exit 1
 
-      - name: Install k6
-        env:
-          K6_VERSION: "2.1.0"
-        run: |
-          curl -sL "https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-amd64.tar.gz" \
-            | tar xz --strip-components=1 -C /usr/local/bin "k6-v${K6_VERSION}-linux-amd64/k6"
-          k6 version
-
       - name: Run k6 benchmark
         env:
           BASE_URL: http://localhost:8080
           VUS: "10"
           DURATION_SECONDS: "15"
-        working-directory: benchmark/k6
+          # <https://hub.docker.com/r/grafana/k6>
+          K6_IMAGE: grafana/k6:2.1.0@sha256:65c920dc067d5e2e00befbf982af6ad6ad0117034e8b1c65817c7975c52d4669
         run: |
-          k6 run de-identify-comparison.js 2>&1 | tee k6-output.txt || true
+          docker run --rm --network host \
+            -v "${PWD}:/home/k6" \
+            -e BASE_URL -e VUS -e DURATION_SECONDS \
+            "${K6_IMAGE}" run benchmark/k6/de-identify-comparison.js \
+            2>&1 | tee benchmark/k6/k6-output.txt || true
 
       - name: Container logs
         if: always()
