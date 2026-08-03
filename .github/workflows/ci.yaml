@@ -443,12 +443,16 @@ jobs:
           benchmark-data-dir-path: dev/bench
           auto-push: true
 
+      # benchmark-action/github-action-benchmark clones the gh-pages branch into its own
+      # ./benchmark-data-repository working copy (not the main checkout) and writes/commits the
+      # dashboard there, since that's the actual gh-pages content - it's left on disk afterwards,
+      # so that's what needs uploading, not benchmark-data-dir-path itself relative to the checkout.
       - name: Upload benchmark dashboard artifact
         if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: benchmarks-dashboard
-          path: dev/bench
+          path: benchmark-data-repository/dev/bench
 
   deploy-pages:
     name: deploy pages
