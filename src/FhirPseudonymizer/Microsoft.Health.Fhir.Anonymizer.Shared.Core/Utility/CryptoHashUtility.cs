@@ -1,10 +1,16 @@
 using System.Security.Cryptography;
 using System.Text;
+using Blake3;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
 {
     public class CryptoHashUtility
     {
+        // Fixed, non-secret context for compressing an arbitrary-length cryptoHashKey down to
+        // the 32 bytes BLAKE3's keyed mode requires. Binds the derived key to this specific use,
+        // so it can never collide with BLAKE3 used for any other purpose in this application.
+        private const string Blake3KeyDerivationContext = "FhirPseudonymizer.CryptoHash.Blake3.v1";
+
         public static string ComputeHmacSHA256Hash(string input, string hashKey)
         {
             if (string.IsNullOrEmpty(input))
@@ -18,6 +24,27 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             var hashData = hmac.ComputeHash(plainData);
 
             return string.Concat(hashData.Select(b => b.ToString("x2")));
+        }
+
+        public static string ComputeKeyedBlake3Hash(string input, string hashKey)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+
+            // BLAKE3's keyed mode requires an exact 32-byte key. Its own key-derivation mode is
+            // the correct tool for compressing the (arbitrary-length) configured key down to
+            // that size - any existing cryptoHashKey value keeps working unchanged.
+            using var keyDeriver = Hasher.NewDeriveKey(Blake3KeyDerivationContext);
+            keyDeriver.Update(Encoding.UTF8.GetBytes(hashKey));
+            var derivedKey = keyDeriver.Finalize();
+
+            using var hasher = Hasher.NewKeyed(derivedKey.AsSpan());
+            hasher.Update(Encoding.UTF8.GetBytes(input));
+            var hashData = hasher.Finalize().AsSpan();
+
+            return Convert.ToHexStringLower(hashData);
         }
     }
 }

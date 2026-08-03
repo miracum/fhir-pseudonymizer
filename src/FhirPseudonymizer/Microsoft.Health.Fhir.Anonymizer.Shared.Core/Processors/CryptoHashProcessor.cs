@@ -1,4 +1,5 @@
 using Hl7.Fhir.ElementModel;
+using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
@@ -7,15 +8,23 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public class CryptoHashProcessor : IAnonymizerProcessor
     {
+        private readonly Func<string, string, string> _hashFunction;
         private readonly Func<string, string> _cryptoHashFunction;
         private readonly string _cryptoHashKey;
         private readonly ILogger _logger = AnonymizerLogging.CreateLogger<CryptoHashProcessor>();
 
-        public CryptoHashProcessor(string cryptoHashKey)
+        public CryptoHashProcessor(
+            string cryptoHashKey,
+            CryptoHashAlgorithm algorithm = CryptoHashAlgorithm.HmacSha256
+        )
         {
             _cryptoHashKey = cryptoHashKey;
-            _cryptoHashFunction = input =>
-                CryptoHashUtility.ComputeHmacSHA256Hash(input, _cryptoHashKey);
+            _hashFunction = algorithm switch
+            {
+                CryptoHashAlgorithm.Blake3 => CryptoHashUtility.ComputeKeyedBlake3Hash,
+                _ => CryptoHashUtility.ComputeHmacSHA256Hash,
+            };
+            _cryptoHashFunction = input => _hashFunction(input, _cryptoHashKey);
         }
 
         public Task<ProcessResult> ProcessAsync(
@@ -40,7 +49,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 var truncateToMaxLength = Convert.ToInt32(truncateToMaxLengthObject);
                 cryptoHashFunction = (input) =>
                 {
-                    var fullHash = CryptoHashUtility.ComputeHmacSHA256Hash(input, _cryptoHashKey);
+                    var fullHash = _hashFunction(input, _cryptoHashKey);
                     return fullHash[..Math.Min(truncateToMaxLength, fullHash.Length)];
                 };
             }

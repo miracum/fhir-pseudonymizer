@@ -222,6 +222,26 @@ fhirPathRules:
 | `Kafka__Consumer__*`                              | Consumer-only settings layered on top of `Kafka__Client__*`, e.g. `Kafka__Consumer__GroupId`, `Kafka__Consumer__SessionTimeoutMs`. Any property of [`Confluent.Kafka.ConsumerConfig`](https://docs.confluent.io/platform/current/clients/confluent-kafka-dotnet/_site/api/Confluent.Kafka.ConsumerConfig.html) can be set this way; `GroupId` defaults to `"fhir-pseudonymizer"` if unset. Note that `EnableAutoOffsetStore` is always forced to `false` regardless of this setting, since offsets are only stored after a message has been anonymized and produced. | unset               |
 | `Kafka__Producer__*`                              | Producer-only settings layered on top of `Kafka__Client__*`, e.g. `Kafka__Producer__LingerMs`, `Kafka__Producer__CompressionType`. Any property of [`Confluent.Kafka.ProducerConfig`](https://docs.confluent.io/platform/current/clients/confluent-kafka-dotnet/_site/api/Confluent.Kafka.ProducerConfig.html) can be set this way.                                                                                                                                                                                                                                  | unset               |
 
+### Crypto-hash Algorithm
+
+By default, the `cryptoHash` method uses keyed HMAC-SHA256. Set `parameters.cryptoHashAlgorithm` to
+`blake3` to use keyed [BLAKE3](https://github.com/BLAKE3-team/BLAKE3) instead, which is
+considerably faster:
+
+```yaml
+fhirPathRules:
+  - path: Resource.id
+    method: cryptoHash
+parameters:
+  cryptoHashKey: a-shared-secret-key
+  cryptoHashAlgorithm: blake3
+```
+
+This is opt-in and defaults to `hmacSha256` so that upgrading doesn't silently change the hash
+values of an already-deployed config. BLAKE3's keyed mode requires an exact 32-byte key; since
+`cryptoHashKey` can be any length, it's first hashed down to 32 bytes with plain BLAKE3, so any
+existing key value works unchanged.
+
 ### Truncating Crypto-hash Length
 
 When using the `cryptoHash` method on a value, the result is a hex-encoded string of 64 characters length.
