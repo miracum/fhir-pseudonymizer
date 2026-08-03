@@ -443,16 +443,25 @@ jobs:
           benchmark-data-dir-path: dev/bench
           auto-push: true
 
-      # benchmark-action/github-action-benchmark clones the gh-pages branch into its own
-      # ./benchmark-data-repository working copy (not the main checkout) and writes/commits the
-      # dashboard there, since that's the actual gh-pages content - it's left on disk afterwards,
-      # so that's what needs uploading, not benchmark-data-dir-path itself relative to the checkout.
+      # benchmark-action/github-action-benchmark commits/pushes to gh-pages by switching the
+      # checkout to that branch in-place, then switches back to master ("git checkout -") once
+      # done - so by this point dev/bench no longer exists anywhere in the working tree. Extract
+      # it directly from the gh-pages ref instead of relying on it being present on disk.
+      - name: Export benchmark dashboard for upload
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          git fetch origin gh-pages
+          mkdir -p dashboard-export
+          # actions/checkout's fetch refspec is narrow, so this fetch only sets FETCH_HEAD rather
+          # than a origin/gh-pages remote-tracking ref - reference that directly instead.
+          git archive FETCH_HEAD dev/bench | tar -x --strip-components=2 -C dashboard-export
+
       - name: Upload benchmark dashboard artifact
         if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: benchmarks-dashboard
-          path: benchmark-data-repository/dev/bench
+          path: dashboard-export
 
   deploy-pages:
     name: deploy pages
