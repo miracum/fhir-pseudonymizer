@@ -9,39 +9,54 @@ spec:
   onExit: exit-handler
   templates:
     - name: test
+      volumes:
+        - name: k6-chaos-script
+          configMap:
+            name: k6-chaos-script
       container:
-        image: ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1
+        # <https://hub.docker.com/r/grafana/k6>
+        image: docker.io/grafana/k6:2.1.0@sha256:65c920dc067d5e2e00befbf982af6ad6ad0117034e8b1c65817c7975c52d4669
         imagePullPolicy: IfNotPresent
         command:
-          - dotnet
+          - k6
         args:
-          - test
-          - /opt/fhir-pseudonymizer-stress/FhirPseudonymizer.StressTests.dll
-          - -l
-          - console;verbosity=detailed
+          - run
+          - --quiet
+          - /scripts/k6-chaos-test.js
         env:
-          - name: FHIR_PSEUDONYMIZER_BASE_URL
-            value: http://fhir-pseudonymizer:8080/fhir
+          - name: BASE_URL
+            value: http://fhir-pseudonymizer:8080
+        volumeMounts:
+          - name: k6-chaos-script
+            mountPath: /scripts
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
             drop:
               - ALL
           privileged: false
-          # currently running into <https://github.com/dotnet/runtime/issues/80619>
-          # when running as non-root.
-          runAsNonRoot: false
+          runAsNonRoot: true
+          runAsUser: 12345
+          runAsGroup: 12345
 
     - name: install-chaos
+      volumes:
+        - name: chaos-yaml
+          configMap:
+            name: chaos-yaml
       container:
-        image: ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1
+        # <https://hub.docker.com/r/rancher/kubectl>
+        image: docker.io/rancher/kubectl:v1.36.2@sha256:06c7a7a9772737494ae1e0c3af90f1b5385630c147e47c1c7cea92f4bed55fbe
         imagePullPolicy: IfNotPresent
         command:
           - kubectl
         args:
           - apply
           - -f
-          - /tmp/chaos.yaml
+          - /config/chaos.yaml
+        volumeMounts:
+          - name: chaos-yaml
+            mountPath: /config
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -53,15 +68,22 @@ spec:
           runAsGroup: 65532
 
     - name: delete-chaos
+      volumes:
+        - name: chaos-yaml
+          configMap:
+            name: chaos-yaml
       container:
-        image: ghcr.io/miracum/fhir-pseudonymizer/stress-test:v1
+        image: docker.io/rancher/kubectl:v1.36.2@sha256:06c7a7a9772737494ae1e0c3af90f1b5385630c147e47c1c7cea92f4bed55fbe
         imagePullPolicy: IfNotPresent
         command:
           - kubectl
         args:
           - delete
           - -f
-          - /tmp/chaos.yaml
+          - /config/chaos.yaml
+        volumeMounts:
+          - name: chaos-yaml
+            mountPath: /config
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

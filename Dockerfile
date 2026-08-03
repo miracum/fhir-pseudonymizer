@@ -38,33 +38,6 @@ WORKDIR /build/src/FhirPseudonymizer.Tests/coverage
 COPY --from=build-test /build/src/FhirPseudonymizer.Tests/coverage .
 ENTRYPOINT [ "true" ]
 
-FROM build AS build-stress-test
-WORKDIR /build
-
-RUN <<EOF
-dotnet publish \
-    --configuration=Release \
-    -a "$TARGETARCH" \
-    -o /build/publish \
-    src/FhirPseudonymizer.StressTests/FhirPseudonymizer.StressTests.csproj
-EOF
-
-FROM build AS stress-test
-WORKDIR /opt/fhir-pseudonymizer-stress
-
-# https://github.com/hadolint/hadolint/pull/815 isn't yet in mega-linter
-# hadolint ignore=DL3022
-COPY --from=docker.io/rancher/kubectl:v1.36.2@sha256:06c7a7a9772737494ae1e0c3af90f1b5385630c147e47c1c7cea92f4bed55fbe /bin/kubectl /usr/bin/kubectl
-
-COPY tests/chaos/chaos.yaml /tmp/
-COPY --from=build-stress-test /build/publish .
-# currently running into <https://github.com/dotnet/runtime/issues/80619>
-# when running as non-root.
-# hadolint ignore=DL3002
-USER 0:0
-ENTRYPOINT ["dotnet"]
-CMD ["/opt/fhir-pseudonymizer-stress/FhirPseudonymizer.StressTests.dll", "-reporter", "verbose"]
-
 FROM runtime
 COPY LICENSE .
 COPY --from=build /build/publish/*anonymization.yaml /etc/
