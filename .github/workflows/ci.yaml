@@ -188,7 +188,7 @@ jobs:
           docker run --rm --network host \
             -v "${PWD}:/home/k6" \
             -e BASE_URL -e VUS -e DURATION_SECONDS \
-            "${K6_IMAGE}" run benchmark/k6/de-identify-comparison.js \
+            "${K6_IMAGE}" run --quiet benchmark/k6/de-identify-comparison.js \
             2>&1 | tee benchmark/k6/k6-output.txt || true
 
       - name: Container logs
@@ -200,7 +200,8 @@ jobs:
           K6_OUTPUT=$(cat benchmark/k6/k6-output.txt)
           {
             echo -e '---';
-            echo -e '## k6 benchmarks';
+            # shellcheck disable=SC2016 # the $ is a literal part of the FHIR operation name, not an expansion
+            echo -e '## k6 benchmark: legacy vs. v3alpha1 `$de-identify`';
             echo -e '```console';
             echo -e "${K6_OUTPUT}";
             echo -e '```'
