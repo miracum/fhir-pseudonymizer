@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785767395647,
+  "lastUpdate": 1785768203489,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -84,6 +84,48 @@ window.BENCHMARK_DATA = {
             "value": 22663851.020089287,
             "unit": "ns",
             "range": "± 367151.92850147217"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chgl@users.noreply.github.com",
+            "name": "chgl",
+            "username": "chgl"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "86b47389506ccd09781cc4afe69602ce804761c0",
+          "message": "ci: fix pages (#377)",
+          "timestamp": "2026-08-03T16:41:43+02:00",
+          "tree_id": "6435df92ceac8ac427a6de9e25a9b77e4ebcc3d7",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/86b47389506ccd09781cc4afe69602ce804761c0"
+        },
+        "date": 1785768202628,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 380448874.93333334,
+            "unit": "ns",
+            "range": "± 6272912.8810179625"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1908781.353236607,
+            "unit": "ns",
+            "range": "± 13825.438196162204"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 22116974.104166668,
+            "unit": "ns",
+            "range": "± 343464.9522658193"
           }
         ]
       }
