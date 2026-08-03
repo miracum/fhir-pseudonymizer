@@ -540,6 +540,43 @@ Statistics        Avg      Stdev        Max
   Throughput:   158.17MB/s
 ```
 
+### Comparing `$de-identify` vs. `v3alpha1`'s `$de-identify`
+
+[benchmark/k6/](benchmark/k6/) contains a [k6](https://k6.io/) script that compares latency and
+throughput between the existing `/fhir/$de-identify` endpoint (statically configured rules) and
+the newer `/v3alpha1/fhir/$de-identify` endpoint (rules sent per-request as a base64-encoded YAML
+`Attachment`). See [benchmark/k6/README.md](benchmark/k6/README.md) for how to run it.
+
+### Microbenchmarks
+
+[src/FhirPseudonymizer.Benchmarks](src/FhirPseudonymizer.Benchmarks) contains
+[BenchmarkDotNet](https://benchmarkdotnet.org/) microbenchmarks for the anonymization engine
+itself (no HTTP involved). Besides benchmarking the parsing of the shipped `anonymization.yaml`
+and `hipaa-anonymization.yaml` configs, `AnonymizationBenchmarks` runs a full de-identify pass
+(parse + anonymize + serialize) using a "complex" config
+([complex-anonymization.yaml](src/FhirPseudonymizer.Benchmarks/complex-anonymization.yaml),
+combining `redact`, `cryptoHash`, `dateshift`, `perturb`, `encrypt` and `pseudonymize` rules)
+against the large Synthea-generated bundle also used by the
+[snapshot tests](src/FhirPseudonymizer.Tests/Fixtures/Data/Resources). The `pseudonymize` rule is
+handled by a trivial mocked `IPseudonymServiceClient` so the benchmark doesn't depend on a running
+gPAS/vfps/Entici/MII instance.
+
+Run all benchmarks with:
+
+```sh
+dotnet run -c Release --project src/FhirPseudonymizer.Benchmarks
+```
+
+Results are tracked over time using
+[github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark) via the
+`microbenchmarks` job in [.github/workflows/ci.yaml](.github/workflows/ci.yaml). On every pull
+request, it compares the new results against the stored history and comments on the PR if a
+benchmark regresses beyond the configured threshold. On every push to `master`, it instead appends
+the new results to that history (stored on the `gh-pages` branch) and hands the rendered dashboard
+to the independent `deploy-pages` job, which publishes it alongside the `playground` job's output
+as part of the same GitHub Pages deployment, at
+<https://miracum.github.io/fhir-pseudonymizer/benchmarks/>.
+
 ## Image signature and provenance verification
 
 Prerequisites:
