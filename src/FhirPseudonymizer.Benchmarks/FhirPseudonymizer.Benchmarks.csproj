@@ -17,5 +17,11 @@
       Include="..\FhirPseudonymizer\anonymization.yaml;..\FhirPseudonymizer\hipaa-anonymization.yaml"
       CopyToOutputDirectory="PreserveNewest"
     />
+    <None Include="complex-anonymization.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <None
+      Include="..\FhirPseudonymizer.Tests\Fixtures\Data\Resources\Ashleigh_Olson_9d9b8bed-7b79-7fa9-cea1-f133a6b4d551.json"
+      Link="Ashleigh_Olson_9d9b8bed-7b79-7fa9-cea1-f133a6b4d551.json"
+      CopyToOutputDirectory="PreserveNewest"
+    />
   </ItemGroup>
 </Project>

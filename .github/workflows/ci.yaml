@@ -116,6 +116,108 @@ jobs:
           recreate: true
           path: code-coverage-results.md
 
+  k6-benchmark:
+    name: k6 benchmark
+    runs-on: ubuntu-24.04
+    # the container image is only uploaded as an artifact for pull_request events, see
+    # standard-build.yaml's "Upload container image" step.
+    if: ${{ github.event_name == 'pull_request' }}
+    needs:
+      - build
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # <https://docs.docker.com/storage/containerd/>
+      # via <https://github.com/docker/setup-buildx-action/issues/257>
+      - name: Set up containerd image store
+        shell: bash
+        run: |
+          [ -f /etc/docker/daemon.json ] || echo "{}" | sudo tee /etc/docker/daemon.json
+          jq '. | .+{"features": {"containerd-snapshotter": true}}' /etc/docker/daemon.json > /tmp/docker-daemon-with-containerd.json
+          sudo mv /tmp/docker-daemon-with-containerd.json /etc/docker/daemon.json
+          cat /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+          docker info -f '{{ .DriverStatus }}'
+
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Download image
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.image-slug }}
+          path: /tmp
+
+      - name: Load image
+        run: |
+          docker load --input /tmp/image.tar
+          docker image ls
+
+      - name: Run container
+        env:
+          IMAGE: ${{ fromJson(needs.build.outputs.image-meta-json).tags[0] }}
+        run: |
+          docker run -d --name=fhir-pseudonymizer -p 8080:8080 \
+            -e PseudonymizationService=None \
+            "${IMAGE}"
+
+      - name: Wait for container to become ready
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -sf http://localhost:8080/fhir/metadata > /dev/null; then
+              echo "container is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "container did not become ready in time" >&2
+          exit 1
+
+      - name: Install k6
+        env:
+          K6_VERSION: "2.1.0"
+        run: |
+          curl -sL "https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-amd64.tar.gz" \
+            | tar xz --strip-components=1 -C /usr/local/bin "k6-v${K6_VERSION}-linux-amd64/k6"
+          k6 version
+
+      - name: Run k6 benchmark
+        env:
+          BASE_URL: http://localhost:8080
+          VUS: "10"
+          DURATION_SECONDS: "15"
+        working-directory: benchmark/k6
+        run: |
+          k6 run de-identify-comparison.js 2>&1 | tee k6-output.txt || true
+
+      - name: Container logs
+        if: always()
+        run: docker logs fhir-pseudonymizer
+
+      - name: Format k6 output for use as a PR comment
+        run: |
+          K6_OUTPUT=$(cat benchmark/k6/k6-output.txt)
+          {
+            echo -e '---';
+            echo -e '## k6 benchmark: legacy vs. v3alpha1 `$de-identify`';
+            echo -e '```console';
+            echo -e "${K6_OUTPUT}";
+            echo -e '```'
+          } >> k6-output.md
+
+      - name: Add sticky comment with k6 benchmark results
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        # when running from a fork, the CI token doesn't have enough permissions to create PR comments
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        with:
+          header: k6-benchmark
+          recreate: true
+          path: k6-output.md
+
   iter8-test:
     name: run iter8 tests
     runs-on: ubuntu-24.04
@@ -255,3 +357,134 @@ jobs:
       dotnet-version: "10.0.x"
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  playground:
+    runs-on: ubuntu-24.04
+    name: playground
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install wasm-tools workload
+        run: dotnet workload install wasm-tools
+
+      - name: Publish
+        run: dotnet publish src/FhirPseudonymizer.Playground/FhirPseudonymizer.Playground.csproj -c Release -o publish-output
+
+      - name: Upload playground site artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playground-site
+          path: publish-output/wwwroot
+
+  microbenchmarks:
+    runs-on: ubuntu-24.04
+    name: microbenchmarks
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+    permissions:
+      # to store the benchmark history on the `gh-pages` branch on pushes to master
+      contents: write
+      # to comment on the PR if a benchmark regresses
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Run microbenchmarks
+        run: |
+          dotnet run -c Release --project src/FhirPseudonymizer.Benchmarks -- \
+            --filter '*' --join --exporters json
+
+      - name: Normalize BenchmarkDotNet result file name
+        run: |
+          mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json \
+            BenchmarkDotNet.Artifacts/results/benchmarks.json
+
+      # on PRs: only compare against the stored history and comment if something regressed.
+      # Never pushes: a fork's GITHUB_TOKEN couldn't push to this repo anyway, and pushing from PR
+      # branches isn't something we want regardless. See
+      # https://github.com/benchmark-action/github-action-benchmark
+      - name: Compare against previous benchmark results
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
+        with:
+          tool: "benchmarkdotnet"
+          output-file-path: BenchmarkDotNet.Artifacts/results/benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          save-data-file: false
+          comment-on-alert: ${{ !github.event.pull_request.head.repo.fork }}
+          alert-threshold: "150%"
+          fail-on-alert: false
+          summary-always: true
+
+      # on pushes to master: persist the new data point to the `gh-pages` branch (creating it on
+      # the first run) under `dev/bench/`, then hand the rendered dashboard to the deploy-pages
+      # job as a plain artifact (that job isn't allowed to push, so it can't fetch this itself).
+      - name: Update benchmark history
+        if: ${{ github.event_name == 'push' }}
+        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
+        with:
+          tool: "benchmarkdotnet"
+          output-file-path: BenchmarkDotNet.Artifacts/results/benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: dev/bench
+          auto-push: true
+
+      - name: Upload benchmark dashboard artifact
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: benchmarks-dashboard
+          path: dev/bench
+
+  deploy-pages:
+    name: deploy pages
+    # the playground and microbenchmarks jobs build independently of each other and of the
+    # container `build` job; this is the only job that combines and publishes their output.
+    if: ${{ github.ref == 'refs/heads/master' }}
+    needs:
+      - playground
+      - microbenchmarks
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download playground site artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: playground-site
+          path: pages-root/playground
+
+      - name: Download benchmark dashboard artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: benchmarks-dashboard
+          path: pages-root/benchmarks
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: pages-root
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
