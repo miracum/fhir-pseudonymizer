@@ -1,5 +1,6 @@
 using System.Reflection;
 using FhirPseudonymizer.Config;
+using FhirPseudonymizer.Controllers;
 using FhirPseudonymizer.Kafka;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Entici;
@@ -56,6 +57,33 @@ public class Startup
         services.AddSingleton<IMemoryCache>(_ => new MemoryCache(
             new MemoryCacheOptions { SizeLimit = cacheConfig.SizeLimit }
         ));
+
+        var anonymizerEngineCacheConfig = appConfig.AnonymizerEngineCache;
+        services.AddKeyedSingleton<IMemoryCache>(
+            AnonymizerConfigCacheKeys.AnonymizerConfig,
+            new MemoryCache(
+                new MemoryCacheOptions { SizeLimit = anonymizerEngineCacheConfig.SizeLimit }
+            )
+        );
+
+        // Default entry options (size/expiration) for the AnonymizerConfigCache above, so
+        // callers just pass this in instead of configuring every entry by hand.
+        var anonymizerConfigCacheEntryOptions = new MemoryCacheEntryOptions { Size = 1 };
+        if (anonymizerEngineCacheConfig.SlidingExpirationMinutes > 0)
+        {
+            anonymizerConfigCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(
+                anonymizerEngineCacheConfig.SlidingExpirationMinutes
+            );
+        }
+        if (anonymizerEngineCacheConfig.AbsoluteExpirationMinutes > 0)
+        {
+            anonymizerConfigCacheEntryOptions.AbsoluteExpirationRelativeToNow =
+                TimeSpan.FromMinutes(anonymizerEngineCacheConfig.AbsoluteExpirationMinutes);
+        }
+        services.AddKeyedSingleton(
+            AnonymizerConfigCacheKeys.AnonymizerConfig,
+            anonymizerConfigCacheEntryOptions
+        );
 
         switch (appConfig.PseudonymizationService)
         {

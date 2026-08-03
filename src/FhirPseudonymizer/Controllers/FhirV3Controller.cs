@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using FhirParametersGenerator;
 using FhirPseudonymizer.Config;
@@ -6,10 +7,17 @@ using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 
 namespace FhirPseudonymizer.Controllers;
+
+public static class AnonymizerConfigCacheKeys
+{
+    public const string AnonymizerConfig = "AnonymizerConfigCache";
+}
 
 [ApiController]
 [Route("v3alpha1/fhir")]
@@ -22,7 +30,11 @@ public class FhirV3Controller(
     AnonymizationConfig anonymizationConfig,
     IPseudonymServiceClient psnClient,
     FeatureManagement features,
-    IProvenancePublisher provenancePublisher
+    IProvenancePublisher provenancePublisher,
+    [FromKeyedServices(AnonymizerConfigCacheKeys.AnonymizerConfig)]
+        IMemoryCache anonymizerConfigCache,
+    [FromKeyedServices(AnonymizerConfigCacheKeys.AnonymizerConfig)]
+        MemoryCacheEntryOptions anonymizerConfigCacheEntryOptions
 ) : ControllerBase
 {
     private readonly ILogger<FhirV3Controller> logger = logger;
@@ -97,10 +109,20 @@ public class FhirV3Controller(
         AnonymizerEngine engine;
         try
         {
-            var yamlConfig = Encoding.UTF8.GetString(request.Config.Data ?? []);
-            var configurationManager = AnonymizerConfigurationManager.CreateFromYamlConfigString(
-                yamlConfig,
-                anonymizationConfig
+            var configBytes = request.Config.Data ?? [];
+            var yamlConfig = Encoding.UTF8.GetString(configBytes);
+
+            var configCacheKey = Convert.ToHexString(SHA256.HashData(configBytes));
+            var configurationManager = await anonymizerConfigCache.GetOrCreateAsync(
+                configCacheKey,
+                entry =>
+                    System.Threading.Tasks.Task.FromResult(
+                        AnonymizerConfigurationManager.CreateFromYamlConfigString(
+                            yamlConfig,
+                            anonymizationConfig
+                        )
+                    ),
+                anonymizerConfigCacheEntryOptions
             );
 
             engine = new AnonymizerEngine(configurationManager);
