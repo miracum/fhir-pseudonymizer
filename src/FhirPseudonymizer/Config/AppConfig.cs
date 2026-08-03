@@ -11,6 +11,7 @@ public record AppConfig
     public string ApiKey { get; init; }
     public PseudonymizationServiceType PseudonymizationService { get; init; }
     public CacheConfig Cache { get; init; } = new();
+    public CacheConfig AnonymizerEngineCache { get; init; } = new();
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
     public EnticiConfig Entici { get; init; } = new();
