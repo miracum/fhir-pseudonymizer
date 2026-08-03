@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.31.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.30.0...v2.31.0) (2026-08-03)
+
+
+### Features
+
+* added new experimental endpoint with support for sending the de-identification rules as part of the request ([#367](https://github.com/miracum/fhir-pseudonymizer/issues/367)) ([c820183](https://github.com/miracum/fhir-pseudonymizer/commit/c82018333656637220664a37693f51513164f6a8))
+
+
+### CI/CD
+
+* added benchmarks ([#374](https://github.com/miracum/fhir-pseudonymizer/issues/374)) ([a616723](https://github.com/miracum/fhir-pseudonymizer/commit/a6167238f4dfef499f315ac4a7a031415288de2c))
+* fix pages ([#377](https://github.com/miracum/fhir-pseudonymizer/issues/377)) ([86b4738](https://github.com/miracum/fhir-pseudonymizer/commit/86b47389506ccd09781cc4afe69602ce804761c0))
+
 ## [2.30.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.29.0...v2.30.0) (2026-08-02)
 
 
