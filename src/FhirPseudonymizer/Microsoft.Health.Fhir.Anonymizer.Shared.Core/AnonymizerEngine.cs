@@ -133,7 +133,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
                 RedactProcessor.Create(configurationManager);
             _processors[AnonymizerMethod.CryptoHash.ToString().ToUpperInvariant()] =
                 new CryptoHashProcessor(
-                    configurationManager.GetParameterConfiguration().CryptoHashKey
+                    configurationManager.GetParameterConfiguration().CryptoHashKey,
+                    configurationManager.GetParameterConfiguration().CryptoHashAlgorithm
                 );
             _processors[AnonymizerMethod.Encrypt.ToString().ToUpperInvariant()] =
                 new EncryptProcessor(configurationManager.GetEncryptKeyBytes());

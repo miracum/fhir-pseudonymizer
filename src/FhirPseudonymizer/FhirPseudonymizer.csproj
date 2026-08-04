@@ -38,6 +38,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
     <PackageReference Include="YamlDotNet" Version="18.1.0" />
+    <PackageReference Include="Blake3" Version="3.0.2" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="*.yaml" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />

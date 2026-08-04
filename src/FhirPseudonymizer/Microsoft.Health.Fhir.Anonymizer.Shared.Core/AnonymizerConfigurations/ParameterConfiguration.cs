@@ -17,6 +17,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
         [DataMember(Name = "cryptoHashKey")]
         public string CryptoHashKey { get; set; }
 
+        [DataMember(Name = "cryptoHashAlgorithm")]
+        public CryptoHashAlgorithm CryptoHashAlgorithm { get; set; }
+
         [DataMember(Name = "encryptKey")]
         public string EncryptKey { get; set; }
 

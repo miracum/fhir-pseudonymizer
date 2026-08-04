@@ -1,4 +1,5 @@
 using Hl7.Fhir.ElementModel;
+using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
@@ -8,14 +9,25 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
     public class CryptoHashProcessor : IAnonymizerProcessor
     {
         private readonly Func<string, string> _cryptoHashFunction;
-        private readonly string _cryptoHashKey;
         private readonly ILogger _logger = AnonymizerLogging.CreateLogger<CryptoHashProcessor>();
 
-        public CryptoHashProcessor(string cryptoHashKey)
+        public CryptoHashProcessor(
+            string cryptoHashKey,
+            CryptoHashAlgorithm algorithm = CryptoHashAlgorithm.HmacSha256
+        )
         {
-            _cryptoHashKey = cryptoHashKey;
-            _cryptoHashFunction = input =>
-                CryptoHashUtility.ComputeHmacSHA256Hash(input, _cryptoHashKey);
+            _cryptoHashFunction =
+                algorithm == CryptoHashAlgorithm.Blake3
+                    ? CreateBlake3HashFunction(cryptoHashKey)
+                    : input => CryptoHashUtility.ComputeHmacSHA256Hash(input, cryptoHashKey);
+        }
+
+        private static Func<string, string> CreateBlake3HashFunction(string cryptoHashKey)
+        {
+            // Derived once here and reused for every value this processor hashes, instead of
+            // re-deriving the same 32-byte key from cryptoHashKey on every single call.
+            var derivedKey = CryptoHashUtility.DeriveBlake3Key(cryptoHashKey);
+            return input => CryptoHashUtility.ComputeKeyedBlake3Hash(input, derivedKey);
         }
 
         public Task<ProcessResult> ProcessAsync(
@@ -38,9 +50,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             )
             {
                 var truncateToMaxLength = Convert.ToInt32(truncateToMaxLengthObject);
+                var baseHashFunction = _cryptoHashFunction;
                 cryptoHashFunction = (input) =>
                 {
-                    var fullHash = CryptoHashUtility.ComputeHmacSHA256Hash(input, _cryptoHashKey);
+                    var fullHash = baseHashFunction(input);
                     return fullHash[..Math.Min(truncateToMaxLength, fullHash.Length)];
                 };
             }

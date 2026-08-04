@@ -1,0 +1,13 @@
+fhirVersion: R4
+fhirPathRules:
+  - path: Resource.id
+    method: cryptoHash
+  - path: nodesByType('Reference').reference
+    method: cryptoHash
+  - path: Bundle.entry.fullUrl
+    method: cryptoHash
+  - path: Bundle.entry.request.where(method = 'PUT').url
+    method: cryptoHash
+parameters:
+  cryptoHashKey: fhir-pseudonymizer
+  cryptoHashAlgorithm: blake3

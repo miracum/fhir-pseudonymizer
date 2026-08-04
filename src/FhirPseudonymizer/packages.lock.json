@@ -8,6 +8,12 @@
         "resolved": "9.0.0",
         "contentHash": "bvQc1iVs3RJZY+BEzId90Dv5R4pFVCyDscYoYIwkbpKRWPR5CCKgAjICsrS6pV8jfZOKNaJRyCLtGGn35adO2Q=="
       },
+      "Blake3": {
+        "type": "Direct",
+        "requested": "[3.0.2, )",
+        "resolved": "3.0.2",
+        "contentHash": "THvWhdj8ErSdrGamTqjshCU1ImANfr7ieKY6eFqeMsRenvXEKut9qGm5/MA4SUk8IYvAahf67jSh0yVj9jTPzg=="
+      },
       "Confluent.Kafka": {
         "type": "Direct",
         "requested": "[2.15.0, )",
