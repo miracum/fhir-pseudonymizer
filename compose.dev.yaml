@@ -21,7 +21,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   vfps-db:
-    image: docker.io/library/postgres:18.3@sha256:7e32e9833a6fb1c92c32552794cb6ed569d51b445a54907d35fc112ef39684db
+    image: docker.io/library/postgres:18.4@sha256:3a82e1f56c8f0f5616a11103ac3d47e632c3938698946a7ad26da0df1334744a
     restart: unless-stopped
     deploy:
       resources:
@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.9.1@sha256:6c8645d9d8a26c9f222b0187b2d9cc967bd79c532cf70f7702bb847d12918689
+    image: ghcr.io/miracum/vfps:v1.10.1@sha256:cb4a7d338af0370bbcf5cd69ccbc102ea0536a26db16f0a69915579eb8ce277c
     restart: unless-stopped
     deploy:
       resources:
