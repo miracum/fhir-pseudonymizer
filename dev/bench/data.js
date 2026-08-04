@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785829693918,
+  "lastUpdate": 1785831578559,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -222,6 +222,60 @@ window.BENCHMARK_DATA = {
             "value": 335.5558487892151,
             "unit": "ns",
             "range": "± 2.4709126635315446"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": false,
+          "id": "9822737ea61662752715d2e4d25303468c4dc7b8",
+          "message": "chore(deps): update docker.io/mockserver/mockserver docker tag to v7 (#383)\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-08-04T08:13:31Z",
+          "tree_id": "1eaac3be5c368156224b3a5b72f77bc69a6de12e",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/9822737ea61662752715d2e4d25303468c4dc7b8"
+        },
+        "date": 1785831578242,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 348574110.6,
+            "unit": "ns",
+            "range": "± 3205135.9501907867"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1786518.6942708334,
+            "unit": "ns",
+            "range": "± 20946.79260055906"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 2487.5526485443115,
+            "unit": "ns",
+            "range": "± 4.055687858144363"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 20580364.089583334,
+            "unit": "ns",
+            "range": "± 101643.06177879247"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 327.1780522419856,
+            "unit": "ns",
+            "range": "± 0.2770573828323635"
           }
         ]
       }
