@@ -1,7 +1,8 @@
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
@@ -29,12 +30,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         public List<string> RestrictedZipCodeTabulationAreas { get; set; }
 
         public Task<ProcessResult> ProcessAsync(
-            ElementNode node,
+            PocoNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
         )
         {
-            if (string.IsNullOrEmpty(node?.Value?.ToString()))
+            if (string.IsNullOrEmpty(node?.GetValue()?.ToString()))
             {
                 return Task.FromResult(new ProcessResult());
             }
@@ -71,7 +72,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 );
             }
 
-            node.Value = null;
+            node.SetPrimitiveValue(null);
             var result = new ProcessResult();
             result.AddProcessRecord(AnonymizationOperations.Redact, node);
             return Task.FromResult(result);

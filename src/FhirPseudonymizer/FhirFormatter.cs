@@ -24,7 +24,8 @@ public class FhirOutputFormatter : TextOutputFormatter
         }
         else
         {
-            SerializeToJsonAsync = (resource) => FhirSerializer.SerializeToStringAsync(resource);
+            SerializeToJsonAsync = (resource) =>
+                System.Threading.Tasks.Task.FromResult(FhirSerializer.SerializeToString(resource));
         }
     }
 
@@ -84,11 +85,12 @@ public class FhirInputFormatter : TextInputFormatter
         }
         else
         {
-            ParseJsonToFhirAsync = FhirParser.ParseAsync<Resource>;
+            ParseJsonToFhirAsync = (json) =>
+                System.Threading.Tasks.Task.FromResult(FhirParser.Deserialize<Resource>(json));
         }
     }
 
-    private FhirJsonParser FhirParser { get; } = new();
+    private FhirJsonDeserializer FhirParser { get; } = new();
 
     private JsonSerializerOptions FhirJsonOptions { get; } =
         new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);

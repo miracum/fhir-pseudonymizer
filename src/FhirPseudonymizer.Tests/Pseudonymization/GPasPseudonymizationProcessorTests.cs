@@ -65,10 +65,10 @@ public class GPasPseudonymizationProcessorTests
         var psnClient = A.Fake<IPseudonymServiceClient>();
         var processor = new PseudonymizationProcessor(psnClient, features);
 
-        var node = ElementNode.FromElement(element.ToTypedElement());
-        while (!node.HasValue())
+        var node = (PocoNode)PocoNodeOrList.Root(element);
+        while (node.GetValue() == null)
         {
-            node = node.Children().CastElementNodes().First();
+            node = node.Children().CastPocoNodes().First();
         }
 
         await processor.ProcessAsync(

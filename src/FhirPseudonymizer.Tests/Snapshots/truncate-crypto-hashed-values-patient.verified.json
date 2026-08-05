@@ -119,13 +119,13 @@
       "name": {
         "family": "du Marché",
         "_family": {
-          "extension": [
-            {
-              "url": "http://hl7.org/fhir/StructureDefinition/humanname-own-prefix",
-              "valueString": "VV"
-            }
-          ]
-        },
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/humanname-own-prefix",
+      "valueString": "VV"
+    }
+  ]
+},
         "given": [
           "Bénédicte"
         ]

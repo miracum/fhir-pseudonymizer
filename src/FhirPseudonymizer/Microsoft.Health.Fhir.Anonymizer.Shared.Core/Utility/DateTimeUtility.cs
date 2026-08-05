@@ -1,6 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
@@ -37,28 +37,30 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         );
 
         public static ProcessResult RedactDateNode(
-            ElementNode node,
+            PocoNode node,
             bool enablePartialDatesForRedact = false
         )
         {
             var processResult = new ProcessResult();
-            if (!node.IsDateNode() || string.IsNullOrEmpty(node?.Value?.ToString()))
+            if (!node.IsDateNode() || string.IsNullOrEmpty(node?.GetValue()?.ToString()))
             {
                 return processResult;
             }
 
             if (enablePartialDatesForRedact)
             {
-                var matchedGroups = s_dateRegex.Match(node.Value.ToString()).Groups;
+                var matchedGroups = s_dateRegex.Match(node.GetValue().ToString()).Groups;
                 if (matchedGroups[s_yearIndex].Captures.Any())
                 {
                     var yearOfDate = matchedGroups[s_yearIndex].Value;
-                    node.Value = IndicateAgeOverThreshold(matchedGroups) ? null : yearOfDate;
+                    node.SetPrimitiveValue(
+                        IndicateAgeOverThreshold(matchedGroups) ? null : yearOfDate
+                    );
                 }
             }
             else
             {
-                node.Value = null;
+                node.SetPrimitiveValue(null);
             }
 
             processResult.AddProcessRecord(AnonymizationOperations.Redact, node);
@@ -66,14 +68,14 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         }
 
         public static ProcessResult RedactDateTimeAndInstantNode(
-            ElementNode node,
+            PocoNode node,
             bool enablePartialDatesForRedact = false
         )
         {
             var processResult = new ProcessResult();
             if (
                 (!node.IsDateTimeNode() && !node.IsInstantNode())
-                || string.IsNullOrEmpty(node?.Value?.ToString())
+                || string.IsNullOrEmpty(node?.GetValue()?.ToString())
             )
             {
                 return processResult;
@@ -81,16 +83,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
 
             if (enablePartialDatesForRedact)
             {
-                var matchedGroups = s_dateTimeRegex.Match(node.Value.ToString()).Groups;
+                var matchedGroups = s_dateTimeRegex.Match(node.GetValue().ToString()).Groups;
                 if (matchedGroups[s_yearIndex].Captures.Any())
                 {
                     var yearOfDateTime = matchedGroups[s_yearIndex].Value;
-                    node.Value = IndicateAgeOverThreshold(matchedGroups) ? null : yearOfDateTime;
+                    node.SetPrimitiveValue(
+                        IndicateAgeOverThreshold(matchedGroups) ? null : yearOfDateTime
+                    );
                 }
             }
             else
             {
-                node.Value = null;
+                node.SetPrimitiveValue(null);
             }
 
             processResult.AddProcessRecord(AnonymizationOperations.Redact, node);
@@ -98,26 +102,26 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         }
 
         public static ProcessResult RedactAgeDecimalNode(
-            ElementNode node,
+            PocoNode node,
             bool enablePartialAgesForRedact = false
         )
         {
             var processResult = new ProcessResult();
-            if (!node.IsAgeDecimalNode() || string.IsNullOrEmpty(node?.Value?.ToString()))
+            if (!node.IsAgeDecimalNode() || string.IsNullOrEmpty(node?.GetValue()?.ToString()))
             {
                 return processResult;
             }
 
             if (enablePartialAgesForRedact)
             {
-                if (int.Parse(node.Value.ToString()) > s_ageThreshold)
+                if (int.Parse(node.GetValue().ToString()) > s_ageThreshold)
                 {
-                    node.Value = null;
+                    node.SetPrimitiveValue(null);
                 }
             }
             else
             {
-                node.Value = null;
+                node.SetPrimitiveValue(null);
             }
 
             processResult.AddProcessRecord(AnonymizationOperations.Redact, node);
@@ -126,7 +130,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         }
 
         public static ProcessResult ShiftDateNode(
-            ElementNode node,
+            PocoNode node,
             string dateShiftKey,
             string dateShiftKeyPrefix,
             bool enablePartialDatesForRedact = false,
@@ -134,12 +138,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         )
         {
             var processResult = new ProcessResult();
-            if (!node.IsDateNode() || string.IsNullOrEmpty(node?.Value?.ToString()))
+            if (!node.IsDateNode() || string.IsNullOrEmpty(node?.GetValue()?.ToString()))
             {
                 return processResult;
             }
 
-            var matchedGroups = s_dateRegex.Match(node.Value.ToString()).Groups;
+            var matchedGroups = s_dateRegex.Match(node.GetValue().ToString()).Groups;
             if (
                 matchedGroups[s_dayIndex].Captures.Any() && !IndicateAgeOverThreshold(matchedGroups)
             )
@@ -150,10 +154,12 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                     dateShiftKeyPrefix,
                     fixedOffsetInDays
                 );
-                node.Value = DateTime
-                    .Parse(node.Value.ToString())
-                    .AddDays(offset)
-                    .ToString(s_dateFormat);
+                node.SetPrimitiveValue(
+                    DateTime
+                        .Parse(node.GetValue().ToString())
+                        .AddDays(offset)
+                        .ToString(s_dateFormat)
+                );
                 processResult.AddProcessRecord(AnonymizationOperations.Perturb, node);
             }
             else
@@ -165,7 +171,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         }
 
         public static ProcessResult ShiftDateTimeAndInstantNode(
-            ElementNode node,
+            PocoNode node,
             string dateShiftKey,
             string dateShiftKeyPrefix,
             bool enablePartialDatesForRedact = false,
@@ -175,13 +181,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             var processResult = new ProcessResult();
             if (
                 (!node.IsDateTimeNode() && !node.IsInstantNode())
-                || string.IsNullOrEmpty(node?.Value?.ToString())
+                || string.IsNullOrEmpty(node?.GetValue()?.ToString())
             )
             {
                 return processResult;
             }
 
-            var matchedGroups = s_dateTimeRegex.Match(node.Value.ToString()).Groups;
+            var matchedGroups = s_dateTimeRegex.Match(node.GetValue().ToString()).Groups;
             if (
                 matchedGroups[s_dayIndex].Captures.Any() && !IndicateAgeOverThreshold(matchedGroups)
             )
@@ -195,7 +201,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 if (matchedGroups[s_timeIndex].Captures.Any())
                 {
                     var newDate = DateTimeOffset
-                        .Parse(node.Value.ToString())
+                        .Parse(node.GetValue().ToString())
                         .AddDays(offset)
                         .ToString(s_dateFormat);
                     var timestamp = matchedGroups[s_timeIndex].Value;
@@ -207,14 +213,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                         timestamp = timestamp.Replace(time, newTime);
                     }
 
-                    node.Value = $"{newDate}{timestamp}";
+                    node.SetPrimitiveValue($"{newDate}{timestamp}");
                 }
                 else
                 {
-                    node.Value = DateTime
-                        .Parse(node.Value.ToString())
-                        .AddDays(offset)
-                        .ToString(s_dateFormat);
+                    node.SetPrimitiveValue(
+                        DateTime
+                            .Parse(node.GetValue().ToString())
+                            .AddDays(offset)
+                            .ToString(s_dateFormat)
+                    );
                 }
 
                 processResult.AddProcessRecord(AnonymizationOperations.Perturb, node);
@@ -248,7 +256,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         }
 
         private static int GetDateShiftValue(
-            ElementNode node,
+            PocoNode node,
             string dateShiftKey,
             string dateShiftKeyPrefix,
             int? fixedOffsetInDays = null
@@ -276,7 +284,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             return offset;
         }
 
-        private static string TryGetResourceId(ElementNode node)
+        private static string TryGetResourceId(PocoNode node)
         {
             while (node.Parent != null)
             {
