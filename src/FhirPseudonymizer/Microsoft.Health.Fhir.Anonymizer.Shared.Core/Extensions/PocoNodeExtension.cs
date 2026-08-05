@@ -171,9 +171,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             return node != null && node.ChildrenByName(Constants.ContainedNodeName).Any();
         }
 
+        // Poco is the live object at this tree position, so checking its runtime type is
+        // equivalent to going through ITypedElement.Definition?.IsResource - but skips
+        // FindInspector()'s walk up the parent chain and the List<object> it allocates via
+        // Annotation<ModelInspector>() at every step. This method is called per node, often
+        // more than once, throughout the visitor and several processors, so that walk-up cost
+        // was paid repeatedly across the whole tree.
         public static bool IsFhirResource(this PocoNode node)
         {
-            return node != null && (((ITypedElement)node).Definition?.IsResource ?? false);
+            return node != null && node.Poco is Resource;
         }
 
         public static string GetFhirPath(this PocoNode node)
