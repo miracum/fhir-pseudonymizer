@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.32.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.31.0...v2.32.0) (2026-08-04)
+
+
+### Features
+
+* support for blake3 as the crypto hash algorithm ([#378](https://github.com/miracum/fhir-pseudonymizer/issues/378)) ([2ff8332](https://github.com/miracum/fhir-pseudonymizer/commit/2ff83323854446466786a3939d3214314cb52a6e))
+
+
+### Miscellaneous Chores
+
+* **deps:** update actions/setup-dotnet action to v6 ([#380](https://github.com/miracum/fhir-pseudonymizer/issues/380)) ([97aa331](https://github.com/miracum/fhir-pseudonymizer/commit/97aa3319c136d0be78d86c2da90b38995469dfb9))
+* **deps:** update docker.io/mockserver/mockserver docker tag to v7 ([#383](https://github.com/miracum/fhir-pseudonymizer/issues/383)) ([9822737](https://github.com/miracum/fhir-pseudonymizer/commit/9822737ea61662752715d2e4d25303468c4dc7b8))
+* **deps:** update github-actions ([#379](https://github.com/miracum/fhir-pseudonymizer/issues/379)) ([8ae31a7](https://github.com/miracum/fhir-pseudonymizer/commit/8ae31a71d23b1b4cc2e329ff3aeb8b6d0bbb5a63))
+
 ## [2.31.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.30.0...v2.31.0) (2026-08-03)
 
 
