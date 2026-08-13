@@ -144,6 +144,7 @@ Service-specific configuration settings are listed below.
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `gPAS__Url`          | The gPAS TTP FHIR Gateway URL. E.g. `http://localhost:8080/ttp-fhir/fhir/gpas/` for gPAS `2023.1.0`. Used if `PseudonymizationService` is set to `gPAS`.                  | `""`       |
 | `gPAS__Version`      | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a version newer than 1.10.1. | `"1.10.1"` |
+| `gPAS__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                                                                                           | `3`        |
 
 #### gPAS Basic Auth
 
@@ -182,6 +183,7 @@ Service-specific configuration settings are listed below.
 | Environment Variable | Description                                                                                            | Default |
 | -------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
 | `entici__Url`        | The entici service base URL for FHIR operations. Used if `PseudonymizationService` is set to `entici`. | `""`    |
+| `entici__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                      | `3`     |
 
 When using entici as a pseudonymization backend, you need to set additional settings for each rule that uses the `pseudonymize` method. These can be set under a `entici` section inside the anonymization config:
 
