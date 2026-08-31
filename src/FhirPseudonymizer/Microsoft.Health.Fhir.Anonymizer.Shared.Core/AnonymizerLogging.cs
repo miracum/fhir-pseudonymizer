@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace Microsoft.Health.Fhir.Anonymizer.Core
 {
     public static class AnonymizerLogging
@@ -6,7 +8,14 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
         public static ILogger CreateLogger<T>()
         {
-            return LoggerFactory.CreateLogger<T>();
+            try
+            {
+                return LoggerFactory.CreateLogger<T>();
+            }
+            catch (ObjectDisposedException)
+            {
+                return NullLogger<T>.Instance;
+            }
         }
     }
 }
