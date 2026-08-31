@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.OpenApi;
 using Prometheus;
 
@@ -180,8 +181,13 @@ public class Startup
         }
     }
 
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
     {
+        // The anonymization engine (AnonymizerEngine, AnonymizationVisitor, CryptoHashProcessor, etc.)
+        // creates its loggers via AnonymizerLogging instead of using DI, so without this it never
+        // picks up the app's configured logging providers/levels and silently discards all log output.
+        AnonymizerLogging.LoggerFactory = loggerFactory;
+
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
