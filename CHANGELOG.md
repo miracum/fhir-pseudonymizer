@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.32.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.32.0...v2.32.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* wire AnonymizerLogging to the app's configured ILoggerFactory ([#385](https://github.com/miracum/fhir-pseudonymizer/issues/385)) ([f7f1c73](https://github.com/miracum/fhir-pseudonymizer/commit/f7f1c73d559c62b19d45835207403879cdd02d00))
+
 ## [2.32.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.31.0...v2.32.0) (2026-08-04)
 
 
