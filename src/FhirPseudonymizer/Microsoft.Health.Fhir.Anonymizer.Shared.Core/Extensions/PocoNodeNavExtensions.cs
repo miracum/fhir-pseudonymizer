@@ -1,29 +1,30 @@
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 {
-    public static class ElementNodeNavExtensions
+    public static class PocoNodeNavExtensions
     {
-        public static List<ElementNode> GetEntryResourceChildren(this ElementNode node)
+        public static List<PocoNode> GetEntryResourceChildren(this PocoNode node)
         {
             return node
-                ?.Children(Constants.EntryNodeName)
-                .Select(entry => entry?.Children(Constants.EntryResourceNodeName).FirstOrDefault())
+                ?.ChildrenByName(Constants.EntryNodeName)
+                .Select(entry =>
+                    entry?.ChildrenByName(Constants.EntryResourceNodeName).FirstOrDefault()
+                )
                 .Where(resource => resource != null)
-                .CastElementNodes()
                 .ToList();
         }
 
-        public static List<ElementNode> GetContainedChildren(this ElementNode node)
+        public static List<PocoNode> GetContainedChildren(this PocoNode node)
         {
-            return node?.Children(Constants.ContainedNodeName).CastElementNodes().ToList();
+            return node?.ChildrenByName(Constants.ContainedNodeName).ToList();
         }
 
-        public static IEnumerable<ElementNode> ResourceDescendantsWithoutSubResource(
-            this ElementNode node
+        public static IEnumerable<PocoNode> ResourceDescendantsWithoutSubResource(
+            this PocoNode node
         )
         {
-            foreach (var child in node.Children().CastElementNodes())
+            foreach (var child in node.Children().CastPocoNodes())
             {
                 // Skip sub resources in bundle entry and contained list
                 if (child.IsFhirResource())
@@ -40,8 +41,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             }
         }
 
-        public static IEnumerable<ElementNode> SelfAndDescendantsWithoutSubResource(
-            this IEnumerable<ElementNode> nodes
+        public static IEnumerable<PocoNode> SelfAndDescendantsWithoutSubResource(
+            this IEnumerable<PocoNode> nodes
         )
         {
             foreach (var node in nodes)

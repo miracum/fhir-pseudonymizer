@@ -417,7 +417,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             TestContext.Current.CancellationToken
         );
 
-        var encryptedPatient = new FhirJsonParser().Parse<Patient>(responseContent);
+        var encryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(responseContent);
 
         encryptedPatient.Identifier[0].Value.Should().NotBe("123456");
     }
@@ -460,7 +460,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var decryptedPatient = await new FhirJsonParser().ParseAsync<Patient>(responseContent);
+        var decryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(responseContent);
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");
     }
@@ -498,12 +498,12 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        var fhirParser = new FhirJsonParser();
-        var input = await fhirParser.ParseAsync<Resource>(fhirBundleJson);
+        var fhirParser = new FhirJsonDeserializer();
+        var input = fhirParser.Deserialize<Resource>(fhirBundleJson);
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "json").UseDirectory("Snapshots");
+        await Verify(response.ToJson(pretty: true), "json").UseDirectory("Snapshots");
     }
 
     [Fact]
@@ -542,8 +542,8 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                 settings: new() { PreferredFormat = ResourceFormat.Json }
             );
 
-            var fhirParser = new FhirJsonParser();
-            var input = await fhirParser.ParseAsync<Resource>(fhirBundleJson);
+            var fhirParser = new FhirJsonDeserializer();
+            var input = fhirParser.Deserialize<Resource>(fhirBundleJson);
             var parameters = new Parameters().Add("resource", input);
             var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
@@ -606,7 +606,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var encryptedPatientJson = await encryptResponse.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var encryptedPatient = new FhirJsonParser().Parse<Patient>(encryptedPatientJson);
+        var encryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(
+            encryptedPatientJson
+        );
 
         encryptedPatient.Identifier[0].Value.Should().NotBe("123456");
 
@@ -623,7 +625,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var decryptedPatientJson = await decryptResponse.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var decryptedPatient = new FhirJsonParser().Parse<Patient>(decryptedPatientJson);
+        var decryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(
+            decryptedPatientJson
+        );
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");
     }
@@ -703,7 +707,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var decryptedPatientJson = await decryptResponse.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var decryptedPatient = new FhirJsonParser().Parse<Patient>(decryptedPatientJson);
+        var decryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(
+            decryptedPatientJson
+        );
 
         // DecryptProcessor swallows AES/padding errors and returns the (still encrypted) input
         // unchanged, so a mismatched key surfaces as "didn't decrypt back to the original".
@@ -744,12 +750,12 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        var fhirParser = new FhirJsonParser();
-        var input = await fhirParser.ParseAsync<Resource>(fhirBundleJson);
+        var fhirParser = new FhirJsonDeserializer();
+        var input = fhirParser.Deserialize<Resource>(fhirBundleJson);
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "json").UseDirectory("Snapshots");
+        await Verify(response.ToJson(pretty: true), "json").UseDirectory("Snapshots");
     }
 
     [Fact]
@@ -819,7 +825,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+        var deIdentified = new FhirJsonDeserializer().Deserialize<Bundle>(responseContent);
 
         deIdentified.Entry.Should().ContainSingle();
         deIdentified.Entry[0].Resource.Should().BeOfType<Observation>();
@@ -912,7 +918,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+        var deIdentified = new FhirJsonDeserializer().Deserialize<Bundle>(responseContent);
 
         // the Patient - and the redact/cryptoHash rules that would have applied to it - are gone
         deIdentified.Entry.Should().ContainSingle();
@@ -983,7 +989,14 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Observation>(responseContent);
+        // Observation.code is required (1..1) by the base spec, so the strict default
+        // deserialization mode would refuse to re-parse a response that - as intended by this
+        // test - no longer has one; SYNTAXONLY skips that content-rule validation (checks only
+        // that the JSON itself is well-formed), matching the leniency the old FhirJsonParser had
+        // here.
+        var deIdentified = FhirJsonDeserializer.SYNTAXONLY.Deserialize<Observation>(
+            responseContent
+        );
 
         // the whole code element is gone - not just cleared - while sibling elements survive,
         // and both methods tag the resource the same way ("REDACTED" - remove reuses that code
