@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.33.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.32.1...v2.33.0) (2026-09-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* the client sends and reads `valueIdentifier` only. The new `Mii__System` setting gives the system of these identifiers and is required if `PseudonymizationService` is `Mii`.
+
+### Features
+
+* conform MiiFhirClient to the MII Pseudonymization IG 2026.1.0 ([#384](https://github.com/miracum/fhir-pseudonymizer/issues/384)) ([3ac9106](https://github.com/miracum/fhir-pseudonymizer/commit/3ac9106ce9769641639cbf8f4c4017dd99195125))
+
+
+### Miscellaneous Chores
+
+* **deps:** update github-actions ([#388](https://github.com/miracum/fhir-pseudonymizer/issues/388)) ([b507636](https://github.com/miracum/fhir-pseudonymizer/commit/b5076362c6bbed315ee18565ebc132c26d3b7c01))
+
 ## [2.32.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.32.0...v2.32.1) (2026-08-31)
 
 
