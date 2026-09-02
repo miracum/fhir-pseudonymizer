@@ -21,7 +21,7 @@ services:
       - "127.0.0.1:16686:16686"
 
   vfps-db:
-    image: docker.io/library/postgres:18.3@sha256:7e32e9833a6fb1c92c32552794cb6ed569d51b445a54907d35fc112ef39684db
+    image: docker.io/library/postgres:18.4@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636
     restart: unless-stopped
     deploy:
       resources:
@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.9.1@sha256:6c8645d9d8a26c9f222b0187b2d9cc967bd79c532cf70f7702bb847d12918689
+    image: ghcr.io/miracum/vfps:v1.11.0@sha256:c962bf762bbe1c4119c37da81971c23689fd364642e90fcb3966f85440b51a2b
     restart: unless-stopped
     deploy:
       resources:
@@ -77,7 +77,7 @@ services:
       - "127.0.0.1:8081:8081"
 
   gpas-entici-mock:
-    image: docker.io/mockserver/mockserver:7.4.0@sha256:fed9b2089e021947f785d1f0bfda3723352bb2c1634ce7b0bcd42dfd1b0fd02f
+    image: docker.io/mockserver/mockserver:7.6.0@sha256:80b3b1a26f3553d0c81a3f3896b5b7274c17b2a2e52f0fd2b28e246bc9efa290
     ipc: none
     security_opt:
       - "no-new-privileges:true"
@@ -130,7 +130,7 @@ services:
       - 127.0.0.1:9094:9094
 
   akhq:
-    image: docker.io/tchiotludo/akhq:0.27.1@sha256:66a43e84a3355f0a13f3b165a48f515c72a5344ea7ea0575a3e4efe2d3ac9a91
+    image: docker.io/tchiotludo/akhq:0.28.0@sha256:c2824dc2ae442b7ec215581f7e60a9f4106ea9004057fa3a1f88a29464cd4e63
     environment:
       AKHQ_CONFIGURATION: |
         akhq:
@@ -144,7 +144,7 @@ services:
       - kafka
 
   mock-data-loader:
-    image: docker.io/confluentinc/cp-kcat:8.2.2@sha256:66889260e24491424ea6066f63d6c091aa50b995a1a4cbfdd902322546d1e69e
+    image: docker.io/confluentinc/cp-kcat:8.2.3@sha256:b700209db34cc98a5a0287cdd49466e18c5736a5c51da02e237064868a3fec57
     entrypoint: ["/bin/bash", "-c"]
     restart: on-failure
     command:
@@ -157,7 +157,7 @@ services:
       - kafka
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.7.0@sha256:0f198be292568439d700cdbfb893e69a6009bb43a94a06a945b1d3d506c76b13
+    image: quay.io/keycloak/keycloak:26.7.3@sha256:ff4257d0d64efbe99ed1ddfaf07765cc3c36dc7518bf8324d41961327f441c54
     restart: unless-stopped
     profiles:
       - keycloak
