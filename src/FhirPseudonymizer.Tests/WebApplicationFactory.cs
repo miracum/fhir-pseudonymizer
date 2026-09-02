@@ -12,10 +12,21 @@ namespace FhirPseudonymizer.Tests
     {
         public IDictionary<string, string> CustomInMemorySettings { get; set; } = null;
 
+        /// <summary>
+        /// If set to false, the application keeps the IPseudonymServiceClient
+        /// registered by the Startup instead of a fake.
+        /// </summary>
+        public bool ReplacePseudonymServiceClientWithFake { get; set; } = true;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureTestServices(services =>
             {
+                if (!ReplacePseudonymServiceClientWithFake)
+                {
+                    return;
+                }
+
                 // remove the existing context configuration
                 var descriptor = services.SingleOrDefault(d =>
                     d.ServiceType == typeof(IPseudonymServiceClient)

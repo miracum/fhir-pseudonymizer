@@ -3,6 +3,10 @@ using Hl7.Fhir.Rest;
 
 namespace FhirPseudonymizer.Pseudonymization.Mii;
 
+/// <summary>
+/// A client for the $pseudonymize and $de-pseudonymize operations of the MII
+/// Pseudonymization Implementation Guide 2026.1.0.
+/// </summary>
 public class MiiFhirClient : IPseudonymServiceClient
 {
     public static readonly string HttpClientName = "mii";
@@ -17,30 +21,64 @@ public class MiiFhirClient : IPseudonymServiceClient
 
     private IHttpClientFactory ClientFactory { get; }
 
+    /// <summary>
+    /// Reads the optional identifier system with the given key from the rule's
+    /// 'mii' settings. Returns null if it is not set, so the identifier is sent
+    /// with only a value.
+    /// </summary>
+    private static string GetIdentifierSystem(
+        IReadOnlyDictionary<string, object> settings,
+        string key
+    )
+    {
+        if (
+            settings is not null
+            && settings.TryGetValue("mii", out var miiSettingsObject)
+            && miiSettingsObject is IReadOnlyDictionary<object, object> miiSettings
+            && miiSettings.TryGetValue(key, out var system)
+        )
+        {
+            return system?.ToString();
+        }
+
+        return null;
+    }
+
+    private FhirClient CreateFhirClient()
+    {
+        var client = ClientFactory.CreateClient(HttpClientName);
+
+        return new FhirClient(
+            client.BaseAddress,
+            client,
+            settings: new() { PreferredFormat = ResourceFormat.Json }
+        );
+    }
+
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
         IReadOnlyDictionary<string, object> settings = null
     )
     {
-        var parameters = new Parameters();
-        parameters.Add("target", new FhirString(domain));
-        parameters.Add("original", new FhirString(value));
-        parameters.Add("allowCreate", new FhirBoolean(true));
+        var request = new MiiPseudonymizeRequest
+        {
+            Context = new Identifier(GetIdentifierSystem(settings, "contextSystem"), domain),
+            Original = new Identifier(GetIdentifierSystem(settings, "originalSystem"), value),
+        };
 
-        var client = ClientFactory.CreateClient(HttpClientName);
+        using var fhirClient = CreateFhirClient();
 
-        using var fhirClient = new FhirClient(
-            client.BaseAddress,
-            client,
-            settings: new() { PreferredFormat = ResourceFormat.Json }
+        var response = await fhirClient.WholeSystemOperationAsync(
+            "pseudonymize",
+            request.ToFhirParameters()
         );
-
-        var response = await fhirClient.WholeSystemOperationAsync("pseudonymize", parameters);
 
         if (response is Parameters responseParameters)
         {
-            var pseudonym = responseParameters.GetSingleValue<FhirString>("pseudonym")?.Value;
+            var pseudonym = MiiPseudonymizeResponse
+                .FromFhirParameters(responseParameters)
+                .Pseudonym?.Value;
             ArgumentException.ThrowIfNullOrEmpty(pseudonym);
             return pseudonym;
         }
@@ -56,35 +94,28 @@ public class MiiFhirClient : IPseudonymServiceClient
         IReadOnlyDictionary<string, object> settings = null
     )
     {
-        var parameters = new Parameters();
-        parameters.Add("target", new FhirString(domain));
-        parameters.Add("pseudonym", new FhirString(pseudonym));
+        var request = new MiiDePseudonymizeRequest
+        {
+            Context = new Identifier(GetIdentifierSystem(settings, "contextSystem"), domain),
+            Pseudonym = new Identifier(null, pseudonym),
+        };
 
-        var client = ClientFactory.CreateClient(HttpClientName);
+        using var fhirClient = CreateFhirClient();
 
-        using var fhirClient = new FhirClient(
-            client.BaseAddress,
-            client,
-            settings: new() { PreferredFormat = ResourceFormat.Json }
+        var response = await fhirClient.WholeSystemOperationAsync(
+            "de-pseudonymize",
+            request.ToFhirParameters()
         );
-
-        var response = await fhirClient.WholeSystemOperationAsync("de-pseudonymize", parameters);
 
         if (response is Parameters responseParameters)
         {
-            var originalParam = responseParameters.Get("original").FirstOrDefault();
-            if (originalParam is not null)
-            {
-                var valuePart = originalParam.Part?.FirstOrDefault(p => p.Name == "value");
-                if (valuePart?.Value is Identifier identifier)
-                {
-                    return identifier.Value;
-                }
+            var original = MiiDePseudonymizeResponse
+                .FromFhirParameters(responseParameters)
+                .Original?.FirstOrDefault();
 
-                if (valuePart?.Value is FhirString fhirString)
-                {
-                    return fhirString.Value;
-                }
+            if (original?.Value?.Value is { Length: > 0 } originalValue)
+            {
+                return originalValue;
             }
 
             throw new InvalidOperationException(

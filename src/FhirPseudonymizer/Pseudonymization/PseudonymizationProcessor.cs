@@ -39,11 +39,13 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
         // prefix the domain, if set
         var domainPrefix =
             settings?.GetValueOrDefault("domain-prefix", null)
-            ?? settings?.GetValueOrDefault("namespace-prefix", string.Empty);
+            ?? settings?.GetValueOrDefault("namespace-prefix", null)
+            ?? settings?.GetValueOrDefault("context-prefix", string.Empty);
 
         var domain =
             settings?.GetValueOrDefault("domain", null)
-            ?? settings?.GetValueOrDefault("namespace", null)?.ToString();
+            ?? settings?.GetValueOrDefault("namespace", null)
+            ?? settings?.GetValueOrDefault("context", null)?.ToString();
 
         var input = node.Value.ToString();
 

@@ -49,6 +49,33 @@ public class GPasPseudonymizationProcessorTests
     }
 
     [Theory]
+    [InlineData("domain", "domain-prefix")]
+    [InlineData("namespace", "namespace-prefix")]
+    [InlineData("context", "context-prefix")]
+    public async Task Process_SupportsDomainSettingAliases(string domainKey, string prefixKey)
+    {
+        var psnClient = A.Fake<IPseudonymServiceClient>();
+        var processor = new PseudonymizationProcessor(psnClient, new FeatureManagement());
+
+        var node = ElementNode.FromElement(new FhirString("12345").ToTypedElement());
+
+        await processor.ProcessAsync(
+            node,
+            null,
+            new Dictionary<string, object> { { domainKey, "bar" }, { prefixKey, "foo-" } }
+        );
+
+        A.CallTo(() =>
+                psnClient.GetOrCreatePseudonymFor(
+                    A<string>._,
+                    "foo-bar",
+                    A<IReadOnlyDictionary<string, object>>._
+                )
+            )
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Theory]
     [MemberData(nameof(GetProcessData))]
     public async Task Process_SupportsDomainPrefixSetting(
         string domainPrefix,

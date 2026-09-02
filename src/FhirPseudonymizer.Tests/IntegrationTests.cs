@@ -2,9 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using FhirPseudonymizer.Config;
+using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 namespace FhirPseudonymizer.Tests;
@@ -35,6 +37,35 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             }
           ]
         }";
+
+    [Fact]
+    public async Task Startup_WithMiiPseudonymizationService_ShouldStartAndResolveTheClient()
+    {
+        using var miiFactory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["PseudonymizationService"] = "Mii",
+                ["Mii:Url"] = "http://mii-backend/",
+                ["EnableMetrics"] = "false",
+            },
+            ReplacePseudonymServiceClientWithFake = false,
+        };
+
+        using var miiClient = miiFactory.CreateClient();
+
+        var response = await miiClient.GetAsync(
+            "/fhir/metadata",
+            TestContext.Current.CancellationToken
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        miiFactory
+            .Services.GetRequiredService<IPseudonymServiceClient>()
+            .Should()
+            .BeOfType<CachedPseudonymServiceClient>();
+    }
 
     [Fact]
     public async Task GetMetadata_ReturnsSuccessAndFhirJsonContentType()
