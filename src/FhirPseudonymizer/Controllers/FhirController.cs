@@ -33,7 +33,7 @@ namespace FhirPseudonymizer.Controllers
             {
                 // we divide measurements in 10 buckets of 5 each, up to 50.
                 Buckets = Histogram.LinearBuckets(start: 1, width: 5, count: 20),
-                LabelNames = new[] { "operation" },
+                LabelNames = ["operation"],
             }
         );
 
@@ -113,7 +113,7 @@ namespace FhirPseudonymizer.Controllers
                 // since a caller fully controls this list and either would otherwise throw
                 // (ToDictionary rejects null and duplicate keys alike).
                 var dynamicSettings = param.GetSingle("settings")?.Part;
-                if (dynamicSettings?.Any() == true)
+                if (dynamicSettings?.Count > 0)
                 {
                     settings.DynamicRuleSettings = dynamicSettings
                         .Where(p => !string.IsNullOrEmpty(p.Name))
@@ -226,11 +226,8 @@ namespace FhirPseudonymizer.Controllers
                     Name = "FHIR Pseudonymizer",
                 },
                 FhirVersion = FHIRVersion.N4_0_1,
-                Format = new[] { "application/fhir+json" },
-                Rest = new List<CapabilityStatement.RestComponent>
-                {
-                    new() { Mode = CapabilityStatement.RestfulCapabilityMode.Server },
-                },
+                Format = ["application/fhir+json"],
+                Rest = [new() { Mode = CapabilityStatement.RestfulCapabilityMode.Server }],
             };
         }
 
