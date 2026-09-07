@@ -436,6 +436,38 @@ The following request body and the (fixed) configuration settings above will res
 
 Note: The domain name could also have been replaced completely by overriding the `domain` setting with the desired value. This works for all rule settings regardless of the `method` value.
 
+## Dynamic config
+
+To set a per-request dynamic config, add a `config` parameter alongside
+`resource` in the `Parameters` request body: an `Attachment` whose
+`data` is a base64-encoded YAML anonymization config:
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "config",
+      "valueAttachment": {
+        "contentType": "application/yaml",
+        "data": "ZmhpclZlcnNpb246IFI0CmZoaXJQYXRoUnVsZXM6CiAgLSBwYXRoOiBQYXRpZW50Lm5hbWUKICAgIG1ldGhvZDogcmVkYWN0Cg=="
+      }
+    },
+    {
+      "name": "resource",
+      "resource": {
+        "resourceType": "Patient",
+        "name": [{ "family": "Doe", "given": ["John"] }]
+      }
+    }
+  ]
+}
+```
+
+`config` and `settings` can be combined in the same request: the dynamic rule
+settings are applied on top of whichever rule set - static or per-request - ends
+ up being used.
+
 ### Date shift offset config
 
 `dateShiftFixedOffsetInDays` can be set in two places, and both can be used at the same time:
@@ -605,12 +637,13 @@ Statistics        Avg      Stdev        Max
   Throughput:   158.17MB/s
 ```
 
-### Comparing `$de-identify` vs. `v3alpha1`'s `$de-identify`
+### Comparing static vs. dynamic config `$de-identify`
 
 [benchmark/k6/](benchmark/k6/) contains a [k6](https://k6.io/) script that compares latency and
-throughput between the existing `/fhir/$de-identify` endpoint (statically configured rules) and
-the newer `/v3alpha1/fhir/$de-identify` endpoint (rules sent per-request as a base64-encoded YAML
-`Attachment`). See [benchmark/k6/README.md](benchmark/k6/README.md) for how to run it.
+throughput between the `/fhir/$de-identify` endpoint using the server's statically configured
+rules and the same endpoint using a per-request [dynamic config](#dynamic-config) (rules sent as
+a base64-encoded YAML `Attachment`). See [benchmark/k6/README.md](benchmark/k6/README.md) for how
+to run it.
 
 ### Microbenchmarks
 

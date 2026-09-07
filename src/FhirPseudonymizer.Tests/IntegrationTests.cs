@@ -109,22 +109,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostV3AlphaDeIdentify_WithInvalidContent_ShouldReturnBadRequest()
-    {
-        using var content = new StringContent("asd");
-        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-
-        var response = await client.PostAsync(
-            "/v3alpha1/fhir/$de-identify",
-            content,
-            TestContext.Current.CancellationToken
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact]
-    public async Task PostV3AlphaDeIdentify_WithParametersButNoResource_ShouldReturnBadRequest()
+    public async Task PostDeIdentify_WithInlineConfigButNoResource_ShouldReturnBadRequest()
     {
         var parameters = new Parameters().Add(
             "config",
@@ -139,7 +124,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
-            "/v3alpha1/fhir/$de-identify",
+            "/fhir/$de-identify",
             content,
             TestContext.Current.CancellationToken
         );
@@ -148,24 +133,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostV3AlphaDeIdentify_WithResourceButNoConfig_ShouldReturnBadRequest()
-    {
-        var parameters = new Parameters().Add("resource", new Patient { Id = "example" });
-
-        var content = new StringContent(parameters.ToJson());
-        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-
-        var response = await client.PostAsync(
-            "/v3alpha1/fhir/$de-identify",
-            content,
-            TestContext.Current.CancellationToken
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact]
-    public async Task PostV3AlphaDeIdentify_WithInlineConfigAndResource_ShouldReturnDeIdentifiedResource()
+    public async Task PostDeIdentify_WithInlineConfigAndResource_ShouldReturnDeIdentifiedResource()
     {
         var parameters = new Parameters()
             .Add(
@@ -191,7 +159,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
-            "/v3alpha1/fhir/$de-identify",
+            "/fhir/$de-identify",
             content,
             TestContext.Current.CancellationToken
         );
@@ -207,7 +175,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostV3AlphaDeIdentify_WithBundleContainingMultipleResources_ShouldDeIdentifyAllEntries()
+    public async Task PostDeIdentify_WithInlineConfigAndBundleContainingMultipleResources_ShouldDeIdentifyAllEntries()
     {
         var bundleJson = """
             {
@@ -260,7 +228,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
-            "/v3alpha1/fhir/$de-identify",
+            "/fhir/$de-identify",
             content,
             TestContext.Current.CancellationToken
         );
@@ -289,7 +257,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostV3AlphaDeIdentify_WithKeyDerivationContextInRequestConfig_ShouldUseDerivedCryptoHashKeyInsteadOfStaticKey()
+    public async Task PostDeIdentify_WithKeyDerivationContextInInlineConfig_ShouldUseDerivedCryptoHashKeyInsteadOfStaticKey()
     {
         const string staticCryptoHashKey = "static-master-key";
         const string keyDerivationContext = "project-a";
@@ -330,7 +298,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
         var response = await client.PostAsync(
-            "/v3alpha1/fhir/$de-identify",
+            "/fhir/$de-identify",
             content,
             TestContext.Current.CancellationToken
         );

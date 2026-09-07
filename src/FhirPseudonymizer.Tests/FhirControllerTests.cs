@@ -1,7 +1,9 @@
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Controllers;
 using FhirPseudonymizer.Kafka;
+using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.Model;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
@@ -11,6 +13,9 @@ namespace FhirPseudonymizer.Tests;
 
 public class FhirControllerTests
 {
+    private static IMemoryCache CreateAnonymizerConfigCache() =>
+        new MemoryCache(new MemoryCacheOptions());
+
     [Fact]
     public async Task DeIdentify_ParsesDynamicSettings()
     {
@@ -28,7 +33,11 @@ public class FhirControllerTests
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
             A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
         );
 
         var parameters = new Parameters()
@@ -57,7 +66,11 @@ public class FhirControllerTests
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
             A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
         );
 
         var parameters = new Parameters()
@@ -81,7 +94,11 @@ public class FhirControllerTests
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
             A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
         );
 
         var response = await controller.DeIdentify(new Bundle());
@@ -99,7 +116,11 @@ public class FhirControllerTests
             A.Fake<ILogger<FhirController>>(),
             A.Fake<IAnonymizerEngine>(),
             A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
         );
 
         var response = await controller.DeIdentify(new Parameters());
@@ -125,7 +146,11 @@ public class FhirControllerTests
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
             A.Fake<IDePseudonymizerEngine>(),
-            provenancePublisher
+            provenancePublisher,
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
         );
 
         await controller.DeIdentify(original);
@@ -150,7 +175,11 @@ public class FhirControllerTests
             A.Fake<ILogger<FhirController>>(),
             A.Fake<IAnonymizerEngine>(),
             dePseudonymizer,
-            provenancePublisher
+            provenancePublisher,
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
         );
 
         await controller.DePseudonymize(new Patient { Id = "123" });
@@ -179,7 +208,11 @@ public class FhirControllerTests
             A.Fake<ILogger<FhirController>>(),
             A.Fake<IAnonymizerEngine>(),
             dePseudonymizer,
-            A.Fake<IProvenancePublisher>()
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
         );
 
         var response = await controller.DePseudonymize(new Bundle());

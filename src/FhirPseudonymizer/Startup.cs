@@ -181,7 +181,11 @@ public class Startup
         }
     }
 
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
+    public void Configure(
+        IApplicationBuilder app,
+        IWebHostEnvironment env,
+        ILoggerFactory loggerFactory
+    )
     {
         // The anonymization engine (AnonymizerEngine, AnonymizationVisitor, CryptoHashProcessor, etc.)
         // creates its loggers via AnonymizerLogging instead of using DI, so without this it never

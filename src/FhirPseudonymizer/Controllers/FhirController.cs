@@ -1,15 +1,24 @@
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
+using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Prometheus;
 
 namespace FhirPseudonymizer.Controllers
 {
+    public static class AnonymizerConfigCacheKeys
+    {
+        public const string AnonymizerConfig = "AnonymizerConfigCache";
+    }
+
     /// <summary>
     ///     The main FHIR operation endpoint.
     /// </summary>
@@ -33,7 +42,7 @@ namespace FhirPseudonymizer.Controllers
             {
                 // we divide measurements in 10 buckets of 5 each, up to 50.
                 Buckets = Histogram.LinearBuckets(start: 1, width: 5, count: 20),
-                LabelNames = new[] { "operation" },
+                LabelNames = ["operation"],
             }
         );
 
@@ -42,13 +51,23 @@ namespace FhirPseudonymizer.Controllers
         private readonly IDePseudonymizerEngine dePseudonymizer;
         private readonly IProvenancePublisher provenancePublisher;
         private readonly ILogger<FhirController> logger;
+        private readonly IPseudonymServiceClient psnClient;
+        private readonly FeatureManagement features;
+        private readonly IMemoryCache anonymizerConfigCache;
+        private readonly MemoryCacheEntryOptions anonymizerConfigCacheEntryOptions;
 
         public FhirController(
             AnonymizationConfig config,
             ILogger<FhirController> logger,
             IAnonymizerEngine anonymizer,
             IDePseudonymizerEngine dePseudonymizer,
-            IProvenancePublisher provenancePublisher
+            IProvenancePublisher provenancePublisher,
+            IPseudonymServiceClient psnClient,
+            FeatureManagement features,
+            [FromKeyedServices(AnonymizerConfigCacheKeys.AnonymizerConfig)]
+                IMemoryCache anonymizerConfigCache,
+            [FromKeyedServices(AnonymizerConfigCacheKeys.AnonymizerConfig)]
+                MemoryCacheEntryOptions anonymizerConfigCacheEntryOptions
         )
         {
             this.config = config;
@@ -56,6 +75,10 @@ namespace FhirPseudonymizer.Controllers
             this.anonymizer = anonymizer;
             this.dePseudonymizer = dePseudonymizer;
             this.provenancePublisher = provenancePublisher;
+            this.psnClient = psnClient;
+            this.features = features;
+            this.anonymizerConfigCache = anonymizerConfigCache;
+            this.anonymizerConfigCacheEntryOptions = anonymizerConfigCacheEntryOptions;
 
             BadRequestOutcome = new();
             BadRequestOutcome.Issue.Add(
@@ -72,11 +95,15 @@ namespace FhirPseudonymizer.Controllers
 
         /// <summary>
         ///     Apply de-identification rules to the given FHIR resource. The rules can be configured using the anonymization.yaml
-        ///     config file.
+        ///     config file, or supplied per-request (see below).
         /// </summary>
         /// <param name="resource">
         ///     The FHIR resource to be de-identified. If the resource is of type 'Parameters' then the input is
-        ///     fetched from the parameter named 'resource'.
+        ///     fetched from the parameter named 'resource'. The 'Parameters' resource may also carry a 'config'
+        ///     parameter (an Attachment whose data is a base64-encoded YAML anonymization config, e.g. the contents
+        ///     of hipaa-anonymization.yaml) to replace the server's statically configured rules for this request
+        ///     only, and/or a 'settings' parameter to override individual rule settings (see the "Dynamic rule
+        ///     settings" docs).
         /// </param>
         /// <returns>The de-identified resource.</returns>
         /// <response code="200">Returns the de-identified resource</response>
@@ -113,7 +140,7 @@ namespace FhirPseudonymizer.Controllers
                 // since a caller fully controls this list and either would otherwise throw
                 // (ToDictionary rejects null and duplicate keys alike).
                 var dynamicSettings = param.GetSingle("settings")?.Part;
-                if (dynamicSettings?.Any() == true)
+                if (dynamicSettings?.Count > 0)
                 {
                     settings.DynamicRuleSettings = dynamicSettings
                         .Where(p => !string.IsNullOrEmpty(p.Name))
@@ -130,15 +157,68 @@ namespace FhirPseudonymizer.Controllers
                     return BadRequest(BadRequestOutcome);
                 }
 
-                return await Anonymize(innerResource, settings);
+                IAnonymizerEngine engine = anonymizer;
+                if (param.GetSingle("config")?.Value is Attachment configAttachment)
+                {
+                    try
+                    {
+                        engine = await GetOrCreateDynamicEngine(configAttachment);
+                    }
+                    catch (Exception exc)
+                    {
+                        logger.LogWarning(
+                            exc,
+                            "Bad Request: failed to parse the received config attachment."
+                        );
+                        return BadRequest(
+                            CreateBadRequestOutcome(
+                                $"Failed to parse the received config attachment: {exc.Message}"
+                            )
+                        );
+                    }
+                }
+
+                return await Anonymize(innerResource, settings, engine);
             }
 
-            return await Anonymize(resource, settings);
+            return await Anonymize(resource, settings, anonymizer);
+        }
+
+        /// <summary>
+        ///     Builds (or retrieves from cache) an <see cref="IAnonymizerEngine" /> configured from the given
+        ///     YAML config attachment, keyed by the SHA-256 hash of its raw bytes so repeated requests using the
+        ///     same config reuse the same parsed engine instead of re-parsing the YAML every time.
+        /// </summary>
+        private async Task<IAnonymizerEngine> GetOrCreateDynamicEngine(Attachment configAttachment)
+        {
+            var configBytes = configAttachment.Data ?? [];
+            var yamlConfig = Encoding.UTF8.GetString(configBytes);
+            var configCacheKey = Convert.ToHexString(SHA256.HashData(configBytes));
+
+            return await anonymizerConfigCache.GetOrCreateAsync(
+                configCacheKey,
+                entry =>
+                {
+                    var configurationManager =
+                        AnonymizerConfigurationManager.CreateFromYamlConfigString(
+                            yamlConfig,
+                            config
+                        );
+                    var engine = new AnonymizerEngine(configurationManager);
+                    engine.AddProcessor(
+                        "pseudonymize",
+                        new PseudonymizationProcessor(psnClient, features)
+                    );
+                    return System.Threading.Tasks.Task.FromResult<IAnonymizerEngine>(engine);
+                },
+                anonymizerConfigCacheEntryOptions
+            );
         }
 
         private async Task<ObjectResult> Anonymize(
             Resource resource,
-            AnonymizerSettings anonymizerSettings
+            AnonymizerSettings anonymizerSettings,
+            IAnonymizerEngine engine
         )
         {
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
@@ -153,10 +233,7 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                var anonymized = await anonymizer.AnonymizeResourceAsync(
-                    resource,
-                    anonymizerSettings
-                );
+                var anonymized = await engine.AnonymizeResourceAsync(resource, anonymizerSettings);
                 provenancePublisher.Publish(resource, anonymized);
                 return Ok(anonymized);
             }
@@ -226,12 +303,23 @@ namespace FhirPseudonymizer.Controllers
                     Name = "FHIR Pseudonymizer",
                 },
                 FhirVersion = FHIRVersion.N4_0_1,
-                Format = new[] { "application/fhir+json" },
-                Rest = new List<CapabilityStatement.RestComponent>
-                {
-                    new() { Mode = CapabilityStatement.RestfulCapabilityMode.Server },
-                },
+                Format = ["application/fhir+json"],
+                Rest = [new() { Mode = CapabilityStatement.RestfulCapabilityMode.Server }],
             };
+        }
+
+        private static OperationOutcome CreateBadRequestOutcome(string diagnostics)
+        {
+            var outcome = new OperationOutcome();
+            outcome.Issue.Add(
+                new OperationOutcome.IssueComponent
+                {
+                    Severity = OperationOutcome.IssueSeverity.Error,
+                    Code = OperationOutcome.IssueType.Processing,
+                    Diagnostics = diagnostics,
+                }
+            );
+            return outcome;
         }
 
         private static OperationOutcome GetInternalErrorOutcome(Exception exc)
