@@ -25,6 +25,13 @@ public record AppConfig
 
 public record KafkaConfig
 {
+    /// <summary>
+    ///     Whether the Kafka producer/consumer (and, transitively, provenance publishing over
+    ///     Kafka) are enabled at all. Defaults to <c>false</c>; overridden to <c>true</c> in the
+    ///     Development environment.
+    /// </summary>
+    public bool Enabled { get; init; }
+
     public List<string> Topics { get; init; } = [];
 
     /// <summary>
