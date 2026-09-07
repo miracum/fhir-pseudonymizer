@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788784278322,
+  "lastUpdate": 1788785723219,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -762,6 +762,60 @@ window.BENCHMARK_DATA = {
             "value": 319.39668277899426,
             "unit": "ns",
             "range": "± 0.29225065885127377"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chgl@users.noreply.github.com",
+            "name": "chgl",
+            "username": "chgl"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f0eefaaf999829e713e188e752d1de0430b99c7c",
+          "message": "docs: added OpenSSF best practices badge (#395)",
+          "timestamp": "2026-09-07T14:53:05+02:00",
+          "tree_id": "8ed497085b275f7a8de849ef84a2a2482db9aef1",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/f0eefaaf999829e713e188e752d1de0430b99c7c"
+        },
+        "date": 1788785722613,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 379646216.26666665,
+            "unit": "ns",
+            "range": "± 5149940.693766864"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1827630.5362723214,
+            "unit": "ns",
+            "range": "± 16760.572517036675"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 2490.9508417569673,
+            "unit": "ns",
+            "range": "± 2.8955071723131325"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 23090469.485576924,
+            "unit": "ns",
+            "range": "± 128238.91785161663"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 313.91192657606945,
+            "unit": "ns",
+            "range": "± 0.6920609023235929"
           }
         ]
       }
