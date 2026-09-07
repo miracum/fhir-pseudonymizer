@@ -1,9 +1,11 @@
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Controllers;
 using FhirPseudonymizer.Kafka;
+using FhirPseudonymizer.Pseudonymization;
 using FsCheck;
 using FsCheck.Xunit;
 using Hl7.Fhir.Model;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
@@ -27,7 +29,11 @@ public class FhirControllerFuzzTests
             A.Fake<ILogger<FhirController>>(),
             anonymizer,
             A.Fake<IDePseudonymizerEngine>(),
-            A.Fake<IProvenancePublisher>()
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            new MemoryCache(new MemoryCacheOptions()),
+            new MemoryCacheEntryOptions()
         );
 
     private static Parameters BuildRequest(IEnumerable<Tuple<string, Base>> settingsParts) =>

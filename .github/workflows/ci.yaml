@@ -201,7 +201,7 @@ jobs:
           {
             echo -e '---';
             # shellcheck disable=SC2016 # the $ is a literal part of the FHIR operation name, not an expansion
-            echo -e '## k6 benchmark: legacy vs. v3alpha1 `$de-identify`';
+            echo -e '## k6 benchmark: static vs. dynamic config `$de-identify`';
             echo -e '```console';
             echo -e "${K6_OUTPUT}";
             echo -e '```'
