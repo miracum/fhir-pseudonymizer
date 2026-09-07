@@ -2,6 +2,7 @@
 
 [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/miracum/fhir-pseudonymizer?label=openssf%20scorecard&style=flat)](https://scorecard.dev/viewer/?uri=github.com/miracum/fhir-pseudonymizer)
 [![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/14501/baseline)](https://www.bestpractices.dev/projects/14501)
 
 <p align="center"><img width="100" src="docs/img/logo.png" alt="FHIR® Pseudonymizer Logo"></p>
 
