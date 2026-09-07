@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788782867418,
+  "lastUpdate": 1788784278322,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -708,6 +708,60 @@ window.BENCHMARK_DATA = {
             "value": 326.42325534820554,
             "unit": "ns",
             "range": "± 2.7922532648126115"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chgl@users.noreply.github.com",
+            "name": "chgl",
+            "username": "chgl"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "de71506617feffac17f8e052c9b6fb3a9c4b1531",
+          "message": "fix: simplified kafka config to enabled/disabled via a flag vs. topic names (#394)",
+          "timestamp": "2026-09-07T14:29:07+02:00",
+          "tree_id": "14f1301fef52ea1de5b47c535f2b935d9a4d8263",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/de71506617feffac17f8e052c9b6fb3a9c4b1531"
+        },
+        "date": 1788784277685,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 354345741.38461536,
+            "unit": "ns",
+            "range": "± 4759451.041789721"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1695287.815625,
+            "unit": "ns",
+            "range": "± 22906.132213151115"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 2225.7998006184894,
+            "unit": "ns",
+            "range": "± 16.655326915337405"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 21284221.354910713,
+            "unit": "ns",
+            "range": "± 322965.8744728568"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 319.39668277899426,
+            "unit": "ns",
+            "range": "± 0.29225065885127377"
           }
         ]
       }
