@@ -110,13 +110,14 @@ public class Startup
 
         services.AddSingleton(_ => appConfig.Kafka);
 
-        var provenanceEnabled = !string.IsNullOrWhiteSpace(appConfig.Kafka.ProvenanceTopic);
-        if (appConfig.Kafka.Topics.Count > 0 || provenanceEnabled)
+        var provenanceEnabled =
+            appConfig.Kafka.Enabled && !string.IsNullOrWhiteSpace(appConfig.Kafka.ProvenanceTopic);
+        if (appConfig.Kafka.Enabled)
         {
             services.AddKafkaProducer(appConfig.Kafka);
         }
 
-        if (appConfig.Kafka.Topics.Count > 0)
+        if (appConfig.Kafka.Enabled && appConfig.Kafka.Topics.Count > 0)
         {
             services.AddKafkaConsumer(appConfig.Kafka);
         }
