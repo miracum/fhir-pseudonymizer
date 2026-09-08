@@ -21,6 +21,12 @@ public record AppConfig
     public FeatureManagement Features { get; set; } = new();
     public AnonymizationConfig Anonymization { get; set; } = new();
     public KafkaConfig Kafka { get; init; } = new();
+    public KestrelConfig Kestrel { get; init; } = new();
+}
+
+public record KestrelConfig
+{
+    public long MaxRequestBodySize { get; init; } = 30_000_000;
 }
 
 public record KafkaConfig

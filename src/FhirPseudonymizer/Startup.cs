@@ -9,6 +9,7 @@ using FhirPseudonymizer.Pseudonymization.Mii;
 using FhirPseudonymizer.Pseudonymization.Vfps;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Health.Fhir.Anonymizer.Core;
@@ -43,6 +44,10 @@ public class Startup
         {
             services.AddMetricServer(options => options.Port = appConfig.MetricsPort);
         }
+
+        services.Configure<KestrelServerOptions>(options =>
+            options.Limits.MaxRequestBodySize = appConfig.Kestrel.MaxRequestBodySize
+        );
 
         services.AddSingleton(_ => appConfig);
         services.AddSingleton(_ => appConfig.GPas);
