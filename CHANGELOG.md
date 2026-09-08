@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.34.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.33.0...v2.34.0) (2026-09-07)
+
+
+### Features
+
+* integrate the experimental dynamic config endpoint into the stable $de-identify operation ([#392](https://github.com/miracum/fhir-pseudonymizer/issues/392)) ([1093f87](https://github.com/miracum/fhir-pseudonymizer/commit/1093f87d6dadcb9ca5b34f131bb337220bd74134))
+
+
+### Bug Fixes
+
+* simplified kafka config to enabled/disabled via a flag vs. topic names ([#394](https://github.com/miracum/fhir-pseudonymizer/issues/394)) ([de71506](https://github.com/miracum/fhir-pseudonymizer/commit/de71506617feffac17f8e052c9b6fb3a9c4b1531))
+
+
+### Documentation
+
+* added OpenSSF best practices badge ([#395](https://github.com/miracum/fhir-pseudonymizer/issues/395)) ([f0eefaa](https://github.com/miracum/fhir-pseudonymizer/commit/f0eefaaf999829e713e188e752d1de0430b99c7c))
+
 ## [2.33.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.32.1...v2.33.0) (2026-09-02)
 
 
