@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.35.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.34.0...v2.35.0) (2026-09-08)
+
+
+### Features
+
+* added Kestrel__MaxRequestBodySize config option ([#400](https://github.com/miracum/fhir-pseudonymizer/issues/400)) ([7416cc9](https://github.com/miracum/fhir-pseudonymizer/commit/7416cc95ddb95b109daf7ab80ed03fdb71f16d68))
+
+
+### Documentation
+
+* added more docs on cotrnibuting and pr template ([#398](https://github.com/miracum/fhir-pseudonymizer/issues/398)) ([4c6f84c](https://github.com/miracum/fhir-pseudonymizer/commit/4c6f84cbd79de6ff37483ecdf48b3f78ea1a8ce9))
+
 ## [2.34.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.33.0...v2.34.0) (2026-09-07)
 
 
