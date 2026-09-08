@@ -3,6 +3,7 @@
 [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/miracum/fhir-pseudonymizer?label=openssf%20scorecard&style=flat)](https://scorecard.dev/viewer/?uri=github.com/miracum/fhir-pseudonymizer)
 [![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 [![OpenSSF Baseline](https://www.bestpractices.dev/projects/14501/baseline)](https://www.bestpractices.dev/projects/14501)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14501/badge)](https://www.bestpractices.dev/projects/14501)
 
 <p align="center"><img width="100" src="docs/img/logo.png" alt="FHIR® Pseudonymizer Logo"></p>
 
@@ -568,6 +569,26 @@ iter8 k report
 kubectl delete job default-1-job
 kubectl apply -f tests/iter8/experiment.yaml
 ```
+
+### Dependency management
+
+#### Selecting dependencies
+
+New dependencies are chosen based on their license (must be compatible with this project's [MIT license](LICENSE)), maintenance activity, and security track record. Every pull request that adds or changes a dependency is automatically checked by GitHub's [dependency-review-action](https://github.com/actions/dependency-review-action) for known vulnerabilities and disallowed licenses before it can be merged.
+
+#### Obtaining dependencies
+
+- **.NET/NuGet packages** are declared as `PackageReference`s in the `.csproj` files and restored from [nuget.org](https://www.nuget.org/). Restores are deterministic: `RestorePackagesWithLockFile` is enabled, and the resulting `packages.lock.json` pins every (transitive) package to an exact version with integrity hashes, so `dotnet restore` always resolves the same dependency graph.
+- **Container base images** are pinned by digest, in addition to tag, in the [Dockerfile](Dockerfile), e.g. `mcr.microsoft.com/dotnet/aspnet:10.0.10-resolute-chiseled@sha256:...`.
+- **GitHub Actions** used in CI are pinned to a specific commit SHA rather than a mutable tag or branch.
+
+#### Tracking and updating dependencies
+
+- [Renovate](https://docs.renovatebot.com/) ([`.renovaterc.json`](.renovaterc.json), extending [miracum's shared configuration](https://github.com/miracum/.github/blob/master/renovate/default.json)) continuously monitors and opens pull requests to update NuGet packages, container base images, GitHub Actions, and Kubernetes manifests.
+- Every pull request runs [CodeQL](https://codeql.github.com/) static analysis and the dependency-review check described above.
+- Released container images are scanned for known vulnerabilities with [Trivy](https://github.com/aquasecurity/trivy); results are published as a signed [cosign](https://github.com/sigstore/cosign) attestation, and a [daily scheduled workflow](.github/workflows/schedule.yaml) re-scans the latest published images so newly disclosed CVEs are caught even between releases.
+- Every build generates a Software Bill of Materials (SBOM) in CycloneDX and SPDX format, which is attached as a downloadable asset to each [GitHub release](https://github.com/miracum/fhir-pseudonymizer/releases).
+- [OpenSSF Scorecard](https://github.com/ossf/scorecard) analysis runs on a schedule and on every push to `master`, continuously assessing the repository's supply-chain security posture, including dependency-related checks. See the badge at the top of this file for the current score.
 
 ## Benchmark
 
