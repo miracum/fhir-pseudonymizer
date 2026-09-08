@@ -18,6 +18,13 @@ public record AppConfig
     public MiiConfig Mii { get; init; } = new();
     public ushort MetricsPort { get; set; } = 8081;
     public bool EnableMetrics { get; set; } = true;
+
+    /// <summary>
+    ///     The maximum allowed size, in bytes, of the body of incoming HTTP requests, e.g. to
+    ///     allow processing larger FHIR Bundles. Left unset (the default), Kestrel's own default
+    ///     of 30,000,000 bytes applies.
+    /// </summary>
+    public long? MaxRequestBodySize { get; init; }
     public FeatureManagement Features { get; set; } = new();
     public AnonymizationConfig Anonymization { get; set; } = new();
     public KafkaConfig Kafka { get; init; } = new();

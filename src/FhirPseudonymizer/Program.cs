@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace FhirPseudonymizer
 {
@@ -19,7 +20,9 @@ namespace FhirPseudonymizer
         {
             return Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration(AddSecretsDirectory)
-                .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<Startup>())
+                .ConfigureWebHostDefaults(webBuilder =>
+                    webBuilder.UseStartup<Startup>().ConfigureKestrel(ConfigureMaxRequestBodySize)
+                )
                 .ConfigureLogging(builder =>
                     builder.AddSimpleConsole(options =>
                     {
@@ -28,6 +31,18 @@ namespace FhirPseudonymizer
                         options.TimestampFormat = "yyyy-MM-ddTHH:mm:ssZ ";
                     })
                 );
+        }
+
+        public static void ConfigureMaxRequestBodySize(
+            WebHostBuilderContext context,
+            KestrelServerOptions options
+        )
+        {
+            var maxRequestBodySize = context.Configuration.GetValue<long?>("MaxRequestBodySize");
+            if (maxRequestBodySize.HasValue)
+            {
+                options.Limits.MaxRequestBodySize = maxRequestBodySize;
+            }
         }
 
         public static void AddSecretsDirectory(
