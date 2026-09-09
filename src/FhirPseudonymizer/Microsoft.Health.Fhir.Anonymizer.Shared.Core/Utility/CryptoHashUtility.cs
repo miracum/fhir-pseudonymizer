@@ -58,7 +58,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             {
                 if (rentedBuffer is not null)
                 {
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                    // Cleared on return: the buffer holds the plaintext of the value just hashed -
+                    // a patient identifier or reference - and ArrayPool.Shared is process-wide, so
+                    // an uncleared buffer would hand that plaintext to whatever rents it next.
+                    ArrayPool<byte>.Shared.Return(rentedBuffer, clearArray: true);
                 }
             }
         }
