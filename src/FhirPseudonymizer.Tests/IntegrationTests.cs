@@ -992,4 +992,101 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         deIdentified.Value.Should().NotBeNull();
         deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REDACTED");
     }
+
+    /// <summary>
+    ///     Both serializer backends must behave identically end to end. The System.Text.Json
+    ///     backend reads the request body and writes the response body as UTF-8 streams rather
+    ///     than going through an intermediate string, so it exercises a different code path in
+    ///     <see cref="FhirInputFormatter" /> / <see cref="FhirOutputFormatter" /> than the Firely
+    ///     backend does.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PostDeIdentify_WithEitherSerializerBackend_ShouldDeIdentifyTheResource(
+        bool useSystemTextJsonFhirSerializer
+    )
+    {
+        using var serializerFactory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["UseSystemTextJsonFhirSerializer"] = useSystemTextJsonFhirSerializer
+                    .ToString()
+                    .ToLowerInvariant(),
+            },
+        };
+        using var serializerClient = serializerFactory.CreateClient();
+
+        var parameters = new Parameters()
+            .Add(
+                "config",
+                new Attachment
+                {
+                    ContentType = "application/yaml",
+                    Data = Encoding.UTF8.GetBytes(
+                        "fhirVersion: R4\nfhirPathRules:\n  - path: Patient.name\n    method: redact\n"
+                    ),
+                }
+            )
+            .Add(
+                "resource",
+                new Patient
+                {
+                    Id = "example",
+                    Name = [new HumanName { Family = "Doe", Given = ["John"] }],
+                    BirthDate = "1985-10-14",
+                }
+            );
+
+        using var content = new StringContent(parameters.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await serializerClient.PostAsync(
+            "/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        var responseContent = await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
+
+        deIdentified.Id.Should().Be("example");
+        deIdentified.Name.Should().BeEmpty();
+        deIdentified.BirthDate.Should().Be("1985-10-14");
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PostDeIdentify_WithEitherSerializerBackendAndInvalidBody_ShouldReturnBadRequest(
+        bool useSystemTextJsonFhirSerializer
+    )
+    {
+        using var serializerFactory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["UseSystemTextJsonFhirSerializer"] = useSystemTextJsonFhirSerializer
+                    .ToString()
+                    .ToLowerInvariant(),
+            },
+        };
+        using var serializerClient = serializerFactory.CreateClient();
+
+        using var content = new StringContent("not json at all");
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await serializerClient.PostAsync(
+            "/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }
