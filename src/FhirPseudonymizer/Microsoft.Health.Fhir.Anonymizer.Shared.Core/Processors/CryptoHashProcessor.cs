@@ -9,7 +9,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
     public class CryptoHashProcessor : IAnonymizerProcessor
     {
         private readonly Func<string, string> _cryptoHashFunction;
-        private readonly ILogger _logger = AnonymizerLogging.CreateLogger<CryptoHashProcessor>();
 
         public CryptoHashProcessor(
             string cryptoHashKey,
@@ -69,13 +68,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             {
                 node.Value = cryptoHashFunction(input);
             }
-
-            _logger.LogDebug(
-                "Fhir value '{Input}' at '{NodeLocation}' is hashed to '{NodeValue}'.",
-                input,
-                node.Location,
-                node.Value
-            );
 
             processResult.AddProcessRecord(AnonymizationOperations.CryptoHash, node);
             return Task.FromResult(processResult);
