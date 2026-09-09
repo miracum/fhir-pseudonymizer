@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.35.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.35.0...v2.35.1) (2026-09-09)
+
+
+### Bug Fixes
+
+* clear pool ([#404](https://github.com/miracum/fhir-pseudonymizer/issues/404)) ([a2d4d10](https://github.com/miracum/fhir-pseudonymizer/commit/a2d4d10c7ea6867c50e1ed9b3590ebb564b9b4b0))
+
+
+### Performance Improvements
+
+* ai-assisted micro-optimizations ([#403](https://github.com/miracum/fhir-pseudonymizer/issues/403)) ([1df9413](https://github.com/miracum/fhir-pseudonymizer/commit/1df9413d213849e5426857e1e8d6e1ee408bf35b))
+* guard the cryptoHash debug log to avoid quadratic node.Location cost ([#401](https://github.com/miracum/fhir-pseudonymizer/issues/401)) ([185cf08](https://github.com/miracum/fhir-pseudonymizer/commit/185cf083828311bd48a1ada5b1fd3e803f2ee10c))
+
 ## [2.35.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.34.0...v2.35.0) (2026-09-08)
 
 
