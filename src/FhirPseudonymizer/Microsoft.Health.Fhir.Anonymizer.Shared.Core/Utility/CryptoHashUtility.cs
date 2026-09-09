@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
 using Blake3;
@@ -11,6 +12,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         // so it can never collide with BLAKE3 used for any other purpose in this application.
         private const string Blake3KeyDerivationContext = "FhirPseudonymizer.CryptoHash.Blake3.v1";
 
+        // Values hashed here are identifiers and references - short enough that their UTF-8 form
+        // comfortably fits a stack buffer. Anything larger falls back to a pooled array.
+        private const int MaxStackAllocBytes = 256;
+
         public static string ComputeHmacSHA256Hash(string input, string hashKey)
         {
             if (string.IsNullOrEmpty(input))
@@ -18,12 +23,44 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                 return input;
             }
 
-            var key = Encoding.UTF8.GetBytes(hashKey);
-            using var hmac = new HMACSHA256(key);
-            var plainData = Encoding.UTF8.GetBytes(input);
-            var hashData = hmac.ComputeHash(plainData);
+            return ComputeHmacSHA256Hash(input, GetHmacSha256KeyBytes(hashKey));
+        }
 
-            return string.Concat(hashData.Select(b => b.ToString("x2")));
+        public static byte[] GetHmacSha256KeyBytes(string hashKey)
+        {
+            return Encoding.UTF8.GetBytes(hashKey);
+        }
+
+        public static string ComputeHmacSHA256Hash(string input, ReadOnlySpan<byte> hashKey)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return input;
+            }
+
+            var maxByteCount = Encoding.UTF8.GetMaxByteCount(input.Length);
+            byte[] rentedBuffer = null;
+            var inputBytes =
+                maxByteCount <= MaxStackAllocBytes
+                    ? stackalloc byte[MaxStackAllocBytes]
+                    : (rentedBuffer = ArrayPool<byte>.Shared.Rent(maxByteCount));
+
+            try
+            {
+                var writtenBytes = Encoding.UTF8.GetBytes(input, inputBytes);
+
+                Span<byte> hashData = stackalloc byte[HMACSHA256.HashSizeInBytes];
+                HMACSHA256.HashData(hashKey, inputBytes[..writtenBytes], hashData);
+
+                return Convert.ToHexStringLower(hashData);
+            }
+            finally
+            {
+                if (rentedBuffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                }
+            }
         }
 
         /// <summary>
