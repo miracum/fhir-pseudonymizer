@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>miracum/.github//renovate/default", "schedule:quarterly"],
+  "automerge": true,
   "kubernetes": {
     "managerFilePatterns": ["/tests/iter8/experiment.yaml/"]
   },
