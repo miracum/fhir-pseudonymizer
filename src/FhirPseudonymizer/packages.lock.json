@@ -80,11 +80,11 @@
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
-        "requested": "[5.13.4, )",
-        "resolved": "5.13.4",
-        "contentHash": "UXeWvf7gQdpViZZm21yfqI5e+Xt04BX78qZRPQsqTh55H2DrvQCnhjGRZUTvOVBcIWjA4EGZ14uyr4h5/FKtZg==",
+        "requested": "[6.4.0, )",
+        "resolved": "6.4.0",
+        "contentHash": "ne+0zlNRGIiqSRKchg0qhQ7LCvS1AJGXo00InKWh6giv4FPv8wKEQpnDtRoCwCVuNtkVyc6XYdmHr5Neel3Xgw==",
         "dependencies": {
-          "Fhir.Metrics": "1.3.1",
+          "Fhir.Metrics": "1.4.0",
           "Newtonsoft.Json": "13.0.4",
           "System.ComponentModel.Annotations": "5.0.0"
         }
@@ -239,8 +239,8 @@
       },
       "Fhir.Metrics": {
         "type": "Transitive",
-        "resolved": "1.3.1",
-        "contentHash": "pCC0/KT4xe7vvJ0UD9u8CTBQOoIqMBl01du0UvK95i1A6smPb32gdmwSJvtx+KV7jQwkIMeKblkH8M3d9iw7fg=="
+        "resolved": "1.4.0",
+        "contentHash": "SxpoHR46khpzQG4rOX+rJduPeuH3h9rEpEoguraOft24E0tMnnDk8CuTMVF3fMudsdyo5addKBf+wGngWHwgOQ=="
       },
       "Grpc.AspNetCore.Server": {
         "type": "Transitive",
