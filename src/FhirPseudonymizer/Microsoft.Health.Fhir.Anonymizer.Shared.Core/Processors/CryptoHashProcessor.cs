@@ -19,7 +19,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             _cryptoHashFunction =
                 algorithm == CryptoHashAlgorithm.Blake3
                     ? CreateBlake3HashFunction(cryptoHashKey)
-                    : input => CryptoHashUtility.ComputeHmacSHA256Hash(input, cryptoHashKey);
+                    : CreateHmacSha256HashFunction(cryptoHashKey);
+        }
+
+        private static Func<string, string> CreateHmacSha256HashFunction(string cryptoHashKey)
+        {
+            var keyBytes = CryptoHashUtility.GetHmacSha256KeyBytes(cryptoHashKey);
+            return input => CryptoHashUtility.ComputeHmacSHA256Hash(input, keyBytes);
         }
 
         private static Func<string, string> CreateBlake3HashFunction(string cryptoHashKey)
