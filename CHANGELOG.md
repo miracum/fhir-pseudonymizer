@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.35.2](https://github.com/miracum/fhir-pseudonymizer/compare/v2.35.1...v2.35.2) (2026-09-12)
+
+
+### Documentation
+
+* added CODEOWNERS file ([#405](https://github.com/miracum/fhir-pseudonymizer/issues/405)) ([75e778b](https://github.com/miracum/fhir-pseudonymizer/commit/75e778be228ceb938f6a380073d142449a6c1cfc))
+
+
+### Miscellaneous Chores
+
+* **deps:** update all non-major dependencies ([#410](https://github.com/miracum/fhir-pseudonymizer/issues/410)) ([0bd6cdb](https://github.com/miracum/fhir-pseudonymizer/commit/0bd6cdb52f8c992ae7cb9bc423019b372b1e622c))
+* **deps:** update github/codeql-action action to v4.37.9 ([#409](https://github.com/miracum/fhir-pseudonymizer/issues/409)) ([15c388c](https://github.com/miracum/fhir-pseudonymizer/commit/15c388c43e6eab24cb2554c920007d2170d03152))
+* **renovate:** enable renovate automerge ([#407](https://github.com/miracum/fhir-pseudonymizer/issues/407)) ([e35d6f0](https://github.com/miracum/fhir-pseudonymizer/commit/e35d6f0d10cda3f5a6a9c528e2e9beefb48754db))
+
 ## [2.35.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.35.0...v2.35.1) (2026-09-09)
 
 
