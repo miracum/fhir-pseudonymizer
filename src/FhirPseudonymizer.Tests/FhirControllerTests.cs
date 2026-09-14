@@ -140,6 +140,9 @@ public class FhirControllerTests
             .Returns(anonymized);
 
         var provenancePublisher = A.Fake<IProvenancePublisher>();
+        // Mirror KafkaProvenancePublisher: snapshot the resource before the anonymizer gets it.
+        var preImage = new Patient { Id = "123" };
+        A.CallTo(() => provenancePublisher.CapturePreImage(original)).Returns(preImage);
 
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
@@ -155,7 +158,7 @@ public class FhirControllerTests
 
         await controller.DeIdentify(original);
 
-        A.CallTo(() => provenancePublisher.Publish(original, anonymized, null))
+        A.CallTo(() => provenancePublisher.Publish(preImage, anonymized, null))
             .MustHaveHappenedOnceExactly();
     }
 

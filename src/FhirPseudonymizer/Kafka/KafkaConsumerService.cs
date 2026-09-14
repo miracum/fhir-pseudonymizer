@@ -192,6 +192,9 @@ public class KafkaConsumerService : BackgroundService
         try
         {
             var original = fhirJsonParser.Deserialize<Resource>(result.Message.Value);
+            // Snapshot before anonymizing: the engine mutates `original` in place and returns
+            // that same instance, so `original` is no longer the pre-image afterwards.
+            var preImage = provenancePublisher.CapturePreImage(original);
             var anonymized = await AnonymizeResourceAsync(original, result.Topic);
             var output = fhirJsonSerializer.SerializeToString(anonymized);
             var outputTopic = GetOutputTopic(result.Topic);
@@ -208,7 +211,7 @@ public class KafkaConsumerService : BackgroundService
 
             ProcessedMessagesCounter.WithLabels(result.Topic, "success").Inc();
 
-            provenancePublisher.Publish(original, anonymized, CopyHeaders(result.Message.Headers));
+            provenancePublisher.Publish(preImage, anonymized, CopyHeaders(result.Message.Headers));
 
             await completedResults.Writer.WriteAsync(result, CancellationToken.None);
         }

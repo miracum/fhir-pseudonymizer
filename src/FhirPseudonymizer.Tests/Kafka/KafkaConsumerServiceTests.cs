@@ -298,6 +298,9 @@ public class KafkaConsumerServiceTests
             .Returns(Task.FromResult<Resource>(anonymized));
 
         var provenancePublisher = A.Fake<IProvenancePublisher>();
+        // Mirror KafkaProvenancePublisher: snapshot the resource before the anonymizer gets it.
+        A.CallTo(() => provenancePublisher.CapturePreImage(A<Resource>._))
+            .ReturnsLazily((Resource r) => (Resource)r.DeepCopy());
         var service = CreateService(
             anonymizer,
             A.Fake<IProducer<byte[], string>>(),
