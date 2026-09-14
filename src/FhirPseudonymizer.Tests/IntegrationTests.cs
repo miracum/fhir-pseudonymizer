@@ -15,6 +15,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     : IClassFixture<CustomWebApplicationFactory<Startup>>
 {
     private readonly HttpClient client = factory.CreateClient();
+    private readonly FhirJsonDeserializer fhirJsonDeserializer = new();
 
     private readonly string fhirBundleJson =
         @"
@@ -169,7 +170,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
+        var deIdentified = fhirJsonDeserializer.Deserialize<Patient>(responseContent);
 
         deIdentified.Name.Should().BeEmpty();
     }
@@ -209,7 +210,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             }
             """;
 
-        var bundle = await new FhirJsonParser().ParseAsync<Bundle>(bundleJson);
+        var bundle = fhirJsonDeserializer.Deserialize<Bundle>(bundleJson);
 
         var parameters = new Parameters()
             .Add(
@@ -238,7 +239,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+        var deIdentified = fhirJsonDeserializer.Deserialize<Bundle>(responseContent);
 
         deIdentified.Entry.Should().HaveCount(3);
         deIdentified
@@ -308,7 +309,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
+        var deIdentified = fhirJsonDeserializer.Deserialize<Patient>(responseContent);
 
         var derivedKey = KeyDerivation.DeriveCryptoHashKey(
             staticCryptoHashKey,
@@ -1067,7 +1068,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
+        var deIdentified = fhirJsonDeserializer.Deserialize<Patient>(responseContent);
 
         deIdentified.Id.Should().Be("example");
         deIdentified.Name.Should().BeEmpty();

@@ -10,6 +10,8 @@ namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class MiiFhirClientTests
 {
+    private static readonly FhirJsonDeserializer fhirJsonDeserializer = new();
+
     private static readonly Uri testBaseAddress = new("http://mii-backend/");
 
     private const string TestContextSystem = "https://sample/context-system";
@@ -124,7 +126,7 @@ public class MiiFhirClientTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        var sent = new FhirJsonParser().Parse<Parameters>(requests.Single());
+        var sent = fhirJsonDeserializer.Deserialize<Parameters>(requests.Single());
 
         sent.GetSingleValue<Identifier>("context")
             .Should()
@@ -169,7 +171,7 @@ public class MiiFhirClientTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        var sent = new FhirJsonParser().Parse<Parameters>(requests.Single());
+        var sent = fhirJsonDeserializer.Deserialize<Parameters>(requests.Single());
 
         sent.GetSingleValue<Identifier>("context")
             .Should()
@@ -194,7 +196,7 @@ public class MiiFhirClientTests
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        var sent = new FhirJsonParser().Parse<Parameters>(requests.Single());
+        var sent = fhirJsonDeserializer.Deserialize<Parameters>(requests.Single());
 
         sent.GetSingleValue<Identifier>("context")
             .Should()
