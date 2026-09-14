@@ -10,7 +10,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
     public class EncryptProcessor : IAnonymizerProcessor
     {
         private readonly byte[] _key;
-        private readonly ILogger _logger = AnonymizerLogging.CreateLogger<EncryptProcessor>();
 
         public EncryptProcessor(string encryptKey)
         {
