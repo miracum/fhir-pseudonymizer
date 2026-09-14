@@ -55,7 +55,7 @@ public class GPasPseudonymizationProcessorTests
         var psnClient = A.Fake<IPseudonymServiceClient>();
         var processor = new PseudonymizationProcessor(psnClient, new FeatureManagement());
 
-        var node = (PocoNode)PocoNodeOrList.Root(new FhirString("12345"));
+        var node = PocoNodeOrList.Root(new FhirString("12345"));
         while (node.GetValue() == null)
         {
             node = node.Children().CastPocoNodes().First();
@@ -95,7 +95,7 @@ public class GPasPseudonymizationProcessorTests
         var psnClient = A.Fake<IPseudonymServiceClient>();
         var processor = new PseudonymizationProcessor(psnClient, features);
 
-        var node = (PocoNode)PocoNodeOrList.Root(element);
+        var node = PocoNodeOrList.Root(element);
         while (node.GetValue() == null)
         {
             node = node.Children().CastPocoNodes().First();

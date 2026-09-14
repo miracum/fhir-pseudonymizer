@@ -42,8 +42,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
                 // Convert null object to empty object
                 var replaceWith = substituteSetting.ReplaceWith ?? "{}";
-                var replacementPoco = (Base)
-                    _parser.DeserializeObject(replacementNodeType, replaceWith);
+                var replacementPoco = _parser.DeserializeObject(replacementNodeType, replaceWith);
                 replacementNode = PocoNodeExtension.CreateRootNode(replacementPoco);
             }
 
