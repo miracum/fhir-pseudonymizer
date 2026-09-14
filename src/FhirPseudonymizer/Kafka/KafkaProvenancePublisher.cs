@@ -26,6 +26,8 @@ public class KafkaProvenancePublisher : IProvenancePublisher
         this.logger = logger;
     }
 
+    public Resource CapturePreImage(Resource resource) => (Resource)resource?.DeepCopy();
+
     public void Publish(Resource original, Resource pseudonymized, Headers headers = null)
     {
         var bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, DateTimeOffset.UtcNow);

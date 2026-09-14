@@ -9,5 +9,7 @@ namespace FhirPseudonymizer.Kafka;
 /// </summary>
 public class NoopProvenancePublisher : IProvenancePublisher
 {
+    public Resource CapturePreImage(Resource resource) => null;
+
     public void Publish(Resource original, Resource pseudonymized, Headers headers = null) { }
 }

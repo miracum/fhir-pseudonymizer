@@ -151,4 +151,34 @@ public class KafkaProvenancePublisherTests
 
         act.Should().NotThrow();
     }
+
+    /// <summary>
+    ///     The anonymizer mutates the resource it is handed in place and returns that same
+    ///     instance, so the pre-image has to be snapshotted before anonymizing. This asserts the
+    ///     snapshot really is detached, since a shallow hand-back would leave
+    ///     entity[role=source] pointing at the pseudonymized resource.
+    /// </summary>
+    [Fact]
+    public void CapturePreImage_ReturnsSnapshotUnaffectedByLaterInPlaceMutation()
+    {
+        var publisher = CreatePublisher(A.Fake<IProducer<byte[], string>>());
+        var resource = new Patient { Id = "original-id" };
+
+        var preImage = publisher.CapturePreImage(resource);
+
+        // stand in for what the anonymizer does to the caller's instance
+        resource.Id = "pseudonymized-id";
+
+        preImage.Should().NotBeSameAs(resource);
+        preImage.Id.Should().Be("original-id");
+    }
+
+    [Fact]
+    public void CapturePreImage_WithoutProvenanceConfigured_DoesNotPayForACopy()
+    {
+        new NoopProvenancePublisher()
+            .CapturePreImage(new Patient { Id = "original-id" })
+            .Should()
+            .BeNull();
+    }
 }

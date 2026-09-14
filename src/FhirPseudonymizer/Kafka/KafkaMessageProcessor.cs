@@ -130,13 +130,13 @@ public class KafkaMessageProcessor
         // for the processing duration metric
         var attempt = new StrongBox<int>(1);
 
-        Resource original;
+        Resource preImage;
         Resource anonymized;
         string output;
 
         try
         {
-            (original, anonymized) = await AnonymizeWithRetryAsync(
+            (preImage, anonymized) = await AnonymizeWithRetryAsync(
                 result.Message.Value,
                 result.Topic,
                 attempt,
@@ -250,7 +250,7 @@ public class KafkaMessageProcessor
             return;
         }
 
-        provenancePublisher.Publish(original, anonymized, CopyHeaders(result.Message.Headers));
+        provenancePublisher.Publish(preImage, anonymized, CopyHeaders(result.Message.Headers));
     }
 
     /// <summary>
@@ -265,7 +265,7 @@ public class KafkaMessageProcessor
     }
 
     private async System.Threading.Tasks.Task<(
-        Resource Original,
+        Resource PreImage,
         Resource Anonymized
     )> AnonymizeWithRetryAsync(
         string json,
@@ -282,6 +282,10 @@ public class KafkaMessageProcessor
             // resource to pseudonymize again.
             var resource = ParseResource(json);
 
+            // Snapshot before anonymizing: the anonymizer mutates `resource` in place and returns
+            // that same instance, so `resource` is no longer the pre-image afterwards.
+            var preImage = provenancePublisher.CapturePreImage(resource);
+
             try
             {
                 using var activity = Program.ActivitySource.StartActivity("AnonymizeMessageAsync");
@@ -292,7 +296,7 @@ public class KafkaMessageProcessor
                     ShouldAddSecurityTag = anonymizationConfig.ShouldAddSecurityTag,
                 };
 
-                return (resource, await anonymizer.AnonymizeResourceAsync(resource, settings));
+                return (preImage, await anonymizer.AnonymizeResourceAsync(resource, settings));
             }
             catch (TransientPseudonymizationException exc)
             {
