@@ -12,7 +12,7 @@ namespace FhirPseudonymizer
     public class DecryptProcessor : IAnonymizerProcessor
     {
         private readonly byte[] _key;
-        private readonly ILogger _logger = AnonymizerLogging.CreateLogger<EncryptProcessor>();
+        private readonly ILogger _logger = AnonymizerLogging.CreateLogger<DecryptProcessor>();
 
         public DecryptProcessor(string decryptKey)
         {
