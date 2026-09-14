@@ -46,10 +46,6 @@ namespace FhirPseudonymizer
                 _logger.LogWarning(exc, "Decryption failed. Returning original value.");
             }
 
-            _logger.LogDebug(
-                $"Fhir value '{input}' at '{node.GetLocation()}' is decrypted to '{node.GetValue()}'."
-            );
-
             return Task.FromResult(processResult);
         }
     }
