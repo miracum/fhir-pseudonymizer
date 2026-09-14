@@ -80,22 +80,22 @@
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
-        "requested": "[6.3.0, )",
-        "resolved": "6.3.0",
-        "contentHash": "k8XIzJftud7yqRXyBQKnJmKifjkGqICMk1SjfbEWunsf24cpOm1ThgTJBYt1Vixh1dBixV/NT7bih58gOdWfgw==",
+        "requested": "[6.5.0, )",
+        "resolved": "6.5.0",
+        "contentHash": "dUhmyt02x3Atza9phe4xKyWUNTQOFCsOq/0v4i2KK8zsr5v8PSnBVBb/MtWs2t1ICzNOdP8uSNETUqf5zODeVw==",
         "dependencies": {
-          "Fhir.Metrics": "1.3.1",
+          "Fhir.Metrics": "1.4.0",
           "Newtonsoft.Json": "13.0.4",
           "System.ComponentModel.Annotations": "5.0.0"
         }
       },
       "Hl7.Fhir.R4": {
         "type": "Direct",
-        "requested": "[6.3.0, )",
-        "resolved": "6.3.0",
-        "contentHash": "eS3DJvxtA+Sy1AGSv6x415pV89AYhCB20OdUgcImM2obpUdiGPV4eiS4AclBMwNeD+6PrREQ2X9XVJ6Dicw/rg==",
+        "requested": "[6.5.0, )",
+        "resolved": "6.5.0",
+        "contentHash": "BzyRsljxDGLnQI5ghvhk1OTHYl4EkcmAXTo45qzRZwB1bW+YGPBrywgTh+wxlwJR2jSvbUYEkXw68qdelWdxdQ==",
         "dependencies": {
-          "Hl7.Fhir.Conformance": "6.3.0"
+          "Hl7.Fhir.Conformance": "6.5.0"
         }
       },
       "MathNet.Numerics": {
@@ -239,8 +239,8 @@
       },
       "Fhir.Metrics": {
         "type": "Transitive",
-        "resolved": "1.3.1",
-        "contentHash": "pCC0/KT4xe7vvJ0UD9u8CTBQOoIqMBl01du0UvK95i1A6smPb32gdmwSJvtx+KV7jQwkIMeKblkH8M3d9iw7fg=="
+        "resolved": "1.4.0",
+        "contentHash": "SxpoHR46khpzQG4rOX+rJduPeuH3h9rEpEoguraOft24E0tMnnDk8CuTMVF3fMudsdyo5addKBf+wGngWHwgOQ=="
       },
       "Grpc.AspNetCore.Server": {
         "type": "Transitive",
@@ -265,10 +265,10 @@
       },
       "Hl7.Fhir.Conformance": {
         "type": "Transitive",
-        "resolved": "6.3.0",
-        "contentHash": "1kjNxkaw9/0/nrqd0jn8sw9aDRjto4iCwsFMKFejp2CBM8ythmRUVQFBXxhVuawLtBUbQpT5ABrTOi2xOvKBjA==",
+        "resolved": "6.5.0",
+        "contentHash": "J8bV/L3fqe6ayesJ8uFydiw0b4+x50MDF1M4wvO6vhOdvo3VdxcYQXFy75S060uO+RVQylh8N1GxNi+M8pwSjQ==",
         "dependencies": {
-          "Hl7.Fhir.Base": "6.3.0"
+          "Hl7.Fhir.Base": "6.5.0"
         }
       },
       "librdkafka.redist": {
