@@ -7,6 +7,7 @@ using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
 using Microsoft.Health.Fhir.Anonymizer.Core.Validation;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core
 {
@@ -14,7 +15,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
     {
         private readonly AnonymizerConfigurationManager _configurationManger;
         private readonly ILogger _logger = AnonymizerLogging.CreateLogger<AnonymizerEngine>();
-        private readonly FhirJsonParser _parser = new FhirJsonParser();
+        private readonly FhirJsonDeserializer _parser = new FhirJsonDeserializer();
         private readonly Dictionary<string, IAnonymizerProcessor> _processors;
         private readonly AnonymizationFhirPathRule[] _rules;
         private readonly ResourceValidator _validator = new ResourceValidator();
@@ -42,14 +43,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             EnsureArg.IsNotNull(resource, nameof(resource));
 
             ValidateInput(settings, resource);
-            var anonymizedElement = await AnonymizeElementAsync(
-                resource.ToTypedElement(),
-                settings
-            );
-            var anonymizedResource = anonymizedElement.ToPoco<Resource>();
-            ValidateOutput(settings, anonymizedResource);
 
-            return anonymizedResource;
+            // CreateRootNode() wraps the live resource directly (root.Poco == resource), so the
+            // visitor/processor pipeline below mutates `resource` itself in place - unlike the old
+            // ElementNode-based pipeline, there's no separate tree to convert back via
+            // ToPoco<Resource>() afterwards.
+            var root = PocoNodeExtension.CreateRootNode(resource);
+            await root.AnonymizeAsync(_rules, _processors, settings);
+            ValidateOutput(settings, resource);
+
+            return resource;
         }
 
         public static void InitializeFhirPathExtensionSymbols()
@@ -88,7 +91,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
         {
             EnsureArg.IsNotNull(element, nameof(element));
 
-            var resourceNode = ElementNode.FromElement(element);
+            // Reuse the element in place if it's already a live PocoNode (e.g. from
+            // PocoNodeOrList.Root()); otherwise fall back to converting it, which may build a
+            // disconnected copy if `element` isn't itself backed by a real POCO.
+            var resourceNode = element as PocoNode ?? element.ToPocoNode();
             return await resourceNode.AnonymizeAsync(_rules, _processors, settings);
         }
 
@@ -99,14 +105,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
         {
             EnsureArg.IsNotNullOrEmpty(json, nameof(json));
 
-            var resource = _parser.Parse<Resource>(json);
+            var resource = _parser.Deserialize<Resource>(json);
             var anonymizedResource = await AnonymizeResourceAsync(resource, settings);
 
-            var serializationSettings = new FhirJsonSerializationSettings
-            {
-                Pretty = settings != null && settings.IsPrettyOutput,
-            };
-            return anonymizedResource.ToJson(serializationSettings);
+            return anonymizedResource.ToJson(settings != null && settings.IsPrettyOutput);
         }
 
         private void ValidateInput(AnonymizerSettings settings, Resource resource)

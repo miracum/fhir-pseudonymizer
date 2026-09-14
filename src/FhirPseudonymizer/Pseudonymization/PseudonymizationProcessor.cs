@@ -1,10 +1,11 @@
 using System.Text.RegularExpressions;
 using FhirPseudonymizer.Config;
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
+using Task = System.Threading.Tasks.Task;
 
 namespace FhirPseudonymizer.Pseudonymization;
 
@@ -25,13 +26,13 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
     private bool IsConditionalReferencePseudonymizationEnabled { get; }
 
     public async Task<ProcessResult> ProcessAsync(
-        ElementNode node,
+        PocoNode node,
         ProcessContext context = null,
         Dictionary<string, object> settings = null
     )
     {
         var processResult = new ProcessResult();
-        if (string.IsNullOrEmpty(node?.Value?.ToString()))
+        if (string.IsNullOrEmpty(node?.GetValue()?.ToString()))
         {
             return processResult;
         }
@@ -47,7 +48,7 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
             ?? settings?.GetValueOrDefault("namespace", null)
             ?? settings?.GetValueOrDefault("context", null)?.ToString();
 
-        var input = node.Value.ToString();
+        var input = node.GetValue().ToString();
 
         // Pseudonymize the id part for "Reference.reference" node and
         // pseudonymize whole input for other node types
@@ -57,9 +58,11 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
             // create a domain from the reference, ie "Patient/123" -> "Patient"
             domain ??= ReferenceUtility.GetReferencePrefix(input).TrimEnd('/');
 
-            node.Value = await ReferenceUtility.TransformReferenceIdAsync(
-                input,
-                x => GetOrCreatePseudonymAsync(x, domainPrefix.ToString() + domain, settings)
+            node.SetPrimitiveValue(
+                await ReferenceUtility.TransformReferenceIdAsync(
+                    input,
+                    x => GetOrCreatePseudonymAsync(x, domainPrefix.ToString() + domain, settings)
+                )
             );
         }
         else if (
@@ -71,17 +74,17 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
                 .Groups["domain"]
                 .Value;
 
-            node.Value = await ReferenceUtility.TransformReferenceIdAsync(
-                input,
-                x => GetOrCreatePseudonymAsync(x, domainPrefix.ToString() + domain, settings)
+            node.SetPrimitiveValue(
+                await ReferenceUtility.TransformReferenceIdAsync(
+                    input,
+                    x => GetOrCreatePseudonymAsync(x, domainPrefix.ToString() + domain, settings)
+                )
             );
         }
         else
         {
-            node.Value = await GetOrCreatePseudonymAsync(
-                input,
-                domainPrefix.ToString() + domain,
-                settings
+            node.SetPrimitiveValue(
+                await GetOrCreatePseudonymAsync(input, domainPrefix.ToString() + domain, settings)
             );
         }
 

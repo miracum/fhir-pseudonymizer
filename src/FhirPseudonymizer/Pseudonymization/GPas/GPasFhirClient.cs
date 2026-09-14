@@ -56,7 +56,7 @@ public class GPasFhirClient : IPseudonymServiceClient
     }
 
     private IHttpClientFactory ClientFactory { get; }
-    private FhirJsonParser FhirParser { get; } = new();
+    private FhirJsonDeserializer FhirParser { get; } = new();
     private Func<string, string, Task<string>> GetOrCreatePseudonymForResolver { get; }
     private Func<string, string, Task<string>> GetOriginalValueForResolver { get; }
 
@@ -97,7 +97,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         );
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
-        var parameters = FhirParser.Parse<Parameters>(content);
+        var parameters = FhirParser.Deserialize<Parameters>(content);
 
         var original = parameters.GetSingleValue<FhirString>(pseudonym);
         if (original == null)
@@ -174,7 +174,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         );
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
-        var parameters = FhirParser.Parse<Parameters>(content);
+        var parameters = FhirParser.Deserialize<Parameters>(content);
         return parameters.GetSingleValue<FhirString>(value).Value;
     }
 

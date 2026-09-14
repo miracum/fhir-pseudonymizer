@@ -12,13 +12,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Validation
             var results = _validator.Validate(resource);
             foreach (var error in results)
             {
-                var path = string.IsNullOrEmpty(error.MemberNames?.FirstOrDefault())
-                    ? string.Empty
-                    : error.MemberNames?.FirstOrDefault();
+                var path = error.MemberName ?? string.Empty;
                 _logger.LogDebug(
                     string.IsNullOrEmpty(resource?.Id)
-                        ? $"The input is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
-                        : $"The input of resource ID {resource.Id} is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
+                        ? $"The input is non-conformant with FHIR specification: {error.BaseErrorMessage} for {path} in {resource.TypeName}."
+                        : $"The input of resource ID {resource.Id} is non-conformant with FHIR specification: {error.BaseErrorMessage} for {path} in {resource.TypeName}."
                 );
             }
 
@@ -35,11 +33,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Validation
             var results = _validator.Validate(resource);
             foreach (var error in results)
             {
-                var path = error.MemberNames?.FirstOrDefault() ?? string.Empty;
+                var path = error.MemberName ?? string.Empty;
                 _logger.LogDebug(
                     string.IsNullOrEmpty(resource?.Id)
-                        ? $"The output is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
-                        : $"The output of resource ID {resource.Id} is non-conformant with FHIR specification: {error.ErrorMessage} for {path} in {resource.TypeName}."
+                        ? $"The output is non-conformant with FHIR specification: {error.BaseErrorMessage} for {path} in {resource.TypeName}."
+                        : $"The output of resource ID {resource.Id} is non-conformant with FHIR specification: {error.BaseErrorMessage} for {path} in {resource.TypeName}."
                 );
             }
 

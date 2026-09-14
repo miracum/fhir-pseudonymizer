@@ -41,7 +41,7 @@ public class KafkaConsumerService : BackgroundService
     private readonly KafkaConfig kafkaConfig;
     private readonly IProvenancePublisher provenancePublisher;
     private readonly ILogger<KafkaConsumerService> logger;
-    private readonly FhirJsonParser fhirJsonParser = new();
+    private readonly FhirJsonDeserializer fhirJsonParser = new();
     private readonly FhirJsonSerializer fhirJsonSerializer = new();
     private readonly Channel<ConsumeResult<byte[], string>>[] workerChannels;
     private readonly Channel<ConsumeResult<byte[], string>> completedResults =
@@ -191,7 +191,10 @@ public class KafkaConsumerService : BackgroundService
     {
         try
         {
-            var original = fhirJsonParser.Parse<Resource>(result.Message.Value);
+            var original = fhirJsonParser.Deserialize<Resource>(result.Message.Value);
+            // Snapshot before anonymizing: the engine mutates `original` in place and returns
+            // that same instance, so `original` is no longer the pre-image afterwards.
+            var preImage = provenancePublisher.CapturePreImage(original);
             var anonymized = await AnonymizeResourceAsync(original, result.Topic);
             var output = fhirJsonSerializer.SerializeToString(anonymized);
             var outputTopic = GetOutputTopic(result.Topic);
@@ -208,7 +211,7 @@ public class KafkaConsumerService : BackgroundService
 
             ProcessedMessagesCounter.WithLabels(result.Topic, "success").Inc();
 
-            provenancePublisher.Publish(original, anonymized, CopyHeaders(result.Message.Headers));
+            provenancePublisher.Publish(preImage, anonymized, CopyHeaders(result.Message.Headers));
 
             await completedResults.Writer.WriteAsync(result, CancellationToken.None);
         }
@@ -233,6 +236,19 @@ public class KafkaConsumerService : BackgroundService
             await SendToDeadLetterQueueAsync(result, exc);
         }
         catch (FormatException exc)
+        {
+            logger.LogError(
+                exc,
+                "Failed to process message from topic {Topic}, sending to dead letter queue",
+                result.Topic
+            );
+
+            await SendToDeadLetterQueueAsync(result, exc);
+        }
+        // Syntactically invalid JSON fails inside Utf8JsonReader itself, before the FHIR
+        // deserializer gets a chance to wrap it into a FormatException-derived exception like it
+        // does for validly-shaped-but-wrong JSON.
+        catch (System.Text.Json.JsonException exc)
         {
             logger.LogError(
                 exc,
@@ -356,7 +372,7 @@ public class KafkaConsumerService : BackgroundService
         string json
     )
     {
-        var resource = fhirJsonParser.Parse<Resource>(json);
+        var resource = fhirJsonParser.Deserialize<Resource>(json);
         var anonymized = await AnonymizeResourceAsync(resource, sourceTopic);
         return fhirJsonSerializer.SerializeToString(anonymized);
     }
