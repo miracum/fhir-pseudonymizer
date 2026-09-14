@@ -13,15 +13,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
         /// <summary>
         ///     Builds a root PocoNode for the given POCO. PocoNodeOrList.Root() alone doesn't
-        ///     attach a ModelInspector annotation, so ITypedElement.Definition - and therefore
-        ///     IsFhirResource() - would silently return null/false for the root and every
-        ///     descendant (FindInspector() walks up looking for one and finds nothing), which
-        ///     means the anonymization visitor would never recognize any resource in the tree and
-        ///     rules would silently match nothing.
+        ///     attach a ModelInspector annotation, so ITypedElement.Definition stays null for the
+        ///     root and every descendant (FindInspector() walks up looking for one and finds
+        ///     nothing). InstanceType still resolves off the POCO without it, and IsFhirResource()
+        ///     no longer reads Definition at all, so nothing here reads Definition directly today -
+        ///     but the FHIRPath engine and the serializers do, so keep the annotation attached
+        ///     rather than relying on every Definition consumer staying away.
         /// </summary>
         public static PocoNode CreateRootNode(Base poco)
         {
-            var root = (PocoNode)PocoNodeOrList.Root(poco);
+            var root = PocoNodeOrList.Root(poco);
             ((IAnnotatable)root).AddAnnotation(ModelInfo.ModelInspector);
             return root;
         }

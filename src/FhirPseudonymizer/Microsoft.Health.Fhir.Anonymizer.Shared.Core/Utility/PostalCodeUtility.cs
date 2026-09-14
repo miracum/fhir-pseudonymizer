@@ -18,7 +18,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         )
         {
             var processResult = new ProcessResult();
-            if (!node.IsPostalCodeNode() || string.IsNullOrEmpty(node?.GetValue()?.ToString()))
+            if (!node.IsPostalCodeNode() || string.IsNullOrEmpty(node.GetValue()?.ToString()))
             {
                 return processResult;
             }

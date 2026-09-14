@@ -48,7 +48,7 @@ public class CryptoHashProcessorTests
     {
         var processor = new CryptoHashProcessor("test");
 
-        var node = (PocoNode)PocoNodeOrList.Root(element);
+        var node = PocoNodeOrList.Root(element);
         while (node.GetValue() == null)
         {
             node = node.Children().CastPocoNodes().First();
@@ -68,7 +68,7 @@ public class CryptoHashProcessorTests
     {
         var processor = new CryptoHashProcessor("test");
 
-        var node = (PocoNode)PocoNodeOrList.Root(element);
+        var node = PocoNodeOrList.Root(element);
         while (node.GetValue() == null)
         {
             node = node.Children().CastPocoNodes().First();

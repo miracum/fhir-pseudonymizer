@@ -42,7 +42,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         )
         {
             var processResult = new ProcessResult();
-            if (!node.IsDateNode() || string.IsNullOrEmpty(node?.GetValue()?.ToString()))
+            if (!node.IsDateNode() || string.IsNullOrEmpty(node.GetValue()?.ToString()))
             {
                 return processResult;
             }
@@ -75,7 +75,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             var processResult = new ProcessResult();
             if (
                 (!node.IsDateTimeNode() && !node.IsInstantNode())
-                || string.IsNullOrEmpty(node?.GetValue()?.ToString())
+                || string.IsNullOrEmpty(node.GetValue()?.ToString())
             )
             {
                 return processResult;
@@ -107,7 +107,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         )
         {
             var processResult = new ProcessResult();
-            if (!node.IsAgeDecimalNode() || string.IsNullOrEmpty(node?.GetValue()?.ToString()))
+            if (!node.IsAgeDecimalNode() || string.IsNullOrEmpty(node.GetValue()?.ToString()))
             {
                 return processResult;
             }
@@ -138,7 +138,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
         )
         {
             var processResult = new ProcessResult();
-            if (!node.IsDateNode() || string.IsNullOrEmpty(node?.GetValue()?.ToString()))
+            if (!node.IsDateNode() || string.IsNullOrEmpty(node.GetValue()?.ToString()))
             {
                 return processResult;
             }
@@ -181,7 +181,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             var processResult = new ProcessResult();
             if (
                 (!node.IsDateTimeNode() && !node.IsInstantNode())
-                || string.IsNullOrEmpty(node?.GetValue()?.ToString())
+                || string.IsNullOrEmpty(node.GetValue()?.ToString())
             )
             {
                 return processResult;

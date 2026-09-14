@@ -18,7 +18,7 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var node = PocoNodeOrList.Root(patient);
         var birthDateNode = node.ChildrenByName("birthDate").First();
 
         var settings = new Dictionary<string, object>
@@ -41,7 +41,7 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var node = PocoNodeOrList.Root(patient);
         var birthDateNode = node.ChildrenByName("birthDate").First();
 
         var settings = new Dictionary<string, object>
@@ -64,7 +64,7 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var node = PocoNodeOrList.Root(patient);
         var birthDateNode = node.ChildrenByName("birthDate").First();
 
         var settings = new Dictionary<string, object>
@@ -95,11 +95,11 @@ public class DateShiftProcessorTests
         );
 
         var patient1 = new Patient { BirthDate = "1990-01-15" };
-        var node1 = (PocoNode)PocoNodeOrList.Root(patient1);
+        var node1 = PocoNodeOrList.Root(patient1);
         var birthDateNode1 = node1.ChildrenByName("birthDate").First();
 
         var patient2 = new Patient { BirthDate = "1990-01-15" };
-        var node2 = (PocoNode)PocoNodeOrList.Root(patient2);
+        var node2 = PocoNodeOrList.Root(patient2);
         var birthDateNode2 = node2.ChildrenByName("birthDate").First();
 
         await processor1.ProcessAsync(birthDateNode1, settings: null);
@@ -120,7 +120,7 @@ public class DateShiftProcessorTests
 
         // Use Condition.recordedDate which is a non-polymorphic dateTime field
         var condition = new Condition { RecordedDate = "2020-06-15T10:30:00+02:00" };
-        var node = (PocoNode)PocoNodeOrList.Root(condition);
+        var node = PocoNodeOrList.Root(condition);
         var recordedDateNode = node.ChildrenByName("recordedDate").First();
 
         var settings = new Dictionary<string, object>
@@ -144,7 +144,7 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var node = PocoNodeOrList.Root(patient);
         var birthDateNode = node.ChildrenByName("birthDate").First();
 
         // Using raw int instead of FHIR Integer
@@ -166,7 +166,7 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var node = PocoNodeOrList.Root(patient);
         var birthDateNode = node.ChildrenByName("birthDate").First();
 
         await processor.ProcessAsync(birthDateNode, settings: null);
@@ -185,7 +185,7 @@ public class DateShiftProcessorTests
         );
 
         var patient = new Patient { BirthDate = "1990-01-15" };
-        var node = (PocoNode)PocoNodeOrList.Root(patient);
+        var node = PocoNodeOrList.Root(patient);
         var birthDateNode = node.ChildrenByName("birthDate").First();
 
         var settings = new Dictionary<string, object>
