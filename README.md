@@ -181,6 +181,32 @@ Service-specific configuration settings are listed below.
 | `Vfps__Auth__Basic__Username` | The HTTP basic auth username to connect to the Vfps service. Used in the `Authorization: Basic` metadata header value for the gRPC calls. | `""`    |
 | `Vfps__Auth__Basic__Password` | The HTTP basic auth password to connect to the Vfps service.                                                                              | `""`    |
 
+#### Vfps OAuth
+
+Setting `Vfps__Auth__OAuth__TokenEndpoint` enables the OAuth client credentials flow: an access token is
+fetched from the token endpoint, cached until shortly before it expires, and sent as the
+`Authorization: Bearer` metadata header of every gRPC call. This is what a Vfps deployment started with
+`Authorization__IsEnabled=true` expects - it only accepts bearer tokens on its gRPC API, so basic auth
+does not work against such a deployment. If both are configured, OAuth takes precedence.
+
+| Environment Variable              | Description                       | Default |
+| --------------------------------- | --------------------------------- | ------- |
+| `Vfps__Auth__OAuth__TokenEndpoint` | The URL of the token endpoint     | `""`    |
+| `Vfps__Auth__OAuth__ClientId`      | The client ID                     | `""`    |
+| `Vfps__Auth__OAuth__ClientSecret`  | The static (shared) client secret | `""`    |
+| `Vfps__Auth__OAuth__Scope`         | The scope                         | `""`    |
+| `Vfps__Auth__OAuth__Resource`      | The resource                      | `""`    |
+
+Note that the token is only attached to calls made over an insecure channel if
+`Vfps__UnsafeUseInsecureChannelCallCredentials` is `true` (the default). Prefer `Vfps__UseTls=true`
+instead, so the token isn't sent in plaintext.
+
+On the Vfps side, the client this service authenticates as needs access to each namespace it uses:
+**write** access for creating pseudonyms, plus **reverse-lookup** access if de-pseudonymization is used.
+Access is granted per namespace in the Vfps admin UI. Since a machine client has no verified email
+address, only role-based grants apply to it - see the
+[Vfps access control documentation](https://github.com/miracum/vfps#access-control).
+
 ### entici
 
 | Environment Variable | Description                                                                                            | Default |
