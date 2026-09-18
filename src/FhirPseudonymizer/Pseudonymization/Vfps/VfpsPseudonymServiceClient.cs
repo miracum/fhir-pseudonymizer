@@ -20,7 +20,8 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         var request = new PseudonymServiceCreateRequest
@@ -29,7 +30,7 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
             Namespace = domain,
         };
 
-        var response = await Client.CreateAsync(request);
+        var response = await Client.CreateAsync(request, cancellationToken: cancellationToken);
 
         return response.Pseudonym.PseudonymValue;
     }
@@ -37,7 +38,8 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
     public async Task<string> GetOriginalValueFor(
         string pseudonym,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         var request = new PseudonymServiceGetRequest
@@ -48,8 +50,15 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
 
         try
         {
-            var response = await Client.GetAsync(request);
+            var response = await Client.GetAsync(request, cancellationToken: cancellationToken);
             return response.Pseudonym.OriginalValue;
+        }
+        // See GPasFhirClient: a caller-requested cancellation must not be swallowed into the
+        // "return the pseudonym unchanged" fallback, or a cancelled $de-pseudonymize would
+        // silently produce still-pseudonymized output instead of aborting.
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception exc)
         {

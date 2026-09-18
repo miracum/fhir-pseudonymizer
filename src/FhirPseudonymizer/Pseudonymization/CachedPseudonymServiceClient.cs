@@ -27,7 +27,8 @@ public class CachedPseudonymServiceClient(
     public Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         TotalPseudonymizationRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
@@ -40,7 +41,12 @@ public class CachedPseudonymServiceClient(
                     .WithLabels(nameof(GetOrCreatePseudonymFor))
                     .Inc();
                 ApplyCacheConfig(entry);
-                return await innerClient.GetOrCreatePseudonymFor(value, domain, settings);
+                return await innerClient.GetOrCreatePseudonymFor(
+                    value,
+                    domain,
+                    settings,
+                    cancellationToken
+                );
             }
         );
     }
@@ -48,7 +54,8 @@ public class CachedPseudonymServiceClient(
     public Task<string> GetOriginalValueFor(
         string pseudonym,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         TotalPseudonymizationRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
@@ -61,7 +68,12 @@ public class CachedPseudonymServiceClient(
                     .WithLabels(nameof(GetOriginalValueFor))
                     .Inc();
                 ApplyCacheConfig(entry);
-                return await innerClient.GetOriginalValueFor(pseudonym, domain, settings);
+                return await innerClient.GetOriginalValueFor(
+                    pseudonym,
+                    domain,
+                    settings,
+                    cancellationToken
+                );
             }
         );
     }

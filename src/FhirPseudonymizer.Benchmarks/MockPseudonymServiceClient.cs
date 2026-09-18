@@ -11,12 +11,14 @@ public class MockPseudonymServiceClient : IPseudonymServiceClient
     public Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     ) => Task.FromResult($"pseudonym-for-{value}-in-{domain}");
 
     public Task<string> GetOriginalValueFor(
         string pseudonym,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     ) => Task.FromResult($"original-for-{pseudonym}-in-{domain}");
 }

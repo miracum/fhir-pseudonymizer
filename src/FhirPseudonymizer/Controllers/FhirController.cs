@@ -105,14 +105,23 @@ namespace FhirPseudonymizer.Controllers
         ///     only, and/or a 'settings' parameter to override individual rule settings (see the "Dynamic rule
         ///     settings" docs).
         /// </param>
+        /// <param name="cancellationToken">
+        ///     Bound to the request's abort token. If the caller disconnects, de-identification
+        ///     stops instead of running the remaining rules and pseudonymization calls to completion.
+        /// </param>
         /// <returns>The de-identified resource.</returns>
         /// <response code="200">Returns the de-identified resource</response>
+        /// <response code="499">The caller aborted the request before it was processed</response>
         [HttpPost("$de-identify")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(Resource), 200)]
         [ProducesResponseType(typeof(OperationOutcome), 400)]
         [ProducesResponseType(typeof(OperationOutcome), 500)]
-        public async Task<ObjectResult> DeIdentify([FromBody] Resource resource)
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
+        public async Task<ObjectResult> DeIdentify(
+            [FromBody] Resource resource,
+            CancellationToken cancellationToken
+        )
         {
             if (resource == null)
             {
@@ -178,10 +187,10 @@ namespace FhirPseudonymizer.Controllers
                     }
                 }
 
-                return await Anonymize(innerResource, settings, engine);
+                return await Anonymize(innerResource, settings, engine, cancellationToken);
             }
 
-            return await Anonymize(resource, settings, anonymizer);
+            return await Anonymize(resource, settings, anonymizer, cancellationToken);
         }
 
         /// <summary>
@@ -218,7 +227,8 @@ namespace FhirPseudonymizer.Controllers
         private async Task<ObjectResult> Anonymize(
             Resource resource,
             AnonymizerSettings anonymizerSettings,
-            IAnonymizerEngine engine
+            IAnonymizerEngine engine,
+            CancellationToken cancellationToken
         )
         {
             using var activity = Program.ActivitySource.StartActivity(nameof(Anonymize));
@@ -233,9 +243,25 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                var anonymized = await engine.AnonymizeResourceAsync(resource, anonymizerSettings);
+                var anonymized = await engine.AnonymizeResourceAsync(
+                    resource,
+                    anonymizerSettings,
+                    cancellationToken
+                );
                 provenancePublisher.Publish(resource, anonymized);
                 return Ok(anonymized);
+            }
+            // Caught ahead of the catch-all below so an aborted request is not logged and
+            // reported as an internal server error. The caller is usually already gone, so
+            // this response is mostly for the access log and for callers that cancel for some
+            // other reason than a dropped connection.
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                logger.LogInformation("Anonymize cancelled by the caller");
+                return StatusCode(
+                    StatusCodes.Status499ClientClosedRequest,
+                    CreateCancelledOutcome()
+                );
             }
             catch (Exception exc)
             {
@@ -248,14 +274,23 @@ namespace FhirPseudonymizer.Controllers
         ///     Revert any reversible de-identification methods previously applied to the given FHIR resource.
         /// </summary>
         /// <param name="resource">The FHIR resource containing pseudonymized fields that are to be de-pseudonymized.</param>
+        /// <param name="cancellationToken">
+        ///     Bound to the request's abort token. If the caller disconnects, de-pseudonymization
+        ///     stops instead of running the remaining lookups to completion.
+        /// </param>
         /// <returns>The modified FHIR resource with the pseudonymized fields replaced with the original value.</returns>
         /// <response code="200">Returns the de-pseudonymized resource</response>
+        /// <response code="499">The caller aborted the request before it was processed</response>
         [HttpPost("$de-pseudonymize")]
         [Authorize]
         [ProducesResponseType(typeof(Resource), 200)]
         [ProducesResponseType(typeof(OperationOutcome), 400)]
         [ProducesResponseType(typeof(OperationOutcome), 500)]
-        public async Task<ObjectResult> DePseudonymize([FromBody] Resource resource)
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
+        public async Task<ObjectResult> DePseudonymize(
+            [FromBody] Resource resource,
+            CancellationToken cancellationToken
+        )
         {
             if (resource == null)
             {
@@ -276,7 +311,20 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                return Ok(await dePseudonymizer.DePseudonymizeResourceAsync(resource));
+                return Ok(
+                    await dePseudonymizer.DePseudonymizeResourceAsync(
+                        resource,
+                        cancellationToken: cancellationToken
+                    )
+                );
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                logger.LogInformation("DePseudonymize cancelled by the caller");
+                return StatusCode(
+                    StatusCodes.Status499ClientClosedRequest,
+                    CreateCancelledOutcome()
+                );
             }
             catch (Exception exc)
             {
@@ -317,6 +365,20 @@ namespace FhirPseudonymizer.Controllers
                     Severity = OperationOutcome.IssueSeverity.Error,
                     Code = OperationOutcome.IssueType.Processing,
                     Diagnostics = diagnostics,
+                }
+            );
+            return outcome;
+        }
+
+        private static OperationOutcome CreateCancelledOutcome()
+        {
+            var outcome = new OperationOutcome();
+            outcome.Issue.Add(
+                new OperationOutcome.IssueComponent
+                {
+                    Severity = OperationOutcome.IssueSeverity.Error,
+                    Code = OperationOutcome.IssueType.Timeout,
+                    Diagnostics = "The request was cancelled before processing completed.",
                 }
             );
             return outcome;

@@ -81,7 +81,11 @@ public class GPasFhirClientTests
         var gpasClient = CreateGPasClient(gpasVersion);
 
         // act
-        await gpasClient.GetOrCreatePseudonymFor("42", "domain");
+        await gpasClient.GetOrCreatePseudonymFor(
+            "42",
+            "domain",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         // verify
         VerifyRequest(requestMethod, requestUri);
@@ -120,17 +124,76 @@ public class GPasFhirClientTests
         var gpasClient = CreateGPasClient(gpasVersion);
 
         // act
-        await gpasClient.GetOriginalValueFor("42", "domain");
+        await gpasClient.GetOriginalValueFor(
+            "42",
+            "domain",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         // verify request uri and method
         VerifyRequest(requestMethod, requestUri);
     }
 
-    private IPseudonymServiceClient CreateGPasClient(string gPasVersion)
+    private IPseudonymServiceClient CreateGPasClient(
+        string gPasVersion,
+        HttpMessageHandler handler = null
+    )
     {
         var config = new GPasConfig { Version = gPasVersion };
+        var factory = handler is null ? clientFactory : CreateHttpClientFactory(handler);
 
-        return new GPasFhirClient(A.Fake<ILogger<GPasFhirClient>>(), clientFactory, config);
+        return new GPasFhirClient(A.Fake<ILogger<GPasFhirClient>>(), factory, config);
+    }
+
+    // The gPAS V2/V2x de-pseudonymize paths deliberately swallow backend failures and return the
+    // pseudonym unchanged. A caller-requested cancellation must not take that path, or a cancelled
+    // $de-pseudonymize would quietly emit still-pseudonymized data for the rest of the resource.
+    [Theory]
+    [InlineData("1.10.2")]
+    [InlineData("1.10.3")]
+    public async Task GetOriginalValueFor_WhenTheCallerCancels_ThrowsInsteadOfReturningThePseudonym(
+        string gpasVersion
+    )
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var gpasClient = CreateGPasClient(gpasVersion, CreateThrowingHttpMessageHandler());
+
+        var act = async () =>
+            await gpasClient.GetOriginalValueFor("42", "domain", cancellationToken: cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    // The flip side: an HttpClient timeout also surfaces as an OperationCanceledException, but
+    // with the caller's token unsignalled. That case keeps the pre-existing fallback.
+    [Theory]
+    [InlineData("1.10.2")]
+    [InlineData("1.10.3")]
+    public async Task GetOriginalValueFor_WhenTheBackendFailsWithoutCancellation_FallsBackToThePseudonym(
+        string gpasVersion
+    )
+    {
+        var gpasClient = CreateGPasClient(gpasVersion, CreateThrowingHttpMessageHandler());
+
+        var result = await gpasClient.GetOriginalValueFor(
+            "42",
+            "domain",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        result.Should().Be("42");
+    }
+
+    private static HttpMessageHandler CreateThrowingHttpMessageHandler()
+    {
+        var handler = A.Fake<HttpMessageHandler>();
+        A.CallTo(handler)
+            .Where(_ => _.Method.Name == "SendAsync")
+            .WithReturnType<Task<HttpResponseMessage>>()
+            .Throws(new TaskCanceledException());
+
+        return handler;
     }
 
     private static HttpMessageHandler CreateHttpMessageHandler()

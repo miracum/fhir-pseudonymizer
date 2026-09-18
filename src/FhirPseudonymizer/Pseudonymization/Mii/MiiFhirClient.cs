@@ -58,7 +58,8 @@ public class MiiFhirClient : IPseudonymServiceClient
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         var request = new MiiPseudonymizeRequest
@@ -71,7 +72,8 @@ public class MiiFhirClient : IPseudonymServiceClient
 
         var response = await fhirClient.WholeSystemOperationAsync(
             "pseudonymize",
-            request.ToFhirParameters()
+            request.ToFhirParameters(),
+            ct: cancellationToken
         );
 
         if (response is Parameters responseParameters)
@@ -91,7 +93,8 @@ public class MiiFhirClient : IPseudonymServiceClient
     public async Task<string> GetOriginalValueFor(
         string pseudonym,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         var request = new MiiDePseudonymizeRequest
@@ -104,7 +107,8 @@ public class MiiFhirClient : IPseudonymServiceClient
 
         var response = await fhirClient.WholeSystemOperationAsync(
             "de-pseudonymize",
-            request.ToFhirParameters()
+            request.ToFhirParameters(),
+            ct: cancellationToken
         );
 
         if (response is Parameters responseParameters)

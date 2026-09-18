@@ -56,8 +56,17 @@ public class KafkaConsumerServiceTests
     public async Task AnonymizeMessageAsync_ReturnsAnonymizedResource()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
-            .ReturnsLazily((Resource resource, AnonymizerSettings _) => Task.FromResult(resource));
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(
+                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
+                    Task.FromResult(resource)
+            );
 
         var service = CreateService(anonymizer, A.Fake<IProducer<byte[], string>>());
 
@@ -73,8 +82,17 @@ public class KafkaConsumerServiceTests
     public async System.Threading.Tasks.Task ProcessResultAsync_AnonymizesResourceAndProducesToPrefixedTopic()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
-            .ReturnsLazily((Resource resource, AnonymizerSettings _) => Task.FromResult(resource));
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(
+                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
+                    Task.FromResult(resource)
+            );
 
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(anonymizer, producer);
@@ -100,8 +118,17 @@ public class KafkaConsumerServiceTests
     public async System.Threading.Tasks.Task ProcessResultAsync_PreservesOriginalMessageKey()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
-            .ReturnsLazily((Resource resource, AnonymizerSettings _) => Task.FromResult(resource));
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(
+                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
+                    Task.FromResult(resource)
+            );
 
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(anonymizer, producer);
@@ -137,8 +164,17 @@ public class KafkaConsumerServiceTests
     public async System.Threading.Tasks.Task ProcessResultAsync_ForwardsOriginalMessageHeaders()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
-            .ReturnsLazily((Resource resource, AnonymizerSettings _) => Task.FromResult(resource));
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(
+                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
+                    Task.FromResult(resource)
+            );
 
         var producer = A.Fake<IProducer<byte[], string>>();
         var service = CreateService(anonymizer, producer);
@@ -299,7 +335,13 @@ public class KafkaConsumerServiceTests
     {
         var anonymized = new Patient { Id = "hashed-456" };
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
             .Returns(Task.FromResult<Resource>(anonymized));
 
         var provenancePublisher = A.Fake<IProvenancePublisher>();

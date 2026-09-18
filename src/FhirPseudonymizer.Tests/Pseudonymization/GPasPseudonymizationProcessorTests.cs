@@ -69,7 +69,8 @@ public class GPasPseudonymizationProcessorTests
                 psnClient.GetOrCreatePseudonymFor(
                     A<string>._,
                     "foo-bar",
-                    A<IReadOnlyDictionary<string, object>>._
+                    A<IReadOnlyDictionary<string, object>>._,
+                    A<CancellationToken>._
                 )
             )
             .MustHaveHappenedOnceExactly();
@@ -112,7 +113,8 @@ public class GPasPseudonymizationProcessorTests
                 psnClient.GetOrCreatePseudonymFor(
                     A<string>._,
                     expectedDomain,
-                    A<IReadOnlyDictionary<string, object>>._
+                    A<IReadOnlyDictionary<string, object>>._,
+                    A<CancellationToken>._
                 )
             )
             .MustHaveHappenedOnceExactly();

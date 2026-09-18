@@ -41,28 +41,32 @@ namespace FhirPseudonymizer.Tests
                         psnClient.GetOrCreatePseudonymFor(
                             A<string>._,
                             A<string>._,
-                            A<IReadOnlyDictionary<string, object>>._
+                            A<IReadOnlyDictionary<string, object>>._,
+                            A<CancellationToken>._
                         )
                     )
                     .ReturnsLazily(
                         (
                             string original,
                             string domain,
-                            IReadOnlyDictionary<string, object> settings
+                            IReadOnlyDictionary<string, object> settings,
+                            CancellationToken cancellationToken
                         ) => $"pseuded-{original}@{domain}"
                     );
                 A.CallTo(() =>
                         psnClient.GetOriginalValueFor(
                             A<string>._,
                             A<string>._,
-                            A<IReadOnlyDictionary<string, object>>._
+                            A<IReadOnlyDictionary<string, object>>._,
+                            A<CancellationToken>._
                         )
                     )
                     .ReturnsLazily(
                         (
                             string pseudonym,
                             string domain,
-                            IReadOnlyDictionary<string, object> settings
+                            IReadOnlyDictionary<string, object> settings,
+                            CancellationToken cancellationToken
                         ) => $"original-{pseudonym}@{domain}"
                     );
 

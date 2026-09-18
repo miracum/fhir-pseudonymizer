@@ -20,7 +20,8 @@ public class EnticiFhirClient : IPseudonymServiceClient
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -60,7 +61,8 @@ public class EnticiFhirClient : IPseudonymServiceClient
 
         var response = await fhirClient.WholeSystemOperationAsync(
             "pseudonymize",
-            request.ToFhirParameters()
+            request.ToFhirParameters(),
+            ct: cancellationToken
         );
 
         if (response is Parameters responseParameters)
@@ -80,7 +82,8 @@ public class EnticiFhirClient : IPseudonymServiceClient
     public Task<string> GetOriginalValueFor(
         string pseudonym,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         throw new NotImplementedException(

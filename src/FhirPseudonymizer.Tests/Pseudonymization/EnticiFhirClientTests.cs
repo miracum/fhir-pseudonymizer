@@ -78,7 +78,12 @@ public class EnticiFhirClientTests
             ["entici"] = new Dictionary<object, object> { ["resourceType"] = "Encounter" },
         };
 
-        var response = await client.GetOrCreatePseudonymFor("42", "domain", settings);
+        var response = await client.GetOrCreatePseudonymFor(
+            "42",
+            "domain",
+            settings,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         response.Should().BeEquivalentTo("a-test-pseudonym");
 
@@ -99,7 +104,12 @@ public class EnticiFhirClientTests
             },
         };
 
-        var response = await client.GetOrCreatePseudonymFor("42", "domain", settings);
+        var response = await client.GetOrCreatePseudonymFor(
+            "42",
+            "domain",
+            settings,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         response.Should().BeEquivalentTo("a-test-pseudonym");
 

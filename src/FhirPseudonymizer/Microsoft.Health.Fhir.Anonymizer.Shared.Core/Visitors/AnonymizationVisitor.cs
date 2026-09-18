@@ -18,17 +18,24 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
         private readonly Dictionary<string, IAnonymizerProcessor> _processors;
         private readonly AnonymizerSettings _settings;
         private readonly AnonymizationFhirPathRule[] _rules;
+
+        // Held for the whole visit rather than passed through VisitAsync/EndVisitAsync: a visitor
+        // is built fresh for each AnonymizeAsync call and is scoped to exactly that one run, and
+        // EndVisitAsync has no use for it at all.
+        private readonly CancellationToken _cancellationToken;
         private readonly HashSet<ElementNode> _visitedNodes = new HashSet<ElementNode>();
 
         public AnonymizationVisitor(
             AnonymizationFhirPathRule[] rules,
             Dictionary<string, IAnonymizerProcessor> processors,
-            AnonymizerSettings settings = null
+            AnonymizerSettings settings = null,
+            CancellationToken cancellationToken = default
         )
         {
             _rules = rules;
             _processors = processors;
             _settings = settings;
+            _cancellationToken = cancellationToken;
 
             if (settings is not null)
             {
@@ -84,7 +91,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 
             foreach (var rule in resourceSpecificAndGeneralRules)
             {
-                var context = new ProcessContext { VisitedNodes = _visitedNodes };
+                // Checked before the FHIRPath evaluation below, which is the most expensive step
+                // per (resource, rule) pair and has no cancellation of its own.
+                _cancellationToken.ThrowIfCancellationRequested();
+
+                var context = new ProcessContext
+                {
+                    VisitedNodes = _visitedNodes,
+                    CancellationToken = _cancellationToken,
+                };
 
                 var resultOnRule = new ProcessResult();
                 var method = rule.Method.ToUpperInvariant();
@@ -190,6 +205,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             Dictionary<string, object> settings
         )
         {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
             var result = new ProcessResult();
             if (_visitedNodes.Contains(node))
             {

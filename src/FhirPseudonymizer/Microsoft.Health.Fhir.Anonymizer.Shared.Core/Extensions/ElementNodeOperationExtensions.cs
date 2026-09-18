@@ -17,10 +17,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             this ElementNode node,
             AnonymizationFhirPathRule[] rules,
             Dictionary<string, IAnonymizerProcessor> processors,
-            AnonymizerSettings settings = null
+            AnonymizerSettings settings = null,
+            CancellationToken cancellationToken = default
         )
         {
-            var visitor = new AnonymizationVisitor(rules, processors, settings);
+            var visitor = new AnonymizationVisitor(rules, processors, settings, cancellationToken);
             await node.AcceptAsync(visitor);
             node.RemoveNullChildren();
 

@@ -45,14 +45,21 @@ public class FhirControllerFuzzTests
     )
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
             .Returns(new Patient());
 
         var parts = (settingNames ?? [])
             .Select(name => Tuple.Create<string, Base>(name, new FhirString("value")))
             .ToArray();
 
-        var response = await CreateController(anonymizer).DeIdentify(BuildRequest(parts));
+        var response = await CreateController(anonymizer)
+            .DeIdentify(BuildRequest(parts), TestContext.Current.CancellationToken);
 
         return response is not null;
     }
@@ -66,9 +73,16 @@ public class FhirControllerFuzzTests
     {
         Dictionary<string, object> capturedSettings = null;
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
             .Invokes(
-                (Resource _, AnonymizerSettings s) => capturedSettings = s?.DynamicRuleSettings
+                (Resource _, AnonymizerSettings s, CancellationToken _) =>
+                    capturedSettings = s?.DynamicRuleSettings
             )
             .Returns(new Patient());
 
@@ -78,7 +92,8 @@ public class FhirControllerFuzzTests
             Tuple.Create<string, Base>(name.Get, new FhirString(secondValue.Get)),
         };
 
-        await CreateController(anonymizer).DeIdentify(BuildRequest(parts));
+        await CreateController(anonymizer)
+            .DeIdentify(BuildRequest(parts), TestContext.Current.CancellationToken);
 
         return capturedSettings.TryGetValue(name.Get, out var value)
             && value is FhirString fhirString
@@ -98,9 +113,16 @@ public class FhirControllerFuzzTests
 
         Dictionary<string, object> capturedSettings = null;
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
             .Invokes(
-                (Resource _, AnonymizerSettings s) => capturedSettings = s?.DynamicRuleSettings
+                (Resource _, AnonymizerSettings s, CancellationToken _) =>
+                    capturedSettings = s?.DynamicRuleSettings
             )
             .Returns(new Patient());
 
@@ -108,7 +130,8 @@ public class FhirControllerFuzzTests
             Tuple.Create<string, Base>(name, new FhirString("value"))
         );
 
-        await CreateController(anonymizer).DeIdentify(BuildRequest(parts));
+        await CreateController(anonymizer)
+            .DeIdentify(BuildRequest(parts), TestContext.Current.CancellationToken);
 
         return distinctNames.All(name => capturedSettings?.ContainsKey(name) == true);
     }

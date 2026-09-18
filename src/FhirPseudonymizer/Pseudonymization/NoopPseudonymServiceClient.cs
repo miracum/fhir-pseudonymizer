@@ -5,7 +5,8 @@ public class NoopPseudonymServiceClient : IPseudonymServiceClient
     public Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         throw new InvalidOperationException(
@@ -16,7 +17,8 @@ public class NoopPseudonymServiceClient : IPseudonymServiceClient
     public Task<string> GetOriginalValueFor(
         string pseudonym,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         throw new InvalidOperationException(
