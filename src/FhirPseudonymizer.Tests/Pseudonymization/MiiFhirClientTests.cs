@@ -96,7 +96,12 @@ public class MiiFhirClientTests
         var factory = CreateHttpClientFactory(handler);
         var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
 
-        var result = await client.GetOrCreatePseudonymFor("D1CL0CAL1", "Transfer1", testSettings);
+        var result = await client.GetOrCreatePseudonymFor(
+            "D1CL0CAL1",
+            "Transfer1",
+            testSettings,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         result.Should().Be("H3RAU56A8E");
 
@@ -111,7 +116,12 @@ public class MiiFhirClientTests
         var factory = CreateHttpClientFactory(handler);
         var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
 
-        await client.GetOrCreatePseudonymFor("D1CL0CAL1", "Transfer1", testSettings);
+        await client.GetOrCreatePseudonymFor(
+            "D1CL0CAL1",
+            "Transfer1",
+            testSettings,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         var sent = new FhirJsonParser().Parse<Parameters>(requests.Single());
 
@@ -131,7 +141,12 @@ public class MiiFhirClientTests
         var factory = CreateHttpClientFactory(handler);
         var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
 
-        var result = await client.GetOriginalValueFor("H3RAU56A8E", "Transfer1", testSettings);
+        var result = await client.GetOriginalValueFor(
+            "H3RAU56A8E",
+            "Transfer1",
+            testSettings,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         result.Should().Be("D1CL0CAL1");
 
@@ -146,7 +161,12 @@ public class MiiFhirClientTests
         var factory = CreateHttpClientFactory(handler);
         var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
 
-        await client.GetOriginalValueFor("H3RAU56A8E", "Transfer1", testSettings);
+        await client.GetOriginalValueFor(
+            "H3RAU56A8E",
+            "Transfer1",
+            testSettings,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         var sent = new FhirJsonParser().Parse<Parameters>(requests.Single());
 
@@ -166,7 +186,12 @@ public class MiiFhirClientTests
         var factory = CreateHttpClientFactory(handler);
         var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
 
-        await client.GetOrCreatePseudonymFor("D1CL0CAL1", "Transfer1", settings: null);
+        await client.GetOrCreatePseudonymFor(
+            "D1CL0CAL1",
+            "Transfer1",
+            settings: null,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         var sent = new FhirJsonParser().Parse<Parameters>(requests.Single());
 

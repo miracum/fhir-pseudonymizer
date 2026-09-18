@@ -57,32 +57,48 @@ public class GPasFhirClient : IPseudonymServiceClient
 
     private IHttpClientFactory ClientFactory { get; }
     private FhirJsonParser FhirParser { get; } = new();
-    private Func<string, string, Task<string>> GetOrCreatePseudonymForResolver { get; }
-    private Func<string, string, Task<string>> GetOriginalValueForResolver { get; }
+    private PseudonymResolver GetOrCreatePseudonymForResolver { get; }
+    private PseudonymResolver GetOriginalValueForResolver { get; }
+
+    /// <summary>
+    ///     Resolves a value in a domain against the gPAS API version this client was configured
+    ///     for - either an original to its pseudonym, or the other way around.
+    /// </summary>
+    private delegate Task<string> PseudonymResolver(
+        string value,
+        string domain,
+        CancellationToken cancellationToken
+    );
 
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         TotalGPasRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
 
-        return await GetOrCreatePseudonymForResolver(value, domain);
+        return await GetOrCreatePseudonymForResolver(value, domain, cancellationToken);
     }
 
     public async Task<string> GetOriginalValueFor(
         string pseudonym,
         string domain,
-        IReadOnlyDictionary<string, object> settings = null
+        IReadOnlyDictionary<string, object> settings = null,
+        CancellationToken cancellationToken = default
     )
     {
         TotalGPasRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
 
-        return await GetOriginalValueForResolver(pseudonym, domain);
+        return await GetOriginalValueForResolver(pseudonym, domain, cancellationToken);
     }
 
-    private async Task<string> GetOriginalValueForV1(string pseudonym, string domain)
+    private async Task<string> GetOriginalValueForV1(
+        string pseudonym,
+        string domain,
+        CancellationToken cancellationToken
+    )
     {
         var client = ClientFactory.CreateClient(HttpClientName);
 
@@ -93,10 +109,11 @@ public class GPasFhirClient : IPseudonymServiceClient
         };
 
         var response = await client.GetAsync(
-            QueryHelpers.AddQueryString("$de-pseudonymize", query)
+            QueryHelpers.AddQueryString("$de-pseudonymize", query),
+            cancellationToken
         );
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
         var parameters = FhirParser.Parse<Parameters>(content);
 
         var original = parameters.GetSingleValue<FhirString>(pseudonym);
@@ -109,14 +126,19 @@ public class GPasFhirClient : IPseudonymServiceClient
         return original.Value;
     }
 
-    private async Task<string> GetOriginalValueForV2(string pseudonym, string domain)
+    private async Task<string> GetOriginalValueForV2(
+        string pseudonym,
+        string domain,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
             var responseParameters = await RequestGetOriginalValueForV2(
                 pseudonym,
                 domain,
-                "de-pseudonymize"
+                "de-pseudonymize",
+                cancellationToken
             );
 
             var pseudonymResultSet = responseParameters.Get("pseudonym-result-set").First();
@@ -126,6 +148,15 @@ public class GPasFhirClient : IPseudonymServiceClient
 
             return originalPart.Value.ToString();
         }
+        // A caller-requested cancellation has to propagate: falling through to the fallback
+        // below would silently return the pseudonym as if de-pseudonymization had failed, for
+        // this and every remaining field of the resource. An HttpClient *timeout* also surfaces
+        // as OperationCanceledException, but with the token unsignalled - that case still takes
+        // the fallback, as before.
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception exc)
         {
             logger.LogError(exc, "Failed to de-pseudonymize. Returning original value.");
@@ -133,14 +164,19 @@ public class GPasFhirClient : IPseudonymServiceClient
         }
     }
 
-    private async Task<string> GetOriginalValueForV2x(string pseudonym, string domain)
+    private async Task<string> GetOriginalValueForV2x(
+        string pseudonym,
+        string domain,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
             var responseParameters = await RequestGetOriginalValueForV2(
                 pseudonym,
                 domain,
-                "dePseudonymize"
+                "dePseudonymize",
+                cancellationToken
             );
 
             var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
@@ -153,6 +189,15 @@ public class GPasFhirClient : IPseudonymServiceClient
             logger.LogError("Failed to de-pseudonymize. Returning original value.");
             return pseudonym;
         }
+        // A caller-requested cancellation has to propagate: falling through to the fallback
+        // below would silently return the pseudonym as if de-pseudonymization had failed, for
+        // this and every remaining field of the resource. An HttpClient *timeout* also surfaces
+        // as OperationCanceledException, but with the token unsignalled - that case still takes
+        // the fallback, as before.
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception exc)
         {
             logger.LogError(exc, "Failed to de-pseudonymize. Returning original value.");
@@ -160,7 +205,11 @@ public class GPasFhirClient : IPseudonymServiceClient
         }
     }
 
-    private async Task<string> GetOrCreatePseudonymForV1(string value, string domain)
+    private async Task<string> GetOrCreatePseudonymForV1(
+        string value,
+        string domain,
+        CancellationToken cancellationToken
+    )
     {
         var client = ClientFactory.CreateClient(HttpClientName);
 
@@ -170,20 +219,26 @@ public class GPasFhirClient : IPseudonymServiceClient
         // Polly, tracing, and metrics support. Once FhirClient allows for overriding the HttpClient,
         // we can simplify this code a lot: https://github.com/FirelyTeam/firely-net-sdk/issues/1483
         var response = await client.GetAsync(
-            QueryHelpers.AddQueryString("$pseudonymize-allow-create", query)
+            QueryHelpers.AddQueryString("$pseudonymize-allow-create", query),
+            cancellationToken
         );
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
         var parameters = FhirParser.Parse<Parameters>(content);
         return parameters.GetSingleValue<FhirString>(value).Value;
     }
 
-    private async Task<string> GetOrCreatePseudonymForV2(string value, string domain)
+    private async Task<string> GetOrCreatePseudonymForV2(
+        string value,
+        string domain,
+        CancellationToken cancellationToken
+    )
     {
         var responseParameters = await RequestGetOrCreatePseudonymForV2(
             value,
             domain,
-            "pseudonymize-allow-create"
+            "pseudonymize-allow-create",
+            cancellationToken
         );
 
         var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
@@ -196,12 +251,17 @@ public class GPasFhirClient : IPseudonymServiceClient
         return pseudonym.Value.ToString();
     }
 
-    private async Task<string> GetOrCreatePseudonymForV2x(string value, string domain)
+    private async Task<string> GetOrCreatePseudonymForV2x(
+        string value,
+        string domain,
+        CancellationToken cancellationToken
+    )
     {
         var responseParameters = await RequestGetOrCreatePseudonymForV2(
             value,
             domain,
-            "pseudonymizeAllowCreate"
+            "pseudonymizeAllowCreate",
+            cancellationToken
         );
 
         var firstResponseParameter = responseParameters.Parameter.FirstOrDefault();
@@ -217,7 +277,8 @@ public class GPasFhirClient : IPseudonymServiceClient
     private async Task<Parameters> RequestGetOrCreatePseudonymForV2(
         string value,
         string domain,
-        string operation
+        string operation,
+        CancellationToken cancellationToken
     )
     {
         var client = ClientFactory.CreateClient(HttpClientName);
@@ -232,7 +293,11 @@ public class GPasFhirClient : IPseudonymServiceClient
             .Add("target", new FhirString(domain))
             .Add("original", new FhirString(value));
 
-        var response = await fhirClient.WholeSystemOperationAsync(operation, parameters);
+        var response = await fhirClient.WholeSystemOperationAsync(
+            operation,
+            parameters,
+            ct: cancellationToken
+        );
 
         return response as Parameters;
     }
@@ -240,7 +305,8 @@ public class GPasFhirClient : IPseudonymServiceClient
     private async Task<Parameters> RequestGetOriginalValueForV2(
         string pseudonym,
         string domain,
-        string operation
+        string operation,
+        CancellationToken cancellationToken
     )
     {
         var client = ClientFactory.CreateClient(HttpClientName);
@@ -255,7 +321,11 @@ public class GPasFhirClient : IPseudonymServiceClient
             .Add("target", new FhirString(domain))
             .Add("pseudonym", new FhirString(pseudonym));
 
-        var response = await fhirClient.WholeSystemOperationAsync(operation, parameters);
+        var response = await fhirClient.WholeSystemOperationAsync(
+            operation,
+            parameters,
+            ct: cancellationToken
+        );
 
         return response as Parameters;
     }

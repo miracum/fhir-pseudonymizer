@@ -36,7 +36,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
         public async Task<Resource> AnonymizeResourceAsync(
             Resource resource,
-            AnonymizerSettings settings = null
+            AnonymizerSettings settings = null,
+            CancellationToken cancellationToken = default
         )
         {
             EnsureArg.IsNotNull(resource, nameof(resource));
@@ -44,7 +45,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             ValidateInput(settings, resource);
             var anonymizedElement = await AnonymizeElementAsync(
                 resource.ToTypedElement(),
-                settings
+                settings,
+                cancellationToken
             );
             var anonymizedResource = anonymizedElement.ToPoco<Resource>();
             ValidateOutput(settings, anonymizedResource);
@@ -83,13 +85,19 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
         public async Task<ITypedElement> AnonymizeElementAsync(
             ITypedElement element,
-            AnonymizerSettings settings = null
+            AnonymizerSettings settings = null,
+            CancellationToken cancellationToken = default
         )
         {
             EnsureArg.IsNotNull(element, nameof(element));
 
             var resourceNode = ElementNode.FromElement(element);
-            return await resourceNode.AnonymizeAsync(_rules, _processors, settings);
+            return await resourceNode.AnonymizeAsync(
+                _rules,
+                _processors,
+                settings,
+                cancellationToken
+            );
         }
 
         public async Task<string> AnonymizeJsonAsync(
@@ -170,10 +178,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
         public Task<Resource> DePseudonymizeResourceAsync(
             Resource resource,
-            AnonymizerSettings settings = null
+            AnonymizerSettings settings = null,
+            CancellationToken cancellationToken = default
         )
         {
-            return AnonymizeResourceAsync(resource, settings);
+            return AnonymizeResourceAsync(resource, settings, cancellationToken);
         }
     }
 }

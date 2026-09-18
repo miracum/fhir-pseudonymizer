@@ -3,6 +3,7 @@ using FhirPseudonymizer.Controllers;
 using FhirPseudonymizer.Kafka;
 using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.Model;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -24,8 +25,17 @@ public class FhirControllerTests
         Dictionary<string, object> ruleSettings = null;
 
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
-            .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings)
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Invokes(
+                (Resource _, AnonymizerSettings s, CancellationToken _) =>
+                    ruleSettings = s?.DynamicRuleSettings
+            )
             .Returns(new Patient());
 
         var controller = new FhirController(
@@ -44,7 +54,7 @@ public class FhirControllerTests
             .Add("settings", new[] { Tuple.Create<string, Base>(domainPrefix, domainPrefixValue) })
             .Add("resource", new Patient());
 
-        await controller.DeIdentify(parameters);
+        await controller.DeIdentify(parameters, TestContext.Current.CancellationToken);
 
         ruleSettings.Should().ContainKey(domainPrefix).WhoseValue.Should().Be(domainPrefixValue);
     }
@@ -57,8 +67,17 @@ public class FhirControllerTests
         Dictionary<string, object> ruleSettings = null;
 
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
-            .Invokes((Resource _, AnonymizerSettings s) => ruleSettings = s?.DynamicRuleSettings)
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Invokes(
+                (Resource _, AnonymizerSettings s, CancellationToken _) =>
+                    ruleSettings = s?.DynamicRuleSettings
+            )
             .Returns(new Patient());
 
         var controller = new FhirController(
@@ -77,7 +96,7 @@ public class FhirControllerTests
             .Add("settings", new[] { Tuple.Create<string, Base>(settingKey, settingValue) })
             .Add("resource", new Patient());
 
-        await controller.DeIdentify(parameters);
+        await controller.DeIdentify(parameters, TestContext.Current.CancellationToken);
 
         ruleSettings.Should().ContainKey(settingKey).WhoseValue.Should().Be(settingValue);
     }
@@ -86,7 +105,13 @@ public class FhirControllerTests
     public async Task DeIdentify_WithExceptionThrownInAnonymizer_ShouldReturnInternalError()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
             .Throws(new Exception("something went wrong"));
 
         var controller = new FhirController(
@@ -101,7 +126,10 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        var response = await controller.DeIdentify(new Bundle());
+        var response = await controller.DeIdentify(
+            new Bundle(),
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(500);
 
@@ -123,10 +151,84 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        var response = await controller.DeIdentify(new Parameters());
+        var response = await controller.DeIdentify(
+            new Parameters(),
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(400);
 
+        response.Value.Should().BeOfType<OperationOutcome>();
+    }
+
+    [Fact]
+    public async Task DeIdentify_WhenCancelled_ReturnsClientClosedRequestWithoutPublishingProvenance()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(() => new OperationCanceledException(cts.Token));
+
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+
+        var controller = new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            anonymizer,
+            A.Fake<IDePseudonymizerEngine>(),
+            provenancePublisher,
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
+        );
+
+        var response = await controller.DeIdentify(new Bundle(), cts.Token);
+
+        response.StatusCode.Should().Be(StatusCodes.Status499ClientClosedRequest);
+        response.Value.Should().BeOfType<OperationOutcome>();
+        A.CallTo(provenancePublisher).MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task DePseudonymize_WhenCancelled_ReturnsClientClosedRequest()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
+        A.CallTo(() =>
+                dePseudonymizer.DePseudonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(() => new OperationCanceledException(cts.Token));
+
+        var controller = new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            A.Fake<IAnonymizerEngine>(),
+            dePseudonymizer,
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
+        );
+
+        var response = await controller.DePseudonymize(new Bundle(), cts.Token);
+
+        response.StatusCode.Should().Be(StatusCodes.Status499ClientClosedRequest);
         response.Value.Should().BeOfType<OperationOutcome>();
     }
 
@@ -136,7 +238,13 @@ public class FhirControllerTests
         var original = new Patient { Id = "123" };
         var anonymized = new Patient { Id = "hashed-123" };
         var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() => anonymizer.AnonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._))
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
             .Returns(anonymized);
 
         var provenancePublisher = A.Fake<IProvenancePublisher>();
@@ -153,7 +261,7 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        await controller.DeIdentify(original);
+        await controller.DeIdentify(original, TestContext.Current.CancellationToken);
 
         A.CallTo(() => provenancePublisher.Publish(original, anonymized, null))
             .MustHaveHappenedOnceExactly();
@@ -164,7 +272,11 @@ public class FhirControllerTests
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
         A.CallTo(() =>
-                dePseudonymizer.DePseudonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._)
+                dePseudonymizer.DePseudonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
             )
             .Returns(new Patient());
 
@@ -182,7 +294,10 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        await controller.DePseudonymize(new Patient { Id = "123" });
+        await controller.DePseudonymize(
+            new Patient { Id = "123" },
+            TestContext.Current.CancellationToken
+        );
 
         A.CallTo(() =>
                 provenancePublisher.Publish(
@@ -199,7 +314,11 @@ public class FhirControllerTests
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
         A.CallTo(() =>
-                dePseudonymizer.DePseudonymizeResourceAsync(A<Resource>._, A<AnonymizerSettings>._)
+                dePseudonymizer.DePseudonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
             )
             .Throws(new Exception("something went wrong"));
 
@@ -215,7 +334,10 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        var response = await controller.DePseudonymize(new Bundle());
+        var response = await controller.DePseudonymize(
+            new Bundle(),
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(500);
 

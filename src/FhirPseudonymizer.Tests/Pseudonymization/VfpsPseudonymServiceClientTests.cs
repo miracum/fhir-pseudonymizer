@@ -18,7 +18,14 @@ public class VfpsPseudonymServiceClientTests
             Pseudonym = new() { PseudonymValue = "not test" },
         };
 
-        A.CallTo(() => client.CreateAsync(A<PseudonymServiceCreateRequest>._, null, null, default))
+        A.CallTo(() =>
+                client.CreateAsync(
+                    A<PseudonymServiceCreateRequest>._,
+                    null,
+                    null,
+                    A<CancellationToken>._
+                )
+            )
             .Returns(
                 new AsyncUnaryCall<PseudonymServiceCreateResponse>(
                     Task.FromResult(fakeResponse),
@@ -35,7 +42,11 @@ public class VfpsPseudonymServiceClientTests
         );
 
         // Act
-        var result = await sut.GetOrCreatePseudonymFor("test", "namespace");
+        var result = await sut.GetOrCreatePseudonymFor(
+            "test",
+            "namespace",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         // Assert
         result.Should().Be("not test");
@@ -52,7 +63,9 @@ public class VfpsPseudonymServiceClientTests
             Pseudonym = new() { PseudonymValue = "not test", OriginalValue = "test" },
         };
 
-        A.CallTo(() => client.GetAsync(A<PseudonymServiceGetRequest>._, null, null, default))
+        A.CallTo(() =>
+                client.GetAsync(A<PseudonymServiceGetRequest>._, null, null, A<CancellationToken>._)
+            )
             .Returns(
                 new AsyncUnaryCall<PseudonymServiceGetResponse>(
                     Task.FromResult(fakeResponse),
@@ -69,7 +82,11 @@ public class VfpsPseudonymServiceClientTests
         );
 
         // Act
-        var result = await sut.GetOriginalValueFor("not test", "namespace");
+        var result = await sut.GetOriginalValueFor(
+            "not test",
+            "namespace",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         // Assert
         result.Should().Be("test");
@@ -81,7 +98,9 @@ public class VfpsPseudonymServiceClientTests
         // Arrange
         var client = A.Fake<PseudonymService.PseudonymServiceClient>();
 
-        A.CallTo(() => client.GetAsync(A<PseudonymServiceGetRequest>._, null, null, default))
+        A.CallTo(() =>
+                client.GetAsync(A<PseudonymServiceGetRequest>._, null, null, A<CancellationToken>._)
+            )
             .Throws(() => throw new RpcException(new Status(StatusCode.NotFound, "doesn't exist")));
 
         var sut = new VfpsPseudonymServiceClient(
@@ -90,9 +109,39 @@ public class VfpsPseudonymServiceClientTests
         );
 
         // Act
-        var result = await sut.GetOriginalValueFor("test", "namespace");
+        var result = await sut.GetOriginalValueFor(
+            "test",
+            "namespace",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         // Assert
         result.Should().Be("test");
+    }
+
+    [Fact]
+    public async Task GetOriginalValueFor_WhenTheCallerCancels_ThrowsInsteadOfReturningThePseudonym()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var client = A.Fake<PseudonymService.PseudonymServiceClient>();
+        A.CallTo(() =>
+                client.GetAsync(A<PseudonymServiceGetRequest>._, null, null, A<CancellationToken>._)
+            )
+            .Throws(() => new OperationCanceledException(cts.Token));
+
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
+
+        // Act
+        var act = async () =>
+            await sut.GetOriginalValueFor("test", "namespace", cancellationToken: cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
     }
 }

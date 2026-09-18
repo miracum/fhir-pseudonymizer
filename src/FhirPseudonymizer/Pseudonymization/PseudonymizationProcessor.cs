@@ -36,6 +36,11 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
             return processResult;
         }
 
+        // This is the one processor that makes a remote call per node, so it is the one that
+        // needs the caller's token. The visitor always supplies a context; a null one only
+        // happens when a test drives the processor directly, and then there is nothing to cancel.
+        var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
+
         // prefix the domain, if set
         var domainPrefix =
             settings?.GetValueOrDefault("domain-prefix", null)
@@ -59,7 +64,13 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
 
             node.Value = await ReferenceUtility.TransformReferenceIdAsync(
                 input,
-                x => GetOrCreatePseudonymAsync(x, domainPrefix.ToString() + domain, settings)
+                x =>
+                    GetOrCreatePseudonymAsync(
+                        x,
+                        domainPrefix.ToString() + domain,
+                        settings,
+                        cancellationToken
+                    )
             );
         }
         else if (
@@ -73,7 +84,13 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
 
             node.Value = await ReferenceUtility.TransformReferenceIdAsync(
                 input,
-                x => GetOrCreatePseudonymAsync(x, domainPrefix.ToString() + domain, settings)
+                x =>
+                    GetOrCreatePseudonymAsync(
+                        x,
+                        domainPrefix.ToString() + domain,
+                        settings,
+                        cancellationToken
+                    )
             );
         }
         else
@@ -81,7 +98,8 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
             node.Value = await GetOrCreatePseudonymAsync(
                 input,
                 domainPrefix.ToString() + domain,
-                settings
+                settings,
+                cancellationToken
             );
         }
 
@@ -92,10 +110,11 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
     protected virtual Task<string> GetOrCreatePseudonymAsync(
         string input,
         string domain,
-        IReadOnlyDictionary<string, object> settings
+        IReadOnlyDictionary<string, object> settings,
+        CancellationToken cancellationToken
     )
     {
-        return PsnClient.GetOrCreatePseudonymFor(input, domain, settings);
+        return PsnClient.GetOrCreatePseudonymFor(input, domain, settings, cancellationToken);
     }
 }
 
@@ -110,9 +129,10 @@ public class DePseudonymizationProcessor : PseudonymizationProcessor
     protected override Task<string> GetOrCreatePseudonymAsync(
         string input,
         string domain,
-        IReadOnlyDictionary<string, object> settings
+        IReadOnlyDictionary<string, object> settings,
+        CancellationToken cancellationToken
     )
     {
-        return PsnClient.GetOriginalValueFor(input, domain, settings);
+        return PsnClient.GetOriginalValueFor(input, domain, settings, cancellationToken);
     }
 }

@@ -7,7 +7,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
     {
         Task<Resource> AnonymizeResourceAsync(
             Resource resource,
-            AnonymizerSettings settings = null
+            AnonymizerSettings settings = null,
+            CancellationToken cancellationToken = default
         );
     }
 
@@ -15,7 +16,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
     {
         Task<Resource> DePseudonymizeResourceAsync(
             Resource resource,
-            AnonymizerSettings settings = null
+            AnonymizerSettings settings = null,
+            CancellationToken cancellationToken = default
         );
     }
 }
