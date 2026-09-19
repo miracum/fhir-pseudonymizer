@@ -114,9 +114,9 @@ namespace FhirPseudonymizer.Controllers
         /// <response code="499">The caller aborted the request before it was processed</response>
         [HttpPost("$de-identify")]
         [AllowAnonymous]
-        [ProducesResponseType(typeof(Resource), 200)]
-        [ProducesResponseType(typeof(OperationOutcome), 400)]
-        [ProducesResponseType(typeof(OperationOutcome), 500)]
+        [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
         public async Task<ObjectResult> DeIdentify(
             [FromBody] Resource resource,
@@ -266,7 +266,10 @@ namespace FhirPseudonymizer.Controllers
             catch (Exception exc)
             {
                 logger.LogError(exc, "Anonymize failed");
-                return StatusCode(500, GetInternalErrorOutcome(exc));
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    GetInternalErrorOutcome(exc)
+                );
             }
         }
 
@@ -283,9 +286,9 @@ namespace FhirPseudonymizer.Controllers
         /// <response code="499">The caller aborted the request before it was processed</response>
         [HttpPost("$de-pseudonymize")]
         [Authorize]
-        [ProducesResponseType(typeof(Resource), 200)]
-        [ProducesResponseType(typeof(OperationOutcome), 400)]
-        [ProducesResponseType(typeof(OperationOutcome), 500)]
+        [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
         public async Task<ObjectResult> DePseudonymize(
             [FromBody] Resource resource,
@@ -329,7 +332,10 @@ namespace FhirPseudonymizer.Controllers
             catch (Exception exc)
             {
                 logger.LogError(exc, "DePseudonymize failed");
-                return StatusCode(500, GetInternalErrorOutcome(exc));
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    GetInternalErrorOutcome(exc)
+                );
             }
         }
 
