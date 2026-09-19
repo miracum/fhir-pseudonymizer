@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.37.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.36.0...v2.37.0) (2026-09-19)
+
+
+### Features
+
+* support for access token auth ([#415](https://github.com/miracum/fhir-pseudonymizer/issues/415)) ([f4b6c29](https://github.com/miracum/fhir-pseudonymizer/commit/f4b6c293b5f4d957df8ab95c0c362e03221208c1))
+
+
+### Bug Fixes
+
+* cancel requests mid-processing if the client disconnects ([#413](https://github.com/miracum/fhir-pseudonymizer/issues/413)) ([37476f0](https://github.com/miracum/fhir-pseudonymizer/commit/37476f0dab43dedfaa26a8d2a109eba1d974de9a))
+
 ## [2.36.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.35.1...v2.36.0) (2026-09-17)
 
 
