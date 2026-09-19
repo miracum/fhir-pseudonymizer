@@ -44,7 +44,7 @@ public class VfpsExtensionsTests
     }
 
     [Fact]
-    public void AddVfpsClient_WithTheDefaultAppSettings_ShouldNotEnableOAuth()
+    public void AddVfpsClient_WithTheDefaultAppSettings_ShouldNotEnableAnyAuth()
     {
         // the shipped appsettings.json leaves every auth setting as an empty string, which has
         // to keep binding to a disabled OAuth config rather than a half-configured one.
@@ -53,6 +53,7 @@ public class VfpsExtensionsTests
                 new Dictionary<string, string>
                 {
                     ["Vfps:Address"] = VfpsAddress.AbsoluteUri,
+                    ["Vfps:Auth:AccessToken"] = "",
                     ["Vfps:Auth:OAuth:TokenEndpoint"] = "",
                     ["Vfps:Auth:OAuth:ClientId"] = "",
                     ["Vfps:Auth:OAuth:ClientSecret"] = "",
@@ -142,6 +143,111 @@ public class VfpsExtensionsTests
         await InvokeCreateAsync(config, vfps, tokenEndpoint);
 
         vfps.LastAuthorizationHeader.Should().Be("Bearer the-access-token");
+    }
+
+    [Fact]
+    public async Task AddVfpsClient_WithAnAccessTokenConfigured_ShouldSendItAsBearerMetadata()
+    {
+        var vfps = new CapturingHandler(TrailersOnlyGrpcResponse());
+
+        var config = new VfpsConfig
+        {
+            Address = VfpsAddress,
+            UnsafeUseInsecureChannelCallCredentials = true,
+            Auth = new() { AccessToken = "vfps_sat_abc.def" },
+        };
+
+        await InvokeCreateAsync(config, vfps);
+
+        vfps.LastAuthorizationHeader.Should().Be("Bearer vfps_sat_abc.def");
+    }
+
+    [Fact]
+    public async Task AddVfpsClient_WithAnAccessToken_ShouldNotCallATokenEndpoint()
+    {
+        // The whole point of a Vfps-issued token: nothing is fetched or refreshed, so it keeps
+        // working while the identity provider is unreachable.
+        var tokenEndpoint = new CapturingHandler(TokenResponse("should-never-be-requested"));
+        var vfps = new CapturingHandler(TrailersOnlyGrpcResponse());
+
+        var config = new VfpsConfig
+        {
+            Address = VfpsAddress,
+            UnsafeUseInsecureChannelCallCredentials = true,
+            Auth = new() { AccessToken = "vfps_pat_abc.def" },
+        };
+
+        await InvokeCreateAsync(config, vfps, tokenEndpoint);
+
+        vfps.LastAuthorizationHeader.Should().Be("Bearer vfps_pat_abc.def");
+        tokenEndpoint.LastRequest.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("  vfps_sat_abc.def  ")]
+    [InlineData("vfps_sat_abc.def\n")]
+    [InlineData("vfps_sat_abc.def\r\n")]
+    public async Task AddVfpsClient_WithASurroundedAccessToken_ShouldTrimIt(string configured)
+    {
+        // A token mounted from a file or pasted out of the admin UI regularly carries a trailing
+        // newline, which would otherwise go into the header and be rejected as malformed.
+        var vfps = new CapturingHandler(TrailersOnlyGrpcResponse());
+
+        var config = new VfpsConfig
+        {
+            Address = VfpsAddress,
+            UnsafeUseInsecureChannelCallCredentials = true,
+            Auth = new() { AccessToken = configured },
+        };
+
+        await InvokeCreateAsync(config, vfps);
+
+        vfps.LastAuthorizationHeader.Should().Be("Bearer vfps_sat_abc.def");
+    }
+
+    [Fact]
+    public void AddVfpsClient_WithAnAccessTokenAndOAuth_ShouldThrow()
+    {
+        var config = new VfpsConfig
+        {
+            Address = VfpsAddress,
+            Auth = new()
+            {
+                AccessToken = "vfps_sat_abc.def",
+                OAuth = new()
+                {
+                    TokenEndpoint = new Uri("http://keycloak/token"),
+                    ClientId = "id",
+                    ClientSecret = "secret",
+                },
+            },
+        };
+
+        var act = () => new ServiceCollection().AddVfpsClient(config);
+
+        act.Should()
+            .Throw<ValidationException>()
+            .WithMessage("*access token and an OAuth token endpoint*");
+    }
+
+    [Fact]
+    public void AddVfpsClient_WithAnAccessTokenAndBasicAuth_ShouldThrow()
+    {
+        var config = new VfpsConfig
+        {
+            Address = VfpsAddress,
+            Auth = new()
+            {
+                AccessToken = "vfps_sat_abc.def",
+                Basic = new() { Username = "user", Password = "pass" },
+            },
+        };
+
+        var act = () => new ServiceCollection().AddVfpsClient(config);
+
+        act.Should()
+            .Throw<ValidationException>()
+            .WithMessage("*access token and basic auth credentials*");
     }
 
     [Fact]

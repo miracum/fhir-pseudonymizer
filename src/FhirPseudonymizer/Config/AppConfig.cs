@@ -107,9 +107,31 @@ public record EnticiConfig
 public record VfpsConfig
 {
     public Uri Address { get; init; }
-    public PseudonymServiceAuthConfig Auth { get; init; } = new();
+    public VfpsAuthConfig Auth { get; init; } = new();
     public bool UnsafeUseInsecureChannelCallCredentials { get; init; }
     public bool UseTls { get; init; }
+}
+
+/// <summary>
+///     Vfps accepts one credential the other pseudonymization backends have no equivalent of, so
+///     it gets an auth config of its own rather than widening the shared one: an access token
+///     that Vfps itself issues and hands out through its admin UI, for clients that can't obtain
+///     one from an identity provider.
+/// </summary>
+public record VfpsAuthConfig : PseudonymServiceAuthConfig
+{
+    /// <summary>
+    ///     A Vfps-issued access token - a service account's (<c>vfps_sat_...</c>) or a personal
+    ///     one (<c>vfps_pat_...</c>) - sent verbatim as the <c>Authorization: Bearer</c> metadata
+    ///     of every gRPC call.
+    ///
+    ///     Unlike <see cref="PseudonymServiceAuthConfig.OAuth" />, nothing is fetched or
+    ///     refreshed: the token is a static credential that Vfps verifies itself, so it keeps
+    ///     working while the identity provider is unreachable, and stops working when it expires
+    ///     or is revoked. Prefer a service account's token over a personal one - a personal token
+    ///     carries the access of the person who created it and dies with their account.
+    /// </summary>
+    public string AccessToken { get; init; }
 }
 
 public record MiiConfig
