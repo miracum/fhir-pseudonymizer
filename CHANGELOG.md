@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.37.0...v2.37.1) (2026-09-19)
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency verify.xunitv3 to v32 ([#389](https://github.com/miracum/fhir-pseudonymizer/issues/389)) ([1f21664](https://github.com/miracum/fhir-pseudonymizer/commit/1f21664780c690b65e5ade077cb3c1c2beb87073))
+
 ## [2.37.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.36.0...v2.37.0) (2026-09-19)
 
 
