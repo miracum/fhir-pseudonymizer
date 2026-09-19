@@ -201,11 +201,26 @@ Note that the token is only attached to calls made over an insecure channel if
 `Vfps__UnsafeUseInsecureChannelCallCredentials` is `true` (the default). Prefer `Vfps__UseTls=true`
 instead, so the token isn't sent in plaintext.
 
-On the Vfps side, the client this service authenticates as needs access to each namespace it uses:
-**write** access for creating pseudonyms, plus **reverse-lookup** access if de-pseudonymization is used.
-Access is granted per namespace in the Vfps admin UI. Since a machine client has no verified email
-address, only role-based grants apply to it - see the
-[Vfps access control documentation](https://github.com/miracum/vfps#access-control).
+#### Vfps Access Token
+
+Vfps can also issue credentials itself. Set `Vfps__Auth__AccessToken`
+to a token created in the Vfps admin UI and it is sent as the `Authorization: Bearer`
+metadata header of every gRPC call.
+
+| Environment Variable      | Description                                                            | Default |
+| ------------------------- | ---------------------------------------------------------------------- | ------- |
+| `Vfps__Auth__AccessToken` | A Vfps-issued access token, e.g. `vfps_sat_...`. Sent unchanged.       | `""`    |
+
+Use a **service account** token (`vfps_sat_...`), created on the Vfps *Service accounts* page,
+rather than a personal one (`vfps_pat_...`): a personal token carries the access of the person who
+created it and stops working when they leave. Requires `Authorization__AccessTokens__IsEnabled` on
+the Vfps side.
+
+#### Vfps namespace access
+
+Whichever credential is used, the principal this service authenticates as needs access to each
+namespace it uses: **write** access for creating pseudonyms, plus **reverse-lookup** access if
+de-pseudonymization is used.
 
 ### entici
 

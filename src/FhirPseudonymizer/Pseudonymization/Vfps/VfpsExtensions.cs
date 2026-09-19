@@ -28,6 +28,33 @@ public static class VfpsExtensions
         var oAuthConfig = vfpsConfig.Auth.OAuth;
 
         var isOAuthEnabled = oAuthConfig.TokenEndpoint is not null;
+
+        // Trimmed because this almost always arrives from a mounted secret or a copy-paste, and
+        // a trailing newline in an Authorization header is rejected by the server as a malformed
+        // token - a failure that reads like a wrong token rather than a stray byte.
+        var accessToken = vfpsConfig.Auth.AccessToken?.Trim();
+        var isAccessTokenConfigured = !string.IsNullOrEmpty(accessToken);
+
+        // All three mechanisms set the same Authorization metadata, so configuring more than one
+        // is a mistake rather than a preference. OAuth and basic auth have silently coexisted
+        // (OAuth wins) since before the access token existed and are left alone; the new
+        // combinations fail loudly instead of picking a winner nobody chose.
+        if (isAccessTokenConfigured && isOAuthEnabled)
+        {
+            throw new ValidationException(
+                "Vfps is configured with both an access token and an OAuth token endpoint. "
+                    + "Use one or the other."
+            );
+        }
+
+        if (isAccessTokenConfigured && !string.IsNullOrWhiteSpace(vfpsConfig.Auth.Basic.Username))
+        {
+            throw new ValidationException(
+                "Vfps is configured with both an access token and basic auth credentials. "
+                    + "Use one or the other."
+            );
+        }
+
         if (isOAuthEnabled)
         {
             if (
@@ -110,6 +137,12 @@ public static class VfpsExtensions
                             .GetToken();
 
                         metadata.Add("Authorization", $"Bearer {token.AccessToken}");
+                    }
+                    else if (isAccessTokenConfigured)
+                    {
+                        // Sent as-is, with nothing to refresh: Vfps verifies this token against
+                        // its own store, so there is no token endpoint in the picture at all.
+                        metadata.Add("Authorization", $"Bearer {accessToken}");
                     }
                     else if (!string.IsNullOrEmpty(vfpsConfig.Auth.Basic.Username))
                     {
