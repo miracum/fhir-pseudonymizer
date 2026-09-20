@@ -35,7 +35,7 @@ public static class MetricsConfigurationExtensions
                         {
                             Boundaries =
                             [
-                                .. Enumerable.Range(0, 20).Select(i => (double)(1 + (5 * i))),
+                                .. Enumerable.Range(0, 20).Select(i => 1d + (5d * i)),
                             ],
                         }
                     )
