@@ -32,10 +32,7 @@ public static class MetricsConfigurationExtensions
                         "fhirpseudonymizer.received.bundle_size",
                         new ExplicitBucketHistogramConfiguration
                         {
-                            Boundaries =
-                            [
-                                .. Enumerable.Range(0, 20).Select(i => 1d + (5d * i)),
-                            ],
+                            Boundaries = [.. Enumerable.Range(0, 20).Select(i => 1d + (5d * i))],
                         }
                     )
                     // A standalone HttpListener on its own port, rather than
@@ -51,12 +48,20 @@ public static class MetricsConfigurationExtensions
                     // anything else to be reachable through.
                     .AddPrometheusHttpListener(options =>
                     {
-                        // Default is "localhost", which HttpListener binds loopback-only - useless
-                        // for a container, where the scraper is never the same host. This builds a
-                        // System.Uri internally, which rejects HttpListener's own "*"/"+" wildcard
-                        // host syntax, so the all-interfaces address has to be spelled out instead.
-                        options.Host = "0.0.0.0";
+                        // Host/Port build a System.Uri internally, so neither HttpListener's own
+                        // "+"/"*" wildcard syntax nor a literal "0.0.0.0" work here - Uri rejects
+                        // the former outright, and .NET's cross-platform HttpListener refuses to
+                        // bind the latter on Linux ("the request is not supported"). Left at the
+                        // "localhost" default (which Uri accepts, giving the constructor a prefix
+                        // it can register without throwing) and replaced below with the actual
+                        // all-interfaces prefix, needed since the scraper is never the same host
+                        // as the container.
                         options.Port = metricsPort;
+                        options.ConfigureHttpListener = (_, listener) =>
+                        {
+                            listener.Prefixes.Clear();
+                            listener.Prefixes.Add($"http://+:{metricsPort}/metrics/");
+                        };
                     })
             );
 
