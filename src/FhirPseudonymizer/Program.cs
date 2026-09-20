@@ -5,14 +5,6 @@ namespace FhirPseudonymizer
 {
     public static class Program
     {
-        internal static ActivitySource ActivitySource { get; } =
-            new ActivitySource(
-                "FhirPseudonymizer",
-                typeof(Program).Assembly.GetName().Version.ToString()
-            );
-
-        internal static Meter Meter { get; } = new Meter("FhirPseudonymizer");
-
         // Falls back to the OpenTelemetry SDK's own default ("unknown_service:...") behavior only
         // if this assembly somehow has no version, which doesn't happen outside of that fallback.
         internal static string ServiceVersion { get; } =
@@ -25,6 +17,11 @@ namespace FhirPseudonymizer
         // wins - so this has to be the one and only place that calls it, with the env var as input.
         internal static string ServiceName { get; } =
             Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? "fhir-pseudonymizer";
+
+        internal static ActivitySource ActivitySource { get; } =
+            new ActivitySource("FhirPseudonymizer", ServiceVersion);
+
+        internal static Meter Meter { get; } = new Meter("FhirPseudonymizer");
 
         public static void Main(string[] args)
         {
