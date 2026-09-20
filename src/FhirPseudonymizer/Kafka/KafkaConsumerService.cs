@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Text;
@@ -206,7 +207,10 @@ public class KafkaConsumerService : BackgroundService
                 }
             );
 
-            ProcessedMessagesCounter.Add(1, new("topic", result.Topic), new("outcome", "success"));
+            ProcessedMessagesCounter.Add(
+                1,
+                new TagList { { "topic", result.Topic }, { "outcome", "success" } }
+            );
 
             provenancePublisher.Publish(original, anonymized, CopyHeaders(result.Message.Headers));
 
@@ -298,15 +302,17 @@ public class KafkaConsumerService : BackgroundService
 
             ProcessedMessagesCounter.Add(
                 1,
-                new("topic", result.Topic),
-                new("outcome", "dead-lettered")
+                new TagList { { "topic", result.Topic }, { "outcome", "dead-lettered" } }
             );
 
             await completedResults.Writer.WriteAsync(result, CancellationToken.None);
         }
         catch (Exception dlqExc)
         {
-            ProcessedMessagesCounter.Add(1, new("topic", result.Topic), new("outcome", "error"));
+            ProcessedMessagesCounter.Add(
+                1,
+                new TagList { { "topic", result.Topic }, { "outcome", "error" } }
+            );
             logger.LogError(
                 dlqExc,
                 "Failed to send message from topic {Topic} to dead letter queue",
