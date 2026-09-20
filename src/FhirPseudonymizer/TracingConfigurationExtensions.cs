@@ -46,13 +46,11 @@ public static class TracingConfigurationExtensions
                     {
                         o.Filter = (r) =>
                         {
-                            var ignoredPaths = new[]
-                            {
-                                "/healthz",
-                                "/readyz",
-                                "/livez",
-                                "/fhir/metadata",
-                            };
+                            // "/ready" and "/live" are this app's actual health probe routes (see
+                            // Startup.Configure) - previously listed here as "/readyz"/"/livez"/
+                            // "/healthz", which never matched anything and left every health
+                            // check traced.
+                            var ignoredPaths = new[] { "/ready", "/live", "/fhir/metadata" };
 
                             var path = r.Request.Path.Value!;
                             return !ignoredPaths.Any(path.Contains);

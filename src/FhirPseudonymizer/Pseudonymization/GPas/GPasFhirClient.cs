@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
@@ -76,10 +77,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         CancellationToken cancellationToken = default
     )
     {
-        TotalGPasRequests.Add(
-            1,
-            new KeyValuePair<string, object>("operation", nameof(GetOrCreatePseudonymFor))
-        );
+        TotalGPasRequests.Add(1, new TagList { { "operation", nameof(GetOrCreatePseudonymFor) } });
 
         return await GetOrCreatePseudonymForResolver(value, domain, cancellationToken);
     }
@@ -91,10 +89,7 @@ public class GPasFhirClient : IPseudonymServiceClient
         CancellationToken cancellationToken = default
     )
     {
-        TotalGPasRequests.Add(
-            1,
-            new KeyValuePair<string, object>("operation", nameof(GetOriginalValueFor))
-        );
+        TotalGPasRequests.Add(1, new TagList { { "operation", nameof(GetOriginalValueFor) } });
 
         return await GetOriginalValueForResolver(pseudonym, domain, cancellationToken);
     }

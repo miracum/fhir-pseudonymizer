@@ -41,7 +41,7 @@ public class Startup
 
         if (appConfig.EnableMetrics)
         {
-            services.AddMetrics(Configuration, appConfig.MetricsPort);
+            services.AddMetrics(appConfig.MetricsPort);
         }
 
         services.Configure<KestrelServerOptions>(options =>

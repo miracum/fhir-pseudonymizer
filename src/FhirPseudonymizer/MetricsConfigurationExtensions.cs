@@ -1,4 +1,3 @@
-using System.Reflection;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -9,21 +8,15 @@ public static class MetricsConfigurationExtensions
 {
     public static IServiceCollection AddMetrics(
         this IServiceCollection services,
-        IConfiguration configuration,
         ushort metricsPort
     )
     {
-        var assembly = Assembly.GetExecutingAssembly().GetName();
-        var assemblyVersion = assembly.Version?.ToString() ?? "unknown";
-        var serviceName =
-            configuration.GetValue("Tracing:ServiceName", assembly.Name) ?? "fhir-pseudonymizer";
-
         services
             .AddOpenTelemetry()
             .ConfigureResource(r =>
                 r.AddService(
-                    serviceName: serviceName,
-                    serviceVersion: assemblyVersion,
+                    serviceName: Program.ServiceName,
+                    serviceVersion: Program.ServiceVersion,
                     serviceInstanceId: Environment.MachineName
                 )
             )

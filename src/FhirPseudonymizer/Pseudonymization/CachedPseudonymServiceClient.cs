@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Text.Json;
 using FhirPseudonymizer.Config;
@@ -36,7 +37,7 @@ public class CachedPseudonymServiceClient(
     {
         TotalPseudonymizationRequests.Add(
             1,
-            new KeyValuePair<string, object>("operation", nameof(GetOrCreatePseudonymFor))
+            new TagList { { "operation", nameof(GetOrCreatePseudonymFor) } }
         );
 
         return cache.GetOrCreateAsync(
@@ -45,7 +46,7 @@ public class CachedPseudonymServiceClient(
             {
                 TotalPseudonymizationRequestCacheMisses.Add(
                     1,
-                    new KeyValuePair<string, object>("operation", nameof(GetOrCreatePseudonymFor))
+                    new TagList { { "operation", nameof(GetOrCreatePseudonymFor) } }
                 );
                 ApplyCacheConfig(entry);
                 return await innerClient.GetOrCreatePseudonymFor(
@@ -67,7 +68,7 @@ public class CachedPseudonymServiceClient(
     {
         TotalPseudonymizationRequests.Add(
             1,
-            new KeyValuePair<string, object>("operation", nameof(GetOriginalValueFor))
+            new TagList { { "operation", nameof(GetOriginalValueFor) } }
         );
 
         return cache.GetOrCreateAsync(
@@ -76,7 +77,7 @@ public class CachedPseudonymServiceClient(
             {
                 TotalPseudonymizationRequestCacheMisses.Add(
                     1,
-                    new KeyValuePair<string, object>("operation", nameof(GetOriginalValueFor))
+                    new TagList { { "operation", nameof(GetOriginalValueFor) } }
                 );
                 ApplyCacheConfig(entry);
                 return await innerClient.GetOriginalValueFor(

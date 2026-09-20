@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Security.Cryptography;
@@ -237,7 +238,7 @@ namespace FhirPseudonymizer.Controllers
                 activity?.AddTag("bundle.size", bundle.Entry.Count);
                 BundleSizeHistogram.Record(
                     bundle.Entry.Count,
-                    new KeyValuePair<string, object>("operation", nameof(DeIdentify))
+                    new TagList { { "operation", nameof(DeIdentify) } }
                 );
             }
 
@@ -311,7 +312,7 @@ namespace FhirPseudonymizer.Controllers
             {
                 BundleSizeHistogram.Record(
                     bundle.Entry.Count,
-                    new KeyValuePair<string, object>("operation", nameof(DePseudonymize))
+                    new TagList { { "operation", nameof(DePseudonymize) } }
                 );
             }
 
