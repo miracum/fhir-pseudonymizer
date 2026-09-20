@@ -5,11 +5,8 @@ WORKDIR /opt/fhir-pseudonymizer
 EXPOSE 8080/tcp 8081/tcp
 USER 65532:65532
 ENV ASPNETCORE_ENVIRONMENT="Production" \
-    DOTNET_CLI_TELEMETRY_OPTOUT=1
-# The base image bakes in ASPNETCORE_HTTP_PORTS=8080, which Kestrel would otherwise still try to
-# bind alongside (and log a confusing "overriding address(es)" warning about) the app's own
-# appsettings.json Kestrel:Endpoints:Http:Url - cleared so that config stays the only source.
-ENV ASPNETCORE_HTTP_PORTS=
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    ASPNETCORE_URLS="http://*:8080"
 
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0.401-resolute@sha256:d5355a3715a4a2cd4c63425bb6d41807116672550e12ab48b9be9cf22dbe40af AS build
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1

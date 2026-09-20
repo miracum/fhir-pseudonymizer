@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 
@@ -39,16 +38,27 @@ public static class MetricsConfigurationExtensions
                             ],
                         }
                     )
-                    .AddPrometheusExporter()
+                    // A standalone HttpListener on its own port, rather than
+                    // AddPrometheusExporter()/MapPrometheusScrapingEndpoint(): that alternative
+                    // maps /metrics onto the app's own Kestrel pipeline, which means adding a
+                    // second Kestrel listener for it - and Kestrel drops ASPNETCORE_URLS/
+                    // ASPNETCORE_HTTP_PORTS support entirely as soon as any endpoint is configured
+                    // in code or via the Kestrel:Endpoints config section. This exporter instead
+                    // runs its own independent listener that never touches the app's Kestrel
+                    // configuration, so the app's own port keeps responding to the standard env
+                    // vars exactly as it did under prometheus-net. It also means this port
+                    // inherently serves nothing but /metrics - there's no shared routing table for
+                    // anything else to be reachable through.
+                    .AddPrometheusHttpListener(options =>
+                    {
+                        // Default is "localhost", which HttpListener binds loopback-only - useless
+                        // for a container, where the scraper is never the same host. This builds a
+                        // System.Uri internally, which rejects HttpListener's own "*"/"+" wildcard
+                        // host syntax, so the all-interfaces address has to be spelled out instead.
+                        options.Host = "0.0.0.0";
+                        options.Port = metricsPort;
+                    })
             );
-
-        // A dedicated metrics port (separate from the app's public HTTP listener) keeps /metrics
-        // off the internet-facing endpoint - only an in-cluster scraper needs to reach it. Kept
-        // as a second, code-configured Kestrel listener alongside the appsettings.json-configured
-        // one, rather than folding it into that. The separation is enforced in both directions by
-        // the MetricsPortGuard middleware in Startup - /metrics answers only on this port, and
-        // this port answers nothing but /metrics.
-        services.Configure<KestrelServerOptions>(options => options.ListenAnyIP(metricsPort));
 
         return services;
     }

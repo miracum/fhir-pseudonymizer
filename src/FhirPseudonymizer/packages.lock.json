@@ -138,11 +138,11 @@
           "OpenTelemetry": "1.18.0"
         }
       },
-      "OpenTelemetry.Exporter.Prometheus.AspNetCore": {
+      "OpenTelemetry.Exporter.Prometheus.HttpListener": {
         "type": "Direct",
         "requested": "[1.18.0-beta.1, )",
         "resolved": "1.18.0-beta.1",
-        "contentHash": "TN/EaLh2nwk7IECKJyqBioC3+A/rYXYv6Fby0MGYStI0dQzJdgtV8+ERpLq2L3WWSM9Lah7qOEV305+1PUmLEw==",
+        "contentHash": "nHlyoeHFWY4SLfnkUEAe93CRTGMkh0jsc1mgM1nqbid8uuhsIAJJb1YSE9KX60jPONPFf7dR50hSFdaTZJVrXQ==",
         "dependencies": {
           "OpenTelemetry": "[1.18.0, 2.0.0)"
         }

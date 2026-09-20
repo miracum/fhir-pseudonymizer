@@ -186,8 +186,7 @@ public class Startup
     public void Configure(
         IApplicationBuilder app,
         IWebHostEnvironment env,
-        ILoggerFactory loggerFactory,
-        AppConfig appConfig
+        ILoggerFactory loggerFactory
     )
     {
         // The anonymization engine (AnonymizerEngine, AnonymizationVisitor, CryptoHashProcessor, etc.)
@@ -198,35 +197,6 @@ public class Startup
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
-        }
-
-        if (appConfig.EnableMetrics)
-        {
-            // Keeps /metrics off the main app port, and everything else off the metrics port.
-            // The second half is the one with teeth: ASP.NET Core routing is indifferent to which
-            // Kestrel listener accepted a connection, so without this the FHIR API and Swagger UI
-            // would also be served on the metrics port. See MetricsPortGuard for the decision
-            // itself, kept there as a pure function so it can be unit-tested.
-            //
-            // Placed ahead of routing so a rejected request never reaches an endpoint at all.
-            app.Use(
-                async (context, next) =>
-                {
-                    if (
-                        MetricsPortGuard.ShouldReject(
-                            context.Request.Path,
-                            context.Connection.LocalPort,
-                            appConfig.MetricsPort
-                        )
-                    )
-                    {
-                        context.Response.StatusCode = StatusCodes.Status404NotFound;
-                        return;
-                    }
-
-                    await next(context);
-                }
-            );
         }
 
         app.UseRequestDecompression();
@@ -257,11 +227,6 @@ public class Startup
         {
             endpoints.MapGet("/", context => Task.Run(() => context.Response.Redirect("/swagger")));
             endpoints.MapControllers();
-
-            if (appConfig.EnableMetrics)
-            {
-                endpoints.MapPrometheusScrapingEndpoint(MetricsPortGuard.MetricsPath);
-            }
         });
     }
 }
