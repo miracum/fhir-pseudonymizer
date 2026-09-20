@@ -1,9 +1,9 @@
+using System.Diagnostics.Metrics;
 using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
 using Microsoft.AspNetCore.WebUtilities;
-using Prometheus;
 using Semver;
 
 namespace FhirPseudonymizer.Pseudonymization.GPas;
@@ -12,10 +12,9 @@ public class GPasFhirClient : IPseudonymServiceClient
 {
     public static readonly string HttpClientName = "gPAS";
 
-    private static readonly Counter TotalGPasRequests = Metrics.CreateCounter(
-        "fhirpseudonymizer_gpas_requests_total",
-        "Total number of requests against the gPas service.",
-        new CounterConfiguration() { LabelNames = ["operation"] }
+    private static readonly Counter<long> TotalGPasRequests = Program.Meter.CreateCounter<long>(
+        "fhirpseudonymizer.gpas.requests",
+        description: "Total number of requests against the gPas service."
     );
 
     private readonly ILogger<GPasFhirClient> logger;
@@ -77,7 +76,10 @@ public class GPasFhirClient : IPseudonymServiceClient
         CancellationToken cancellationToken = default
     )
     {
-        TotalGPasRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
+        TotalGPasRequests.Add(
+            1,
+            new KeyValuePair<string, object>("operation", nameof(GetOrCreatePseudonymFor))
+        );
 
         return await GetOrCreatePseudonymForResolver(value, domain, cancellationToken);
     }
@@ -89,7 +91,10 @@ public class GPasFhirClient : IPseudonymServiceClient
         CancellationToken cancellationToken = default
     )
     {
-        TotalGPasRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
+        TotalGPasRequests.Add(
+            1,
+            new KeyValuePair<string, object>("operation", nameof(GetOriginalValueFor))
+        );
 
         return await GetOriginalValueForResolver(pseudonym, domain, cancellationToken);
     }

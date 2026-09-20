@@ -1,7 +1,7 @@
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 using FhirPseudonymizer.Config;
 using Microsoft.Extensions.Caching.Memory;
-using Prometheus;
 
 namespace FhirPseudonymizer.Pseudonymization;
 
@@ -11,18 +11,21 @@ public class CachedPseudonymServiceClient(
     CacheConfig cacheConfig
 ) : IPseudonymServiceClient
 {
-    private static readonly Counter TotalPseudonymizationRequests = Metrics.CreateCounter(
-        "fhirpseudonymizer_pseudonymization_requests_total",
-        "Total number of requests against the pseudonymization service cache, "
-            + "regardless of whether they were resolved via the cache or forwarded to the underlying service.",
-        new CounterConfiguration() { LabelNames = ["operation"] }
-    );
+    // Dotted names are the OpenTelemetry convention; the Prometheus exporter renders them with
+    // underscores and a "_total" suffix on export, matching the metric names this client exposed
+    // under prometheus-net.
+    private static readonly Counter<long> TotalPseudonymizationRequests =
+        Program.Meter.CreateCounter<long>(
+            "fhirpseudonymizer.pseudonymization.requests",
+            description: "Total number of requests against the pseudonymization service cache, "
+                + "regardless of whether they were resolved via the cache or forwarded to the underlying service."
+        );
 
-    private static readonly Counter TotalPseudonymizationRequestCacheMisses = Metrics.CreateCounter(
-        "fhirpseudonymizer_pseudonymization_requests_cache_misses_total",
-        "Total number of requests against the pseudonymization service that could not be resolved via the internal cache.",
-        new CounterConfiguration() { LabelNames = ["operation"] }
-    );
+    private static readonly Counter<long> TotalPseudonymizationRequestCacheMisses =
+        Program.Meter.CreateCounter<long>(
+            "fhirpseudonymizer.pseudonymization.requests.cache_misses",
+            description: "Total number of requests against the pseudonymization service that could not be resolved via the internal cache."
+        );
 
     public Task<string> GetOrCreatePseudonymFor(
         string value,
@@ -31,15 +34,19 @@ public class CachedPseudonymServiceClient(
         CancellationToken cancellationToken = default
     )
     {
-        TotalPseudonymizationRequests.WithLabels(nameof(GetOrCreatePseudonymFor)).Inc();
+        TotalPseudonymizationRequests.Add(
+            1,
+            new KeyValuePair<string, object>("operation", nameof(GetOrCreatePseudonymFor))
+        );
 
         return cache.GetOrCreateAsync(
             ("GetOrCreatePseudonymFor", value, domain, BuildSettingsCacheKey(settings)),
             async entry =>
             {
-                TotalPseudonymizationRequestCacheMisses
-                    .WithLabels(nameof(GetOrCreatePseudonymFor))
-                    .Inc();
+                TotalPseudonymizationRequestCacheMisses.Add(
+                    1,
+                    new KeyValuePair<string, object>("operation", nameof(GetOrCreatePseudonymFor))
+                );
                 ApplyCacheConfig(entry);
                 return await innerClient.GetOrCreatePseudonymFor(
                     value,
@@ -58,15 +65,19 @@ public class CachedPseudonymServiceClient(
         CancellationToken cancellationToken = default
     )
     {
-        TotalPseudonymizationRequests.WithLabels(nameof(GetOriginalValueFor)).Inc();
+        TotalPseudonymizationRequests.Add(
+            1,
+            new KeyValuePair<string, object>("operation", nameof(GetOriginalValueFor))
+        );
 
         return cache.GetOrCreateAsync(
             ("GetOriginalValueFor", pseudonym, domain, BuildSettingsCacheKey(settings)),
             async entry =>
             {
-                TotalPseudonymizationRequestCacheMisses
-                    .WithLabels(nameof(GetOriginalValueFor))
-                    .Inc();
+                TotalPseudonymizationRequestCacheMisses.Add(
+                    1,
+                    new KeyValuePair<string, object>("operation", nameof(GetOriginalValueFor))
+                );
                 ApplyCacheConfig(entry);
                 return await innerClient.GetOriginalValueFor(
                     pseudonym,

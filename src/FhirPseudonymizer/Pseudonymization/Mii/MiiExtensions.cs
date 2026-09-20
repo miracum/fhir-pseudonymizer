@@ -7,7 +7,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
-using Prometheus;
 
 namespace FhirPseudonymizer.Pseudonymization.Mii;
 
@@ -90,8 +89,7 @@ public static class MiiExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(miiConfig.RequestRetryCount))
-            .UseHttpClientMetrics();
+            .AddPolicyHandler(GetRetryPolicy(miiConfig.RequestRetryCount));
 
         services.AddTransient<MiiFhirClient>();
         services.AddTransient<IPseudonymServiceClient>(

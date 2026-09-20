@@ -1,4 +1,3 @@
-using System.Reflection;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Instrumentation.AspNetCore;
 using OpenTelemetry.Metrics;
@@ -14,16 +13,11 @@ public static class TracingConfigurationExtensions
         IConfiguration configuration
     )
     {
-        var assembly = Assembly.GetExecutingAssembly().GetName();
-        var assemblyVersion = assembly.Version?.ToString() ?? "unknown";
-        var serviceName =
-            configuration.GetValue("Tracing:ServiceName", assembly.Name) ?? "fhir-pseudonymizer";
-
         // Build a resource configuration action to set service information.
         void configureResource(ResourceBuilder r) =>
             r.AddService(
-                serviceName: serviceName,
-                serviceVersion: assemblyVersion,
+                serviceName: Program.ServiceName,
+                serviceVersion: Program.ServiceVersion,
                 serviceInstanceId: Environment.MachineName
             );
 

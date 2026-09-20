@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -8,7 +9,6 @@ using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
-using Prometheus;
 
 namespace FhirPseudonymizer.Kafka;
 
@@ -28,11 +28,11 @@ namespace FhirPseudonymizer.Kafka;
 /// </summary>
 public class KafkaConsumerService : BackgroundService
 {
-    private static readonly Counter ProcessedMessagesCounter = Metrics.CreateCounter(
-        "fhirpseudonymizer_kafka_messages_total",
-        "Total number of FHIR resources consumed from Kafka, by source topic and outcome (success, dead-lettered, or error).",
-        new CounterConfiguration { LabelNames = ["topic", "outcome"] }
-    );
+    private static readonly Counter<long> ProcessedMessagesCounter =
+        Program.Meter.CreateCounter<long>(
+            "fhirpseudonymizer.kafka.messages",
+            description: "Total number of FHIR resources consumed from Kafka, by source topic and outcome (success, dead-lettered, or error)."
+        );
 
     private readonly IConsumer<byte[], string> consumer;
     private readonly IProducer<byte[], string> producer;
@@ -206,7 +206,7 @@ public class KafkaConsumerService : BackgroundService
                 }
             );
 
-            ProcessedMessagesCounter.WithLabels(result.Topic, "success").Inc();
+            ProcessedMessagesCounter.Add(1, new("topic", result.Topic), new("outcome", "success"));
 
             provenancePublisher.Publish(original, anonymized, CopyHeaders(result.Message.Headers));
 
@@ -296,13 +296,17 @@ public class KafkaConsumerService : BackgroundService
 
             producer.Produce(deadLetterTopic, message);
 
-            ProcessedMessagesCounter.WithLabels(result.Topic, "dead-lettered").Inc();
+            ProcessedMessagesCounter.Add(
+                1,
+                new("topic", result.Topic),
+                new("outcome", "dead-lettered")
+            );
 
             await completedResults.Writer.WriteAsync(result, CancellationToken.None);
         }
         catch (Exception dlqExc)
         {
-            ProcessedMessagesCounter.WithLabels(result.Topic, "error").Inc();
+            ProcessedMessagesCounter.Add(1, new("topic", result.Topic), new("outcome", "error"));
             logger.LogError(
                 dlqExc,
                 "Failed to send message from topic {Topic} to dead letter queue",

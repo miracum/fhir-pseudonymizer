@@ -2,7 +2,7 @@
   "id": null,
   "uid": "fhir-pseudonymizer",
   "title": "FHIR Pseudonymizer",
-  "description": "Throughput, latency, pseudonymization backend, Kafka and runtime metrics for miracum/fhir-pseudonymizer (prometheus-net /metrics endpoint).",
+  "description": "Throughput, latency, pseudonymization backend, Kafka and runtime metrics for miracum/fhir-pseudonymizer (OpenTelemetry Prometheus exporter /metrics endpoint).",
   "tags": [
     "fhir-pseudonymizer",
     "prometheus",
@@ -231,7 +231,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(http_requests_received_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "expr": "sum(rate(http_server_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m]))",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -299,7 +299,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "100 * sum(rate(http_requests_received_total{job=~\"$job\", instance=~\"$instance\", code=~\"5..\"}[5m])) / sum(rate(http_requests_received_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "expr": "100 * sum(rate(http_server_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance\", http_response_status_code=~\"5..\"}[5m])) / sum(rate(http_server_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m]))",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -349,7 +349,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(http_requests_in_progress{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum(http_server_active_requests{job=~\"$job\", instance=~\"$instance\"})",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -364,7 +364,7 @@
       "description": "Share of pseudonymization lookups served from the in-memory cache instead of the backend service (gPAS/Vfps/entici/Mii).",
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 8,
         "x": 16,
         "y": 1
       },
@@ -419,90 +419,6 @@
         {
           "refId": "A",
           "expr": "100 * (1 - (sum(rate(fhirpseudonymizer_pseudonymization_requests_cache_misses_total{job=~\"$job\", instance=~\"$instance\"}[5m])) / sum(rate(fhirpseudonymizer_pseudonymization_requests_total{job=~\"$job\", instance=~\"$instance\"}[5m]))))",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          }
-        }
-      ]
-    },
-    {
-      "id": 7,
-      "type": "stat",
-      "title": "Health Status",
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 1
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.5
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "Unhealthy",
-                  "index": 0
-                },
-                "0.5": {
-                  "text": "Degraded",
-                  "index": 1
-                },
-                "1": {
-                  "text": "Healthy",
-                  "index": 2
-                }
-              }
-            }
-          ]
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "min"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "min(aspnetcore_healthcheck_status{job=~\"$job\", instance=~\"$instance\"})",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -582,8 +498,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (method, code) (rate(http_requests_received_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
-          "legendFormat": "{{method}} {{code}}",
+          "expr": "sum by (http_request_method, http_response_status_code) (rate(http_server_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "legendFormat": "{{http_request_method}} {{http_response_status_code}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -650,8 +566,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.50, sum by (le, method) (rate(http_request_duration_seconds_bucket{job=~\"$job\", instance=~\"$instance\"}[5m])))",
-          "legendFormat": "p50 {{method}}",
+          "expr": "histogram_quantile(0.50, sum by (le, http_request_method) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\", instance=~\"$instance\"}[5m])))",
+          "legendFormat": "p50 {{http_request_method}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -659,8 +575,8 @@
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.90, sum by (le, method) (rate(http_request_duration_seconds_bucket{job=~\"$job\", instance=~\"$instance\"}[5m])))",
-          "legendFormat": "p90 {{method}}",
+          "expr": "histogram_quantile(0.90, sum by (le, http_request_method) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\", instance=~\"$instance\"}[5m])))",
+          "legendFormat": "p90 {{http_request_method}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -668,8 +584,8 @@
         },
         {
           "refId": "C",
-          "expr": "histogram_quantile(0.99, sum by (le, method) (rate(http_request_duration_seconds_bucket{job=~\"$job\", instance=~\"$instance\"}[5m])))",
-          "legendFormat": "p99 {{method}}",
+          "expr": "histogram_quantile(0.99, sum by (le, http_request_method) (rate(http_server_request_duration_seconds_bucket{job=~\"$job\", instance=~\"$instance\"}[5m])))",
+          "legendFormat": "p99 {{http_request_method}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -734,8 +650,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (method) (http_requests_in_progress{job=~\"$job\", instance=~\"$instance\"})",
-          "legendFormat": "{{method}}",
+          "expr": "sum by (http_request_method) (http_server_active_requests{job=~\"$job\", instance=~\"$instance\"})",
+          "legendFormat": "{{http_request_method}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -802,7 +718,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "100 * sum(rate(http_requests_received_total{job=~\"$job\", instance=~\"$instance\", code=~\"5..\"}[5m])) / sum(rate(http_requests_received_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "expr": "100 * sum(rate(http_server_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance\", http_response_status_code=~\"5..\"}[5m])) / sum(rate(http_server_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m]))",
           "legendFormat": "error rate",
           "datasource": {
             "type": "prometheus",
@@ -850,8 +766,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "topk(10, sum by (action) (rate(http_requests_received_total{job=~\"$job\", instance=~\"$instance\"}[5m])))",
-          "legendFormat": "{{action}}",
+          "expr": "topk(10, sum by (http_route) (rate(http_server_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m])))",
+          "legendFormat": "{{http_route}}",
           "format": "table",
           "instant": true,
           "datasource": {
@@ -1455,7 +1371,7 @@
     {
       "id": 27,
       "type": "row",
-      "title": "Runtime & Health",
+      "title": "Runtime",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -1523,7 +1439,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "100 * sum by (instance) (rate(process_cpu_seconds_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "expr": "100 * sum by (instance) (rate(dotnet_process_cpu_time_seconds_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1590,17 +1506,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (instance) (process_working_set_bytes{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum by (instance) (dotnet_process_memory_working_set_bytes{job=~\"$job\", instance=~\"$instance\"})",
           "legendFormat": "working set - {{instance}}",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          }
-        },
-        {
-          "refId": "B",
-          "expr": "sum by (instance) (process_private_memory_bytes{job=~\"$job\", instance=~\"$instance\"})",
-          "legendFormat": "private memory - {{instance}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -1666,84 +1573,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (generation) (rate(dotnet_collection_count_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
-          "legendFormat": "gen {{generation}}",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          }
-        }
-      ]
-    },
-    {
-      "id": 31,
-      "type": "timeseries",
-      "title": "Threads & open handles",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 66
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "min": 0,
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "spanNulls": false,
-            "pointSize": 5,
-            "showPoints": "never",
-            "stacking": {
-              "mode": "none",
-              "group": "A"
-            },
-            "axisPlacement": "auto",
-            "scaleDistribution": {
-              "type": "linear"
-            }
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "calcs": [
-            "mean",
-            "max"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (instance) (process_num_threads{job=~\"$job\", instance=~\"$instance\"})",
-          "legendFormat": "threads - {{instance}}",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          }
-        },
-        {
-          "refId": "B",
-          "expr": "sum by (instance) (process_open_handles{job=~\"$job\", instance=~\"$instance\"})",
-          "legendFormat": "handles - {{instance}}",
+          "expr": "sum by (gc_heap_generation) (rate(dotnet_gc_collections_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "legendFormat": "{{gc_heap_generation}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -1755,10 +1586,11 @@
       "id": 32,
       "type": "timeseries",
       "title": ".NET managed memory (heap)",
+      "description": "Managed heap size as of the last garbage collection.",
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
+        "w": 24,
+        "x": 0,
         "y": 66
       },
       "datasource": {
@@ -1809,88 +1641,8 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (instance) (dotnet_total_memory_bytes{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum by (instance) (dotnet_gc_last_collection_heap_size_bytes{job=~\"$job\", instance=~\"$instance\"})",
           "legendFormat": "{{instance}}",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          }
-        }
-      ]
-    },
-    {
-      "id": 33,
-      "type": "state-timeline",
-      "title": "Health check status over time",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 66
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.5
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "Unhealthy",
-                  "index": 0
-                },
-                "0.5": {
-                  "text": "Degraded",
-                  "index": 1
-                },
-                "1": {
-                  "text": "Healthy",
-                  "index": 2
-                }
-              }
-            }
-          ]
-        },
-        "overrides": []
-      },
-      "options": {
-        "mergeValues": true,
-        "showValue": "never",
-        "alignValue": "center",
-        "rowHeight": 0.9,
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "aspnetcore_healthcheck_status{job=~\"$job\", instance=~\"$instance\"}",
-          "legendFormat": "{{instance}} - {{name}}",
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
@@ -1970,7 +1722,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "100 * sum by (instance) (rate(system_runtime_dotnet_gc_pause_time{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "expr": "100 * sum by (instance) (rate(dotnet_gc_pause_time_seconds_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -2037,7 +1789,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (instance) (rate(system_runtime_dotnet_gc_heap_total_allocated{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "expr": "sum by (instance) (rate(dotnet_gc_heap_total_allocated_bytes_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -2105,7 +1857,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (instance) (rate(system_runtime_dotnet_monitor_lock_contentions{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+          "expr": "sum by (instance) (rate(dotnet_monitor_lock_contentions_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -2174,7 +1926,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (instance) (system_runtime_dotnet_thread_pool_thread_count{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum by (instance) (dotnet_thread_pool_thread_count_total{job=~\"$job\", instance=~\"$instance\"})",
           "legendFormat": "threads - {{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -2183,7 +1935,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum by (instance) (system_runtime_dotnet_thread_pool_queue_length{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum by (instance) (dotnet_thread_pool_queue_length_total{job=~\"$job\", instance=~\"$instance\"})",
           "legendFormat": "queue length - {{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -2251,7 +2003,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (instance, server_port) (microsoft_aspnetcore_server_kestrel_kestrel_active_connections{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum by (instance, server_port) (kestrel_active_connections{job=~\"$job\", instance=~\"$instance\"})",
           "legendFormat": "active - {{instance}}:{{server_port}}",
           "datasource": {
             "type": "prometheus",
@@ -2260,7 +2012,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum by (instance, server_port) (microsoft_aspnetcore_server_kestrel_kestrel_queued_connections{job=~\"$job\", instance=~\"$instance\"})",
+          "expr": "sum by (instance, server_port) (kestrel_queued_connections{job=~\"$job\", instance=~\"$instance\"})",
           "legendFormat": "queued - {{instance}}:{{server_port}}",
           "datasource": {
             "type": "prometheus",

@@ -7,7 +7,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
-using Prometheus;
 
 namespace FhirPseudonymizer.Pseudonymization.GPas;
 
@@ -96,8 +95,7 @@ public static class GPasExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(gPasConfig.RequestRetryCount))
-            .UseHttpClientMetrics();
+            .AddPolicyHandler(GetRetryPolicy(gPasConfig.RequestRetryCount));
 
         services.AddTransient<GPasFhirClient>();
         services.AddTransient<IPseudonymServiceClient>(
