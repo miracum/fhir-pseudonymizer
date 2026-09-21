@@ -50,18 +50,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
         {
             ArgumentNullException.ThrowIfNull(config);
 
-            if (!config.TryGetValue(Constants.PathKey, out var value))
+            if (!config.TryGetValue(Constants.PathKey, out var pathValue))
             {
                 throw new ArgumentException("Missing path in rule config");
             }
 
-            if (!config.TryGetValue(Constants.MethodKey, out var value))
+            if (!config.TryGetValue(Constants.MethodKey, out var methodValue))
             {
                 throw new ArgumentException("Missing method in rule config");
             }
 
-            var path = value.ToString();
-            var method = value.ToString();
+            var path = pathValue.ToString();
+            var method = methodValue.ToString();
 
             // Parse expression and resource type from path
             string resourceType = null;
