@@ -27,35 +27,41 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
             Expression = expression;
             ResourceType = resourceType;
             RuleSettings = settings;
+
+            // Method/Path are never mutated after construction (both setters exist only because
+            // the base class exposes them); precomputing these here avoids redoing an
+            // upper-casing allocation and a string comparison for every resource this rule is
+            // evaluated against in AnonymizationVisitor's hot loop.
+            MethodUpper = method.ToUpperInvariant();
+            IsResourceTypeRule = path.Equals(resourceType);
         }
 
         public string Expression { get; set; }
 
         public string ResourceType { get; }
 
-        public bool IsResourceTypeRule => Path.Equals(ResourceType);
+        public string MethodUpper { get; }
+
+        public bool IsResourceTypeRule { get; }
 
         public static AnonymizationFhirPathRule CreateAnonymizationFhirPathRule(
             Dictionary<string, object> config
         )
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException("config");
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
-            if (!config.ContainsKey(Constants.PathKey))
+            if (!config.TryGetValue(Constants.PathKey, out var value))
             {
                 throw new ArgumentException("Missing path in rule config");
             }
 
-            if (!config.ContainsKey(Constants.MethodKey))
+            if (!config.TryGetValue(Constants.MethodKey, out var value))
             {
                 throw new ArgumentException("Missing method in rule config");
             }
 
-            var path = config[Constants.PathKey].ToString();
-            var method = config[Constants.MethodKey].ToString();
+            var path = value.ToString();
+            var method = value.ToString();
 
             // Parse expression and resource type from path
             string resourceType = null;

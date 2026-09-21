@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Data;
 using Hl7.Fhir.ElementModel;
 using Hl7.FhirPath;
@@ -11,8 +10,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 {
     public class AnonymizationVisitor : AbstractElementNodeVisitor
     {
-        private readonly Stack<Tuple<ElementNode, ProcessResult>> _contextStack =
-            new Stack<Tuple<ElementNode, ProcessResult>>();
+        private readonly Stack<Tuple<ElementNode, ProcessResult>> _contextStack = new();
 
         private readonly ILogger _logger = AnonymizerLogging.CreateLogger<AnonymizationVisitor>();
         private readonly Dictionary<string, IAnonymizerProcessor> _processors;
@@ -23,7 +21,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
         // is built fresh for each AnonymizeAsync call and is scoped to exactly that one run, and
         // EndVisitAsync has no use for it at all.
         private readonly CancellationToken _cancellationToken;
-        private readonly HashSet<ElementNode> _visitedNodes = new HashSet<ElementNode>();
+        private readonly HashSet<ElementNode> _visitedNodes = [];
+
+        // _rules never changes for the lifetime of the visitor (one visitor per AnonymizeAsync
+        // call), so the resource-specific-and-general rule set for a given resource type is
+        // memoized here instead of being re-filtered out of the full rule array on every single
+        // resource node visited (every Bundle entry, every contained resource, ...).
+        private readonly Dictionary<string, AnonymizationFhirPathRule[]> _rulesByTypeCache = [];
 
         public AnonymizationVisitor(
             AnonymizationFhirPathRule[] rules,
@@ -69,7 +73,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     throw new ConstraintException("Internal error: access wrong context.");
                 }
 
-                if (_contextStack.Count() > 0)
+                if (_contextStack.Count > 0)
                 {
                     _contextStack.Peek().Item2.Update(result);
                 }
@@ -102,8 +106,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                 };
 
                 var resultOnRule = new ProcessResult();
-                var method = rule.Method.ToUpperInvariant();
-                if (!_processors.ContainsKey(method))
+                if (!_processors.TryGetValue(rule.MethodUpper, out var processor))
                 {
                     continue;
                 }
@@ -119,7 +122,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                      * Current FHIR path lib do not support navigate such ResourceType FHIR path from resource in bundle.
                      * Example: navigate with FHIR path "Patient" from "Bundle.entry[0].resource[0]" is not support
                      */
-                    matchNodes = new List<ElementNode> { node };
+                    matchNodes = [node];
                 }
                 else
                 {
@@ -137,7 +140,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     resultOnRule.Update(
                         await ProcessNodeRecursiveAsync(
                             matchNode,
-                            _processors[method],
+                            processor,
                             context,
                             MergeSettings(rule.RuleSettings)
                         )
@@ -154,17 +157,20 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 
         private Dictionary<string, object> MergeSettings(Dictionary<string, object> ruleSettings)
         {
-            if (_settings?.DynamicRuleSettings?.Any() != true)
+            if (_settings?.DynamicRuleSettings is not { Count: > 0 } dynamicRuleSettings)
             {
                 return ruleSettings;
             }
 
             // overwrites existing settings
-            return ImmutableArray
-                .Create(ruleSettings, _settings.DynamicRuleSettings)
-                .SelectMany(dict => dict)
-                .ToLookup(pair => pair.Key, pair => pair.Value)
-                .ToDictionary(group => group.Key, group => group.Last());
+            var merged = ruleSettings is null ? [] : new Dictionary<string, object>(ruleSettings);
+
+            foreach (var (key, value) in dynamicRuleSettings)
+            {
+                merged[key] = value;
+            }
+
+            return merged;
         }
 
         private void LogProcessResult(
@@ -188,14 +194,24 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             }
         }
 
-        private IEnumerable<AnonymizationFhirPathRule> GetRulesByType(string typeString)
+        private AnonymizationFhirPathRule[] GetRulesByType(string typeString)
         {
-            return _rules.Where(r =>
-                r.ResourceType.Equals(typeString)
-                || string.IsNullOrEmpty(r.ResourceType)
-                || string.Equals(Constants.GeneralResourceType, r.ResourceType)
-                || string.Equals(Constants.GeneralDomainResourceType, r.ResourceType)
-            );
+            if (_rulesByTypeCache.TryGetValue(typeString, out var cached))
+            {
+                return cached;
+            }
+
+            var rulesForType = _rules
+                .Where(r =>
+                    r.ResourceType.Equals(typeString)
+                    || string.IsNullOrEmpty(r.ResourceType)
+                    || string.Equals(Constants.GeneralResourceType, r.ResourceType)
+                    || string.Equals(Constants.GeneralDomainResourceType, r.ResourceType)
+                )
+                .ToArray();
+
+            _rulesByTypeCache[typeString] = rulesForType;
+            return rulesForType;
         }
 
         public async Task<ProcessResult> ProcessNodeRecursiveAsync(
