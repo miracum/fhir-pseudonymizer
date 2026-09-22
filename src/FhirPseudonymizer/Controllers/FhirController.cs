@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,7 +12,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
-using Prometheus;
 
 namespace FhirPseudonymizer.Controllers
 {
@@ -35,16 +36,13 @@ namespace FhirPseudonymizer.Controllers
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public class FhirController : ControllerBase
     {
-        private static readonly Histogram BundleSizeHistogram = Metrics.CreateHistogram(
-            "fhirpseudonymizer_received_bundle_size",
-            "Histogram of received bundle sizes.",
-            new HistogramConfiguration
-            {
-                // we divide measurements in 10 buckets of 5 each, up to 50.
-                Buckets = Histogram.LinearBuckets(start: 1, width: 5, count: 20),
-                LabelNames = ["operation"],
-            }
-        );
+        // Bucket boundaries (1, 6, 11, ..., 96) are configured as an OpenTelemetry View on this
+        // instrument - see MetricsConfigurationExtensions.
+        private static readonly Histogram<long> BundleSizeHistogram =
+            Program.Meter.CreateHistogram<long>(
+                "fhirpseudonymizer.received.bundle_size",
+                description: "Histogram of received bundle sizes."
+            );
 
         private readonly IAnonymizerEngine anonymizer;
         private readonly AnonymizationConfig config;
@@ -238,7 +236,10 @@ namespace FhirPseudonymizer.Controllers
             if (resource is Bundle bundle)
             {
                 activity?.AddTag("bundle.size", bundle.Entry.Count);
-                BundleSizeHistogram.WithLabels(nameof(DeIdentify)).Observe(bundle.Entry.Count);
+                BundleSizeHistogram.Record(
+                    bundle.Entry.Count,
+                    new TagList { { "operation", nameof(DeIdentify) } }
+                );
             }
 
             try
@@ -309,7 +310,10 @@ namespace FhirPseudonymizer.Controllers
 
             if (resource is Bundle bundle)
             {
-                BundleSizeHistogram.WithLabels(nameof(DePseudonymize)).Observe(bundle.Entry.Count);
+                BundleSizeHistogram.Record(
+                    bundle.Entry.Count,
+                    new TagList { { "operation", nameof(DePseudonymize) } }
+                );
             }
 
             try

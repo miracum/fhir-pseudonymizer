@@ -1,4 +1,3 @@
-using System.Reflection;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Instrumentation.AspNetCore;
 using OpenTelemetry.Metrics;
@@ -14,16 +13,11 @@ public static class TracingConfigurationExtensions
         IConfiguration configuration
     )
     {
-        var assembly = Assembly.GetExecutingAssembly().GetName();
-        var assemblyVersion = assembly.Version?.ToString() ?? "unknown";
-        var serviceName =
-            configuration.GetValue("Tracing:ServiceName", assembly.Name) ?? "fhir-pseudonymizer";
-
         // Build a resource configuration action to set service information.
         void configureResource(ResourceBuilder r) =>
             r.AddService(
-                serviceName: serviceName,
-                serviceVersion: assemblyVersion,
+                serviceName: Program.ServiceName,
+                serviceVersion: Program.ServiceVersion,
                 serviceInstanceId: Environment.MachineName
             );
 
@@ -52,13 +46,11 @@ public static class TracingConfigurationExtensions
                     {
                         o.Filter = (r) =>
                         {
-                            var ignoredPaths = new[]
-                            {
-                                "/healthz",
-                                "/readyz",
-                                "/livez",
-                                "/fhir/metadata",
-                            };
+                            // "/ready" and "/live" are this app's actual health probe routes (see
+                            // Startup.Configure) - previously listed here as "/readyz"/"/livez"/
+                            // "/healthz", which never matched anything and left every health
+                            // check traced.
+                            var ignoredPaths = new[] { "/ready", "/live", "/fhir/metadata" };
 
                             var path = r.Request.Path.Value!;
                             return !ignoredPaths.Any(path.Contains);

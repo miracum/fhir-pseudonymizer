@@ -14,7 +14,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.OpenApi;
-using Prometheus;
 
 namespace FhirPseudonymizer;
 
@@ -42,7 +41,7 @@ public class Startup
 
         if (appConfig.EnableMetrics)
         {
-            services.AddMetricServer(options => options.Port = appConfig.MetricsPort);
+            services.AddMetrics(appConfig.MetricsPort);
         }
 
         services.Configure<KestrelServerOptions>(options =>
@@ -173,10 +172,7 @@ public class Startup
             c.IncludeXmlComments(xmlPath);
         });
 
-        services
-            .AddHealthChecks()
-            .AddCheck("live", () => HealthCheckResult.Healthy())
-            .ForwardToPrometheus();
+        services.AddHealthChecks().AddCheck("live", () => HealthCheckResult.Healthy());
 
         var isTracingEnabled =
             Configuration.GetValue("Tracing:IsEnabled", false)
@@ -214,9 +210,6 @@ public class Startup
 
         app.UseRouting();
 
-        app.UseHttpMetrics();
-        app.UseGrpcMetrics();
-
         app.UseHealthChecks("/ready");
         app.UseHealthChecks(
             "/live",
@@ -234,7 +227,6 @@ public class Startup
         {
             endpoints.MapGet("/", context => Task.Run(() => context.Response.Redirect("/swagger")));
             endpoints.MapControllers();
-            endpoints.MapMetrics();
         });
     }
 }

@@ -90,7 +90,8 @@ Accessing this endpoint requires authentication. So make sure to set the `APIKEY
 
 #### `:8081/metrics`
 
-While not part of the "user" API, the application exposes metrics in the Prometheus format at the `/metrics` endpoint on port `8081`.
+While not part of the "user" API, the application exposes metrics (via OpenTelemetry's Prometheus exporter) in the Prometheus format at the `/metrics` endpoint on its own dedicated port, `8081` by default. That endpoint only answers on this port - it isn't reachable on the main app port, and the metrics port doesn't serve anything else.
+A ready-to-import Grafana dashboard covering these metrics is available at [`grafana/fhir-pseudonymizer-dashboard.json`](./grafana/fhir-pseudonymizer-dashboard.json).
 
 ### Reading directly from Kafka
 

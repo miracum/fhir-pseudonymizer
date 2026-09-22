@@ -7,7 +7,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
-using Prometheus;
 
 namespace FhirPseudonymizer.Pseudonymization.Entici;
 
@@ -100,8 +99,7 @@ public static class EnticiExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(enticiConfig.RequestRetryCount))
-            .UseHttpClientMetrics();
+            .AddPolicyHandler(GetRetryPolicy(enticiConfig.RequestRetryCount));
 
         services.AddTransient<EnticiFhirClient>();
         services.AddTransient<IPseudonymServiceClient>(

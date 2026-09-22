@@ -1014,6 +1014,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                 ["UseSystemTextJsonFhirSerializer"] = useSystemTextJsonFhirSerializer
                     .ToString()
                     .ToLowerInvariant(),
+                ["EnableMetrics"] = "false",
             },
         };
         using var serializerClient = serializerFactory.CreateClient();
@@ -1074,6 +1075,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                 ["UseSystemTextJsonFhirSerializer"] = useSystemTextJsonFhirSerializer
                     .ToString()
                     .ToLowerInvariant(),
+                ["EnableMetrics"] = "false",
             },
         };
         using var serializerClient = serializerFactory.CreateClient();

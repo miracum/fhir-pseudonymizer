@@ -138,6 +138,15 @@
           "OpenTelemetry": "1.18.0"
         }
       },
+      "OpenTelemetry.Exporter.Prometheus.HttpListener": {
+        "type": "Direct",
+        "requested": "[1.18.0-beta.1, )",
+        "resolved": "1.18.0-beta.1",
+        "contentHash": "nHlyoeHFWY4SLfnkUEAe93CRTGMkh0jsc1mgM1nqbid8uuhsIAJJb1YSE9KX60jPONPFf7dR50hSFdaTZJVrXQ==",
+        "dependencies": {
+          "OpenTelemetry": "[1.18.0, 2.0.0)"
+        }
+      },
       "OpenTelemetry.Extensions.Hosting": {
         "type": "Direct",
         "requested": "[1.18.0, )",
@@ -174,38 +183,13 @@
           "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.18.0, 2.0.0)"
         }
       },
-      "prometheus-net": {
+      "OpenTelemetry.Instrumentation.Runtime": {
         "type": "Direct",
-        "requested": "[8.2.1, )",
-        "resolved": "8.2.1",
-        "contentHash": "3wVgdEPOCBF752s2xps5T+VH+c9mJK8S8GKEDg49084P6JZMumTZI5Te6aJ9MQpX0sx7om6JOnBpIi7ZBmmiDQ=="
-      },
-      "prometheus-net.AspNetCore": {
-        "type": "Direct",
-        "requested": "[8.2.1, )",
-        "resolved": "8.2.1",
-        "contentHash": "/4TfTvbwIDqpaKTiWvEsjUywiHYF9zZvGZF5sK15avoDsUO/WPQbKsF8TiMaesuphdFQPK2z52P0zk6j26V0rQ==",
+        "requested": "[1.18.0, )",
+        "resolved": "1.18.0",
+        "contentHash": "McuXGjBJDL/Cown2PxfUQysK98MZG7ZDjO/IKUtaAx8t1m0PB0d+QtJC79RFTVipMhRIwjJiULNOp0OGfZbvwg==",
         "dependencies": {
-          "prometheus-net": "8.2.1"
-        }
-      },
-      "prometheus-net.AspNetCore.Grpc": {
-        "type": "Direct",
-        "requested": "[8.2.1, )",
-        "resolved": "8.2.1",
-        "contentHash": "zd2npweTzIb7u9k9uaTIz3is+m6L36Dlegwt5P/RQvDaKLCZhm0fvWz3PxiLKriIdWOuAesujnMBu77aTet29Q==",
-        "dependencies": {
-          "Grpc.AspNetCore.Server": "2.48.0",
-          "prometheus-net.AspNetCore": "8.2.1"
-        }
-      },
-      "prometheus-net.AspNetCore.HealthChecks": {
-        "type": "Direct",
-        "requested": "[8.2.1, )",
-        "resolved": "8.2.1",
-        "contentHash": "aKeCH7Wc6FayXPZHyxolifmH/JaH7eyRpMhge3hzdfi4JMHlTPdhDFKDizGvwOd5RL7rhEmUWfhiWAT1j6GYXg==",
-        "dependencies": {
-          "prometheus-net.AspNetCore": "8.2.1"
+          "OpenTelemetry.Api": "[1.18.0, 2.0.0)"
         }
       },
       "Semver": {
@@ -241,14 +225,6 @@
         "type": "Transitive",
         "resolved": "1.3.1",
         "contentHash": "pCC0/KT4xe7vvJ0UD9u8CTBQOoIqMBl01du0UvK95i1A6smPb32gdmwSJvtx+KV7jQwkIMeKblkH8M3d9iw7fg=="
-      },
-      "Grpc.AspNetCore.Server": {
-        "type": "Transitive",
-        "resolved": "2.48.0",
-        "contentHash": "7GaNW8YnE5t+BpU75PsHgAJuy5Fp5ZMvLDSBdjUR4zUi27FwnVxiOhACyayprdCNNOwitbxUIc3iB5A7yn/QvQ==",
-        "dependencies": {
-          "Grpc.Net.Common": "2.48.0"
-        }
       },
       "Grpc.Core.Api": {
         "type": "Transitive",
