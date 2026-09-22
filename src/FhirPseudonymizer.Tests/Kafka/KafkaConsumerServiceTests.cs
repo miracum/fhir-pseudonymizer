@@ -312,6 +312,49 @@ public class KafkaConsumerServiceTests
     }
 
     [Fact]
+    public async System.Threading.Tasks.Task ProcessResultAsync_WhenPseudonymizationBackendThrows_SendsOriginalMessageToDeadLetterTopic()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(new InvalidTimeZoneException("simulated non-Kafka, non-format exception"));
+
+        var producer = A.Fake<IProducer<byte[], string>>();
+        var service = CreateService(anonymizer, producer);
+
+        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
+            new Patient { Id = "123" }
+        );
+        var result = CreateConsumeResult("input-topic", 0, 0, json);
+
+        Message<byte[], string> deadLetterMessage = null;
+        A.CallTo(() =>
+                producer.Produce(
+                    "error.input-topic.fhir-pseudonymizer",
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Invokes(
+                (
+                    string _,
+                    Message<byte[], string> message,
+                    Action<DeliveryReport<byte[], string>> _
+                ) => deadLetterMessage = message
+            );
+
+        await service.Invoking(s => s.ProcessResultAsync(result)).Should().NotThrowAsync();
+
+        deadLetterMessage.Should().NotBeNull();
+        deadLetterMessage.Value.Should().Be(json);
+    }
+
+    [Fact]
     public async System.Threading.Tasks.Task ProcessResultAsync_WhenDeadLetterProduceAlsoFails_DoesNotThrow()
     {
         var producer = A.Fake<IProducer<byte[], string>>();
