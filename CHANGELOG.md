@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.2](https://github.com/miracum/fhir-pseudonymizer/compare/v2.37.1...v2.37.2) (2026-09-22)
+
+
+### Bug Fixes
+
+* store every exception during processing in the DLQ ([#421](https://github.com/miracum/fhir-pseudonymizer/issues/421)) ([f416806](https://github.com/miracum/fhir-pseudonymizer/commit/f416806a6705bd5a0037c1057235cd75e84b4eb3))
+
 ## [2.37.1](https://github.com/miracum/fhir-pseudonymizer/compare/v2.37.0...v2.37.1) (2026-09-19)
 
 
