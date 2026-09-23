@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.37.3](https://github.com/miracum/fhir-pseudonymizer/compare/v2.37.2...v2.37.3) (2026-09-23)
+
+
+### Bug Fixes
+
+* retry indefenitely on transient errors when processing via kafka ([#424](https://github.com/miracum/fhir-pseudonymizer/issues/424)) ([bbbe719](https://github.com/miracum/fhir-pseudonymizer/commit/bbbe71990e9b5f6ec56443b7dc1207c1d0a5ae1e))
+
 ## [2.37.2](https://github.com/miracum/fhir-pseudonymizer/compare/v2.37.1...v2.37.2) (2026-09-22)
 
 
