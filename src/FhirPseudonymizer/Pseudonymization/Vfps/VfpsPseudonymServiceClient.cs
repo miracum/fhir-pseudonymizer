@@ -1,3 +1,4 @@
+using Grpc.Core;
 using Vfps.Protos;
 
 namespace FhirPseudonymizer.Pseudonymization.Vfps;
@@ -30,9 +31,19 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
             Namespace = domain,
         };
 
-        var response = await Client.CreateAsync(request, cancellationToken: cancellationToken);
-
-        return response.Pseudonym.PseudonymValue;
+        try
+        {
+            var response = await Client.CreateAsync(request, cancellationToken: cancellationToken);
+            return response.Pseudonym.PseudonymValue;
+        }
+        catch (RpcException exc)
+            when (exc.StatusCode is StatusCode.Unavailable or StatusCode.Internal)
+        {
+            throw new TransientPseudonymizationException(
+                $"Vfps pseudonymization call failed with status {exc.StatusCode}.",
+                exc
+            );
+        }
     }
 
     public async Task<string> GetOriginalValueFor(

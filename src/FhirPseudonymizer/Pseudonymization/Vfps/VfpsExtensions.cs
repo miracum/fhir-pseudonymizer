@@ -95,7 +95,7 @@ public static class VfpsExtensions
             Names = { MethodName.Default },
             RetryPolicy = new RetryPolicy
             {
-                MaxAttempts = 3,
+                MaxAttempts = Math.Max(2, vfpsConfig.RequestRetryCount + 1),
                 InitialBackoff = TimeSpan.FromSeconds(1),
                 MaxBackoff = TimeSpan.FromSeconds(5),
                 BackoffMultiplier = 1.5,

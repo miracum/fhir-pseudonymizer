@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Mii;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
@@ -221,6 +222,67 @@ public class MiiFhirClientTests
             await client.GetOriginalValueFor("pseudonym", "domain", testSettings);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WhenMiiIsTransientlyUnavailable_ThrowsTransientPseudonymizationException()
+    {
+        var handler = CreateFailingHttpMessageHandler(HttpStatusCode.ServiceUnavailable);
+        var factory = CreateHttpClientFactory(handler);
+        var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
+
+        Func<Task> act = async () =>
+            await client.GetOrCreatePseudonymFor(
+                "D1CL0CAL1",
+                "Transfer1",
+                testSettings,
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<TransientPseudonymizationException>();
+    }
+
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WhenMiiRejectsTheInput_ThrowsTheOriginalException()
+    {
+        var handler = CreateFailingHttpMessageHandler(HttpStatusCode.BadRequest);
+        var factory = CreateHttpClientFactory(handler);
+        var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
+
+        Func<Task> act = async () =>
+            await client.GetOrCreatePseudonymFor(
+                "D1CL0CAL1",
+                "Transfer1",
+                testSettings,
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        await act.Should()
+            .ThrowAsync<Exception>()
+            .Where(exc => exc.GetType() != typeof(TransientPseudonymizationException));
+    }
+
+    private static HttpMessageHandler CreateFailingHttpMessageHandler(HttpStatusCode statusCode)
+    {
+        var handler = A.Fake<HttpMessageHandler>();
+        A.CallTo(handler)
+            .Where(_ => _.Method.Name == "SendAsync")
+            .WithReturnType<Task<HttpResponseMessage>>()
+            .Returns(
+                new HttpResponseMessage
+                {
+                    StatusCode = statusCode,
+                    Content = new StringContent(
+                        """
+                        {"resourceType":"OperationOutcome","issue":[{"severity":"error","code":"exception","diagnostics":"backend error"}]}
+                        """,
+                        new MediaTypeHeaderValue("application/json+fhir")
+                    ),
+                    RequestMessage = new HttpRequestMessage(HttpMethod.Post, testBaseAddress),
+                }
+            );
+
+        return handler;
     }
 
     private static void VerifyRequest(HttpMessageHandler handler, HttpMethod method, string path)

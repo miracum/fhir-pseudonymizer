@@ -70,11 +70,23 @@ public class MiiFhirClient : IPseudonymServiceClient
 
         using var fhirClient = CreateFhirClient();
 
-        var response = await fhirClient.WholeSystemOperationAsync(
-            "pseudonymize",
-            request.ToFhirParameters(),
-            ct: cancellationToken
-        );
+        Resource response;
+        try
+        {
+            response = await fhirClient.WholeSystemOperationAsync(
+                "pseudonymize",
+                request.ToFhirParameters(),
+                ct: cancellationToken
+            );
+        }
+        catch (FhirOperationException exc)
+            when (TransientPseudonymizationException.IsTransientHttpStatus(exc.Status))
+        {
+            throw new TransientPseudonymizationException(
+                $"Mii pseudonymization call failed with status {exc.Status}.",
+                exc
+            );
+        }
 
         if (response is Parameters responseParameters)
         {

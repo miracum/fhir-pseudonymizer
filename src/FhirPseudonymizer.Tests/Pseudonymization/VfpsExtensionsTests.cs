@@ -250,6 +250,46 @@ public class VfpsExtensionsTests
             .WithMessage("*access token and basic auth credentials*");
     }
 
+    [Theory]
+    [InlineData(0, 2)] // RequestRetryCount=0 still clamps to gRPC's minimum of 2 total attempts
+    [InlineData(2, 3)]
+    public async Task AddVfpsClient_WithConfiguredRequestRetryCount_MakesThatManyAttemptsOnTransientErrors(
+        int requestRetryCount,
+        int expectedAttempts
+    )
+    {
+        var vfps = new CapturingHandler(TrailersOnlyGrpcResponse(StatusCode.Unavailable));
+
+        var config = new VfpsConfig
+        {
+            Address = VfpsAddress,
+            UnsafeUseInsecureChannelCallCredentials = true,
+            RequestRetryCount = requestRetryCount,
+        };
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddVfpsClient(config);
+
+        services
+            .AddGrpcClient<PseudonymService.PseudonymServiceClient>()
+            .ConfigurePrimaryHttpMessageHandler(() => vfps);
+
+        var client = services
+            .BuildServiceProvider()
+            .GetRequiredService<PseudonymService.PseudonymServiceClient>();
+
+        var act = async () =>
+            await client.CreateAsync(
+                new PseudonymServiceCreateRequest { Namespace = "test", OriginalValue = "test" }
+            );
+
+        await act.Should()
+            .ThrowAsync<RpcException>()
+            .Where(exc => exc.StatusCode == StatusCode.Unavailable);
+        vfps.CallCount.Should().Be(expectedAttempts);
+    }
+
     [Fact]
     public async Task AddVfpsClient_WithoutAnyAuthConfigured_ShouldNotSendAuthorizationMetadata()
     {
@@ -314,7 +354,9 @@ public class VfpsExtensionsTests
                 ),
             };
 
-    private static Func<HttpResponseMessage> TrailersOnlyGrpcResponse() =>
+    private static Func<HttpResponseMessage> TrailersOnlyGrpcResponse(
+        StatusCode statusCode = StatusCode.PermissionDenied
+    ) =>
         () =>
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK)
@@ -326,7 +368,7 @@ public class VfpsExtensionsTests
                 },
             };
 
-            response.Headers.Add("grpc-status", ((int)StatusCode.PermissionDenied).ToString());
+            response.Headers.Add("grpc-status", ((int)statusCode).ToString());
             return response;
         };
 
@@ -336,11 +378,14 @@ public class VfpsExtensionsTests
 
         public string LastAuthorizationHeader { get; private set; }
 
+        public int CallCount { get; private set; }
+
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken
         )
         {
+            CallCount++;
             LastRequest = request;
             LastAuthorizationHeader = request.Headers.TryGetValues("Authorization", out var values)
                 ? string.Join(' ', values)

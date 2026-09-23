@@ -110,6 +110,7 @@ public record VfpsConfig
     public VfpsAuthConfig Auth { get; init; } = new();
     public bool UnsafeUseInsecureChannelCallCredentials { get; init; }
     public bool UseTls { get; init; }
+    public int RequestRetryCount { get; init; }
 }
 
 /// <summary>

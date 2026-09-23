@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Entici;
 using Microsoft.Extensions.Logging;
 
@@ -131,6 +132,81 @@ public class EnticiFhirClientTests
 
         Func<Task> act = async () => await client.GetOrCreatePseudonymFor("42", "domain", settings);
         await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WhenEnticiIsTransientlyUnavailable_ThrowsTransientPseudonymizationException()
+    {
+        var client = new EnticiFhirClient(
+            A.Fake<ILogger<EnticiFhirClient>>(),
+            CreateHttpClientFactory(
+                CreateFailingHttpMessageHandler(HttpStatusCode.ServiceUnavailable)
+            )
+        );
+
+        var settings = new Dictionary<string, object>
+        {
+            ["entici"] = new Dictionary<object, object> { ["resourceType"] = "Encounter" },
+        };
+
+        Func<Task> act = async () =>
+            await client.GetOrCreatePseudonymFor(
+                "42",
+                "domain",
+                settings,
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<TransientPseudonymizationException>();
+    }
+
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WhenEnticiRejectsTheInput_ThrowsTheOriginalException()
+    {
+        var client = new EnticiFhirClient(
+            A.Fake<ILogger<EnticiFhirClient>>(),
+            CreateHttpClientFactory(CreateFailingHttpMessageHandler(HttpStatusCode.BadRequest))
+        );
+
+        var settings = new Dictionary<string, object>
+        {
+            ["entici"] = new Dictionary<object, object> { ["resourceType"] = "Encounter" },
+        };
+
+        Func<Task> act = async () =>
+            await client.GetOrCreatePseudonymFor(
+                "42",
+                "domain",
+                settings,
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        await act.Should()
+            .ThrowAsync<Exception>()
+            .Where(exc => exc.GetType() != typeof(TransientPseudonymizationException));
+    }
+
+    private static HttpMessageHandler CreateFailingHttpMessageHandler(HttpStatusCode statusCode)
+    {
+        var handler = A.Fake<HttpMessageHandler>();
+        A.CallTo(handler)
+            .Where(_ => _.Method.Name == "SendAsync")
+            .WithReturnType<Task<HttpResponseMessage>>()
+            .Returns(
+                new HttpResponseMessage
+                {
+                    StatusCode = statusCode,
+                    Content = new StringContent(
+                        """
+                        {"resourceType":"OperationOutcome","issue":[{"severity":"error","code":"exception","diagnostics":"backend error"}]}
+                        """,
+                        new MediaTypeHeaderValue("application/json+fhir")
+                    ),
+                    RequestMessage = new HttpRequestMessage(HttpMethod.Post, testBaseAddress),
+                }
+            );
+
+        return handler;
     }
 
     private void VerifyRequest(HttpMethod requestMethod, string requestUri)
