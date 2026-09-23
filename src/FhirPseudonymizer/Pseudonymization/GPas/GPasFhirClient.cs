@@ -79,26 +79,10 @@ public class GPasFhirClient : IPseudonymServiceClient
     {
         TotalGPasRequests.Add(1, new TagList { { "operation", nameof(GetOrCreatePseudonymFor) } });
 
-        try
-        {
-            return await GetOrCreatePseudonymForResolver(value, domain, cancellationToken);
-        }
-        catch (HttpRequestException exc)
-            when (TransientPseudonymizationException.IsTransientHttpStatus(exc.StatusCode))
-        {
-            throw new TransientPseudonymizationException(
-                $"gPAS pseudonymization call failed with status {exc.StatusCode}.",
-                exc
-            );
-        }
-        catch (FhirOperationException exc)
-            when (TransientPseudonymizationException.IsTransientHttpStatus(exc.Status))
-        {
-            throw new TransientPseudonymizationException(
-                $"gPAS pseudonymization call failed with status {exc.Status}.",
-                exc
-            );
-        }
+        return await TransientPseudonymizationException.Wrap(
+            "gPAS",
+            () => GetOrCreatePseudonymForResolver(value, domain, cancellationToken)
+        );
     }
 
     public async Task<string> GetOriginalValueFor(

@@ -59,23 +59,15 @@ public class EnticiFhirClient : IPseudonymServiceClient
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        Resource response;
-        try
-        {
-            response = await fhirClient.WholeSystemOperationAsync(
-                "pseudonymize",
-                request.ToFhirParameters(),
-                ct: cancellationToken
-            );
-        }
-        catch (FhirOperationException exc)
-            when (TransientPseudonymizationException.IsTransientHttpStatus(exc.Status))
-        {
-            throw new TransientPseudonymizationException(
-                $"Entici pseudonymization call failed with status {exc.Status}.",
-                exc
-            );
-        }
+        var response = await TransientPseudonymizationException.Wrap(
+            "Entici",
+            () =>
+                fhirClient.WholeSystemOperationAsync(
+                    "pseudonymize",
+                    request.ToFhirParameters(),
+                    ct: cancellationToken
+                )
+        );
 
         if (response is Parameters responseParameters)
         {

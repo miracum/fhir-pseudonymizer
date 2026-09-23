@@ -5,6 +5,16 @@ namespace FhirPseudonymizer.Pseudonymization.Vfps;
 
 public class VfpsPseudonymServiceClient : IPseudonymServiceClient
 {
+    // Also used by VfpsExtensions to configure the gRPC channel's own fast retry policy, so a
+    // status code only needs to be added here once to be treated as transient by both.
+    internal static readonly HashSet<StatusCode> TransientStatusCodes =
+    [
+        StatusCode.Unavailable,
+        StatusCode.Internal,
+        StatusCode.Unauthenticated,
+        StatusCode.PermissionDenied,
+    ];
+
     private readonly ILogger<VfpsPseudonymServiceClient> logger;
 
     public VfpsPseudonymServiceClient(
@@ -36,13 +46,7 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
             var response = await Client.CreateAsync(request, cancellationToken: cancellationToken);
             return response.Pseudonym.PseudonymValue;
         }
-        catch (RpcException exc)
-            when (exc.StatusCode
-                    is StatusCode.Unavailable
-                        or StatusCode.Internal
-                        or StatusCode.Unauthenticated
-                        or StatusCode.PermissionDenied
-            )
+        catch (RpcException exc) when (TransientStatusCodes.Contains(exc.StatusCode))
         {
             throw new TransientPseudonymizationException(
                 $"Vfps pseudonymization call failed with status {exc.StatusCode}.",

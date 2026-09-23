@@ -90,23 +90,23 @@ public static class VfpsExtensions
                 );
         }
 
+        var retryPolicy = new RetryPolicy
+        {
+            MaxAttempts = Math.Max(2, vfpsConfig.RequestRetryCount + 1),
+            InitialBackoff = TimeSpan.FromSeconds(1),
+            MaxBackoff = TimeSpan.FromSeconds(5),
+            BackoffMultiplier = 1.5,
+        };
+
+        foreach (var statusCode in VfpsPseudonymServiceClient.TransientStatusCodes)
+        {
+            retryPolicy.RetryableStatusCodes.Add(statusCode);
+        }
+
         var defaultMethodConfig = new MethodConfig
         {
             Names = { MethodName.Default },
-            RetryPolicy = new RetryPolicy
-            {
-                MaxAttempts = Math.Max(2, vfpsConfig.RequestRetryCount + 1),
-                InitialBackoff = TimeSpan.FromSeconds(1),
-                MaxBackoff = TimeSpan.FromSeconds(5),
-                BackoffMultiplier = 1.5,
-                RetryableStatusCodes =
-                {
-                    StatusCode.Unavailable,
-                    StatusCode.Internal,
-                    StatusCode.Unauthenticated,
-                    StatusCode.PermissionDenied,
-                },
-            },
+            RetryPolicy = retryPolicy,
         };
 
         services
