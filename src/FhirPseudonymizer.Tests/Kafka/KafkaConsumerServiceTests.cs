@@ -524,7 +524,10 @@ public class KafkaConsumerServiceTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        await service.Invoking(s => s.ProcessResultAsync(result, cts.Token)).Should().NotThrowAsync();
+        await service
+            .Invoking(s => s.ProcessResultAsync(result, cts.Token))
+            .Should()
+            .NotThrowAsync();
 
         A.CallTo(() =>
                 producer.Produce(

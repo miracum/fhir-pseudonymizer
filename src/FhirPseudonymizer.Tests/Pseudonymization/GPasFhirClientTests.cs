@@ -189,6 +189,10 @@ public class GPasFhirClientTests
     [Theory]
     [InlineData("1.10.2", HttpStatusCode.ServiceUnavailable)]
     [InlineData("1.10.3", HttpStatusCode.ServiceUnavailable)]
+    [InlineData("1.10.2", HttpStatusCode.Unauthorized)]
+    [InlineData("1.10.3", HttpStatusCode.Unauthorized)]
+    [InlineData("1.10.2", HttpStatusCode.Forbidden)]
+    [InlineData("1.10.3", HttpStatusCode.Forbidden)]
     public async Task GetOrCreatePseudonymFor_WhenGPasIsTransientlyUnavailable_ThrowsTransientPseudonymizationException(
         string gpasVersion,
         HttpStatusCode statusCode

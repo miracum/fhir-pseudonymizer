@@ -134,14 +134,17 @@ public class EnticiFhirClientTests
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
-    [Fact]
-    public async Task GetOrCreatePseudonymFor_WhenEnticiIsTransientlyUnavailable_ThrowsTransientPseudonymizationException()
+    [Theory]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    public async Task GetOrCreatePseudonymFor_WhenEnticiIsTransientlyUnavailable_ThrowsTransientPseudonymizationException(
+        HttpStatusCode statusCode
+    )
     {
         var client = new EnticiFhirClient(
             A.Fake<ILogger<EnticiFhirClient>>(),
-            CreateHttpClientFactory(
-                CreateFailingHttpMessageHandler(HttpStatusCode.ServiceUnavailable)
-            )
+            CreateHttpClientFactory(CreateFailingHttpMessageHandler(statusCode))
         );
 
         var settings = new Dictionary<string, object>

@@ -224,10 +224,15 @@ public class MiiFhirClientTests
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
-    [Fact]
-    public async Task GetOrCreatePseudonymFor_WhenMiiIsTransientlyUnavailable_ThrowsTransientPseudonymizationException()
+    [Theory]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    public async Task GetOrCreatePseudonymFor_WhenMiiIsTransientlyUnavailable_ThrowsTransientPseudonymizationException(
+        HttpStatusCode statusCode
+    )
     {
-        var handler = CreateFailingHttpMessageHandler(HttpStatusCode.ServiceUnavailable);
+        var handler = CreateFailingHttpMessageHandler(statusCode);
         var factory = CreateHttpClientFactory(handler);
         var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
 

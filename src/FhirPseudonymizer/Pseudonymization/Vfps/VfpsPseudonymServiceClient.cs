@@ -37,7 +37,12 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
             return response.Pseudonym.PseudonymValue;
         }
         catch (RpcException exc)
-            when (exc.StatusCode is StatusCode.Unavailable or StatusCode.Internal)
+            when (exc.StatusCode
+                    is StatusCode.Unavailable
+                        or StatusCode.Internal
+                        or StatusCode.Unauthenticated
+                        or StatusCode.PermissionDenied
+            )
         {
             throw new TransientPseudonymizationException(
                 $"Vfps pseudonymization call failed with status {exc.StatusCode}.",

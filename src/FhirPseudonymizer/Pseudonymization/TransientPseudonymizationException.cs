@@ -8,5 +8,9 @@ public class TransientPseudonymizationException(string message, Exception innerE
     public static bool IsTransientHttpStatus(HttpStatusCode? status) =>
         status is null
         || (int)status >= 500
-        || status is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests;
+        || status
+            is HttpStatusCode.RequestTimeout
+                or HttpStatusCode.TooManyRequests
+                or HttpStatusCode.Unauthorized
+                or HttpStatusCode.Forbidden;
 }

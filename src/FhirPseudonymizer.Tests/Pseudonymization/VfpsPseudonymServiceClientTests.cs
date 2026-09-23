@@ -11,6 +11,8 @@ public class VfpsPseudonymServiceClientTests
     [Theory]
     [InlineData(StatusCode.Unavailable)]
     [InlineData(StatusCode.Internal)]
+    [InlineData(StatusCode.Unauthenticated)]
+    [InlineData(StatusCode.PermissionDenied)]
     public async Task GetOrCreatePseudonymFor_WhenVfpsIsTransientlyUnavailable_ThrowsTransientPseudonymizationException(
         StatusCode statusCode
     )
