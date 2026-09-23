@@ -59,10 +59,14 @@ public class EnticiFhirClient : IPseudonymServiceClient
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        var response = await fhirClient.WholeSystemOperationAsync(
-            "pseudonymize",
-            request.ToFhirParameters(),
-            ct: cancellationToken
+        var response = await TransientPseudonymizationException.Wrap(
+            "Entici",
+            () =>
+                fhirClient.WholeSystemOperationAsync(
+                    "pseudonymize",
+                    request.ToFhirParameters(),
+                    ct: cancellationToken
+                )
         );
 
         if (response is Parameters responseParameters)

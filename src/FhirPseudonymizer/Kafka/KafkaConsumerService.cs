@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Channels;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
+using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 using Microsoft.Health.Fhir.Anonymizer.Core;
@@ -21,11 +22,22 @@ namespace FhirPseudonymizer.Kafka;
 ///     configured.
 ///
 ///     A single thread owns the <see cref="IConsumer{TKey,TValue}" /> and polls for new messages
-///     (Consume/StoreOffset are not guaranteed thread-safe). Each consumed message is routed, based
-///     on a stable hash of its TopicPartition, to one of a fixed number of worker channels so that
-///     messages from the same partition are always processed by the same worker and therefore stay
-///     in order, while different partitions are anonymized concurrently across workers. Workers
-///     report back which messages completed successfully so the poll thread can store their offsets.
+///     (Consume/StoreOffset/Pause/Resume are not guaranteed thread-safe). Each consumed message is
+///     routed, based on a stable hash of its TopicPartition, to one of a fixed number of worker
+///     channels so that messages from the same partition are always processed by the same worker
+///     and therefore stay in order, while different partitions are anonymized concurrently across
+///     workers. Workers report back which messages completed successfully so the poll thread can
+///     store their offsets.
+///
+///     A transient pseudonymization backend failure (<see cref="TransientPseudonymizationException" />)
+///     is retried by <see cref="ProcessResultAsync" /> indefinitely with backoff rather than being
+///     dead-lettered, since the message itself isn't bad, just badly timed. While a worker is stuck
+///     retrying, its channel backs up; rather than let the poll thread block handing off further
+///     messages to it (which would eventually stop it calling Consume() for every partition, not
+///     just the stuck one, and get this consumer kicked from its group for exceeding
+///     max.poll.interval.ms - the very failure this exists to avoid), <see cref="EnqueueOrPause" />
+///     pauses the affected partition and <see cref="RetryPausedPartitionBacklogs" /> resumes it once
+///     the worker catches up.
 /// </summary>
 public class KafkaConsumerService : BackgroundService
 {
@@ -33,6 +45,12 @@ public class KafkaConsumerService : BackgroundService
         Program.Meter.CreateCounter<long>(
             "fhirpseudonymizer.kafka.messages",
             description: "Total number of FHIR resources consumed from Kafka, by source topic and outcome (success, dead-lettered, or error)."
+        );
+
+    private static readonly UpDownCounter<long> PausedPartitionsCounter =
+        Program.Meter.CreateUpDownCounter<long>(
+            "fhirpseudonymizer.kafka.partitions_paused",
+            description: "Number of partitions currently paused because their worker's processing channel is full - most likely because that worker is retrying a transient pseudonymization backend failure."
         );
 
     private readonly IConsumer<byte[], string> consumer;
@@ -47,6 +65,14 @@ public class KafkaConsumerService : BackgroundService
     private readonly Channel<ConsumeResult<byte[], string>>[] workerChannels;
     private readonly Channel<ConsumeResult<byte[], string>> completedResults =
         Channel.CreateUnbounded<ConsumeResult<byte[], string>>();
+
+    // Only ever read/written from the single poll thread (RunConsumeLoopAsync), same as the
+    // consumer itself - see EnqueueOrPause/RetryPausedPartitionBacklogs.
+    private readonly Dictionary<
+        TopicPartition,
+        Queue<ConsumeResult<byte[], string>>
+    > pausedPartitionBacklogs = [];
+
     private readonly Regex outputTopicPattern;
     private readonly string groupId;
 
@@ -100,7 +126,7 @@ public class KafkaConsumerService : BackgroundService
         );
 
         var workerTasks = workerChannels
-            .Select(channel => RunWorkerAsync(channel.Reader))
+            .Select(channel => RunWorkerAsync(channel.Reader, stoppingToken))
             .ToArray();
 
         try
@@ -141,19 +167,81 @@ public class KafkaConsumerService : BackgroundService
 
             if (result?.Message?.Value is not null)
             {
-                var workerIndex = GetWorkerIndex(result.TopicPartition);
-
-                try
-                {
-                    await workerChannels[workerIndex].Writer.WriteAsync(result, stoppingToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
+                EnqueueOrPause(result);
             }
 
+            RetryPausedPartitionBacklogs();
             StoreCompletedOffsets();
+        }
+    }
+
+    /// <summary>
+    ///     Hands a consumed message off to its worker's channel. If that channel is full - most
+    ///     likely because its worker is retrying a <see cref="TransientPseudonymizationException" />
+    ///     against the pseudonymization backend and hasn't drained it in a while - pauses the
+    ///     message's partition so librdkafka stops handing back more of its messages, and holds
+    ///     onto it to retry on a later loop iteration instead of blocking on it here. Blocking here
+    ///     (as this used to do via a plain awaited channel write) would stop this thread calling
+    ///     <see cref="IConsumer{TKey,TValue}.Consume(TimeSpan)" /> for any partition, not just this
+    ///     one, for as long as the backend stays down - tripping the consumer group's
+    ///     max.poll.interval.ms and getting it kicked from the group, the exact failure mode this
+    ///     retry mechanism exists to avoid.
+    /// </summary>
+    private void EnqueueOrPause(ConsumeResult<byte[], string> result)
+    {
+        if (pausedPartitionBacklogs.TryGetValue(result.TopicPartition, out var backlog))
+        {
+            // Already paused with messages waiting - keep this one in line behind them rather
+            // than trying to write it directly, so per-partition ordering is preserved.
+            backlog.Enqueue(result);
+            return;
+        }
+
+        var workerIndex = GetWorkerIndex(result.TopicPartition);
+
+        if (workerChannels[workerIndex].Writer.TryWrite(result))
+        {
+            return;
+        }
+
+        consumer.Pause([result.TopicPartition]);
+        PausedPartitionsCounter.Add(1);
+
+        var newBacklog = new Queue<ConsumeResult<byte[], string>>();
+        newBacklog.Enqueue(result);
+        pausedPartitionBacklogs[result.TopicPartition] = newBacklog;
+    }
+
+    /// <summary>
+    ///     Retries handing off messages held back by <see cref="EnqueueOrPause" />, oldest first
+    ///     per partition, resuming a partition only once its whole backlog has drained.
+    /// </summary>
+    private void RetryPausedPartitionBacklogs()
+    {
+        if (pausedPartitionBacklogs.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var partition in pausedPartitionBacklogs.Keys.ToArray())
+        {
+            var backlog = pausedPartitionBacklogs[partition];
+            var workerIndex = GetWorkerIndex(partition);
+
+            while (
+                backlog.TryPeek(out var pending)
+                && workerChannels[workerIndex].Writer.TryWrite(pending)
+            )
+            {
+                backlog.Dequeue();
+            }
+
+            if (backlog.Count == 0)
+            {
+                pausedPartitionBacklogs.Remove(partition);
+                consumer.Resume([partition]);
+                PausedPartitionsCounter.Add(-1);
+            }
         }
     }
 
@@ -177,54 +265,97 @@ public class KafkaConsumerService : BackgroundService
     }
 
     private async System.Threading.Tasks.Task RunWorkerAsync(
-        ChannelReader<ConsumeResult<byte[], string>> reader
+        ChannelReader<ConsumeResult<byte[], string>> reader,
+        CancellationToken stoppingToken
     )
     {
         await foreach (var result in reader.ReadAllAsync(CancellationToken.None))
         {
-            await ProcessResultAsync(result);
+            await ProcessResultAsync(result, stoppingToken);
         }
     }
 
     public async System.Threading.Tasks.Task ProcessResultAsync(
-        ConsumeResult<byte[], string> result
+        ConsumeResult<byte[], string> result,
+        CancellationToken cancellationToken = default
     )
     {
-        try
+        // A transient pseudonymization backend failure (already retried, unsuccessfully, by the
+        // backend client's own fast retry policy) is retried here indefinitely with backoff
+        // instead of being dead-lettered - the message is only bad timing, not bad data. This
+        // relies on EnqueueOrPause/RetryPausedPartitionBacklogs in the poll loop to keep this
+        // worker's channel from backing up the whole consumer while that happens; this method
+        // itself doesn't need to know anything about partitions or pausing.
+        for (var attempt = 1; ; attempt++)
         {
-            var original = fhirJsonParser.Parse<Resource>(result.Message.Value);
-            var anonymized = await AnonymizeResourceAsync(original, result.Topic);
-            var output = fhirJsonSerializer.SerializeToString(anonymized);
-            var outputTopic = GetOutputTopic(result.Topic);
+            try
+            {
+                var original = fhirJsonParser.Parse<Resource>(result.Message.Value);
+                var anonymized = await AnonymizeResourceAsync(original, result.Topic);
+                var output = fhirJsonSerializer.SerializeToString(anonymized);
+                var outputTopic = GetOutputTopic(result.Topic);
 
-            producer.Produce(
-                outputTopic,
-                new Message<byte[], string>
+                producer.Produce(
+                    outputTopic,
+                    new Message<byte[], string>
+                    {
+                        Key = result.Message.Key,
+                        Value = output,
+                        Headers = CopyHeaders(result.Message.Headers),
+                    }
+                );
+
+                ProcessedMessagesCounter.Add(
+                    1,
+                    new TagList { { "topic", result.Topic }, { "outcome", "success" } }
+                );
+
+                provenancePublisher.Publish(
+                    original,
+                    anonymized,
+                    CopyHeaders(result.Message.Headers)
+                );
+
+                await completedResults.Writer.WriteAsync(result, CancellationToken.None);
+                return;
+            }
+            catch (TransientPseudonymizationException exc)
+            {
+                logger.LogWarning(
+                    exc,
+                    "Pseudonymization backend unavailable while processing message from topic {Topic} (attempt {Attempt}); retrying",
+                    result.Topic,
+                    attempt
+                );
+
+                var delaySeconds = Math.Min(60, Math.Pow(2, attempt - 1));
+
+                try
                 {
-                    Key = result.Message.Key,
-                    Value = output,
-                    Headers = CopyHeaders(result.Message.Headers),
+                    await System.Threading.Tasks.Task.Delay(
+                        TimeSpan.FromSeconds(delaySeconds),
+                        cancellationToken
+                    );
                 }
-            );
+                catch (OperationCanceledException)
+                {
+                    // Service shutdown: give up retrying. The offset was never stored, so this
+                    // message is reprocessed the same way as any other in-flight message after a
+                    // restart.
+                    return;
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(
+                    exc,
+                    "Failed to process message from topic {Topic}, sending to dead letter queue",
+                    result.Topic
+                );
 
-            ProcessedMessagesCounter.Add(
-                1,
-                new TagList { { "topic", result.Topic }, { "outcome", "success" } }
-            );
-
-            provenancePublisher.Publish(original, anonymized, CopyHeaders(result.Message.Headers));
-
-            await completedResults.Writer.WriteAsync(result, CancellationToken.None);
-        }
-        catch (Exception exc)
-        {
-            logger.LogError(
-                exc,
-                "Failed to process message from topic {Topic}, sending to dead letter queue",
-                result.Topic
-            );
-
-            await SendToDeadLetterQueueAsync(result, exc);
+                await SendToDeadLetterQueueAsync(result, exc);
+                return;
+            }
         }
     }
 

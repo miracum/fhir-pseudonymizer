@@ -79,7 +79,10 @@ public class GPasFhirClient : IPseudonymServiceClient
     {
         TotalGPasRequests.Add(1, new TagList { { "operation", nameof(GetOrCreatePseudonymFor) } });
 
-        return await GetOrCreatePseudonymForResolver(value, domain, cancellationToken);
+        return await TransientPseudonymizationException.Wrap(
+            "gPAS",
+            () => GetOrCreatePseudonymForResolver(value, domain, cancellationToken)
+        );
     }
 
     public async Task<string> GetOriginalValueFor(

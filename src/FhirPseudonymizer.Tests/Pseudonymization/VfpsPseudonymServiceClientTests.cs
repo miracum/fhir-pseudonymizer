@@ -1,3 +1,4 @@
+using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Vfps;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
@@ -7,6 +8,84 @@ namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class VfpsPseudonymServiceClientTests
 {
+    [Theory]
+    [InlineData(StatusCode.Unavailable)]
+    [InlineData(StatusCode.Internal)]
+    [InlineData(StatusCode.Unauthenticated)]
+    [InlineData(StatusCode.PermissionDenied)]
+    public async Task GetOrCreatePseudonymFor_WhenVfpsIsTransientlyUnavailable_ThrowsTransientPseudonymizationException(
+        StatusCode statusCode
+    )
+    {
+        // Arrange
+        var client = A.Fake<PseudonymService.PseudonymServiceClient>();
+
+        A.CallTo(() =>
+                client.CreateAsync(
+                    A<PseudonymServiceCreateRequest>._,
+                    null,
+                    null,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(() => throw new RpcException(new Status(statusCode, "backend unavailable")));
+
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
+
+        // Act
+        var act = async () =>
+            await sut.GetOrCreatePseudonymFor(
+                "test",
+                "namespace",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        // Assert
+        (
+            await act.Should().ThrowAsync<TransientPseudonymizationException>()
+        ).WithInnerException<RpcException>();
+    }
+
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WhenVfpsRejectsTheInput_ThrowsTheOriginalRpcException()
+    {
+        // Arrange
+        var client = A.Fake<PseudonymService.PseudonymServiceClient>();
+
+        A.CallTo(() =>
+                client.CreateAsync(
+                    A<PseudonymServiceCreateRequest>._,
+                    null,
+                    null,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(() =>
+                throw new RpcException(
+                    new Status(StatusCode.InvalidArgument, "doesn't match the required pattern")
+                )
+            );
+
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
+
+        // Act
+        var act = async () =>
+            await sut.GetOrCreatePseudonymFor(
+                "test",
+                "namespace",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        // Assert
+        await act.Should().ThrowAsync<RpcException>();
+    }
+
     [Fact]
     public async Task GetOrCreatePseudonymFor_WithGivenOriginalValue_ShouldReturnPseudonym()
     {

@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.GPas;
+using Hl7.Fhir.Rest;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
@@ -183,6 +184,77 @@ public class GPasFhirClientTests
         );
 
         result.Should().Be("42");
+    }
+
+    [Theory]
+    [InlineData("1.10.2", HttpStatusCode.ServiceUnavailable)]
+    [InlineData("1.10.3", HttpStatusCode.ServiceUnavailable)]
+    [InlineData("1.10.2", HttpStatusCode.Unauthorized)]
+    [InlineData("1.10.3", HttpStatusCode.Unauthorized)]
+    [InlineData("1.10.2", HttpStatusCode.Forbidden)]
+    [InlineData("1.10.3", HttpStatusCode.Forbidden)]
+    public async Task GetOrCreatePseudonymFor_WhenGPasIsTransientlyUnavailable_ThrowsTransientPseudonymizationException(
+        string gpasVersion,
+        HttpStatusCode statusCode
+    )
+    {
+        var gpasClient = CreateGPasClient(gpasVersion, CreateFailingHttpMessageHandler(statusCode));
+
+        var act = async () =>
+            await gpasClient.GetOrCreatePseudonymFor(
+                "42",
+                "domain",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<TransientPseudonymizationException>();
+    }
+
+    [Theory]
+    [InlineData("1.10.2")]
+    [InlineData("1.10.3")]
+    public async Task GetOrCreatePseudonymFor_WhenGPasRejectsTheInput_ThrowsTheOriginalException(
+        string gpasVersion
+    )
+    {
+        var gpasClient = CreateGPasClient(
+            gpasVersion,
+            CreateFailingHttpMessageHandler(HttpStatusCode.BadRequest)
+        );
+
+        var act = async () =>
+            await gpasClient.GetOrCreatePseudonymFor(
+                "42",
+                "domain",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        await act.Should()
+            .ThrowAsync<Exception>()
+            .Where(exc => exc.GetType() != typeof(TransientPseudonymizationException));
+    }
+
+    private static HttpMessageHandler CreateFailingHttpMessageHandler(HttpStatusCode statusCode)
+    {
+        var handler = A.Fake<HttpMessageHandler>();
+        A.CallTo(handler)
+            .Where(_ => _.Method.Name == "SendAsync")
+            .WithReturnType<Task<HttpResponseMessage>>()
+            .Returns(
+                new HttpResponseMessage
+                {
+                    StatusCode = statusCode,
+                    Content = new StringContent(
+                        """
+                        {"resourceType":"OperationOutcome","issue":[{"severity":"error","code":"exception","diagnostics":"backend error"}]}
+                        """,
+                        new MediaTypeHeaderValue("application/json+fhir")
+                    ),
+                    RequestMessage = new HttpRequestMessage(HttpMethod.Post, testBaseAddress),
+                }
+            );
+
+        return handler;
     }
 
     private static HttpMessageHandler CreateThrowingHttpMessageHandler()
