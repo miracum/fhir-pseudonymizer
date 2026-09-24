@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790197282268,
+  "lastUpdate": 1790290337738,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -3678,6 +3678,132 @@ window.BENCHMARK_DATA = {
             "value": 1160799794.3333333,
             "unit": "ns",
             "range": "± 71248397.3083598"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chgl@users.noreply.github.com",
+            "name": "chgl",
+            "username": "chgl"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b77420a868738df569063c720c486470f2768cd9",
+          "message": "feat: refactor kafka processing for improved throughput (#427)",
+          "timestamp": "2026-09-25T00:45:42+02:00",
+          "tree_id": "f3851cb131f73b5ddbb5ddab8d20aa548e7ddc92",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/b77420a868738df569063c720c486470f2768cd9"
+        },
+        "date": 1790290336613,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 333260402.8666667,
+            "unit": "ns",
+            "range": "± 5444608.79521638"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1614989.2611607143,
+            "unit": "ns",
+            "range": "± 25099.140773096544"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 1699.3912952423095,
+            "unit": "ns",
+            "range": "± 19.26863228845342"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 21244018.129166666,
+            "unit": "ns",
+            "range": "± 274070.0459526869"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 305.30984287261964,
+            "unit": "ns",
+            "range": "± 3.2935717331223393"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 4942465537.666667,
+            "unit": "ns",
+            "range": "± 32006740.318134777"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 9329539902,
+            "unit": "ns",
+            "range": "± 43461003.15100645"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 4923211786.333333,
+            "unit": "ns",
+            "range": "± 25506647.505515583"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 9321979116,
+            "unit": "ns",
+            "range": "± 61609089.75960795"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 4853473943.666667,
+            "unit": "ns",
+            "range": "± 55253008.151038855"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 6647940789.333333,
+            "unit": "ns",
+            "range": "± 61957113.95102427"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 792694330.6666666,
+            "unit": "ns",
+            "range": "± 10644071.539000493"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 1255773962.3333333,
+            "unit": "ns",
+            "range": "± 169783788.0917085"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 820094610.3333334,
+            "unit": "ns",
+            "range": "± 24127260.639932796"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 1335691031.6666667,
+            "unit": "ns",
+            "range": "± 130390061.03771247"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 831112441.6666666,
+            "unit": "ns",
+            "range": "± 32611613.161052033"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 1100412164,
+            "unit": "ns",
+            "range": "± 72953802.28000544"
           }
         ]
       }
