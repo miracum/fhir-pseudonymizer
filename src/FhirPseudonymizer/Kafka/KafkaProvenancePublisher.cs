@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using Hl7.Fhir.Model;
@@ -11,7 +12,8 @@ public class KafkaProvenancePublisher : IProvenancePublisher
     private readonly IProducer<byte[], string> producer;
     private readonly KafkaConfig kafkaConfig;
     private readonly ILogger<KafkaProvenancePublisher> logger;
-    private readonly FhirJsonSerializer fhirJsonSerializer = new();
+    private static readonly JsonSerializerOptions FhirJsonOptions =
+        new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
 
     public KafkaProvenancePublisher(
         IProducer<byte[], string> producer,
@@ -39,8 +41,20 @@ public class KafkaProvenancePublisher : IProvenancePublisher
                 new Message<byte[], string>
                 {
                     Key = Encoding.UTF8.GetBytes(bundle.Id),
-                    Value = fhirJsonSerializer.SerializeToString(bundle),
+                    Value = JsonSerializer.Serialize(bundle, FhirJsonOptions),
                     Headers = headers,
+                },
+                report =>
+                {
+                    if (report.Error.IsError)
+                    {
+                        logger.LogError(
+                            "Failed to deliver provenance bundle {BundleId} to topic {Topic}: {Reason}",
+                            bundle.Id,
+                            kafkaConfig.ProvenanceTopic,
+                            report.Error.Reason
+                        );
+                    }
                 }
             );
         }

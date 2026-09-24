@@ -49,8 +49,31 @@ public static class KafkaExtensions
         KafkaConfig kafkaConfig
     )
     {
-        services.AddSingleton(_ =>
-            new ConsumerBuilder<byte[], string>(CreateConsumerConfig(kafkaConfig)).Build()
+        services.AddSingleton<KafkaMessageProcessor>();
+
+        services.AddSingleton<KafkaConsumerFactory>(serviceProvider =>
+            (onPartitionsAssigned, onPartitionsRevoked, onPartitionsLost) =>
+            {
+                var logger = serviceProvider
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("FhirPseudonymizer.Kafka.Consumer");
+
+                return new ConsumerBuilder<byte[], string>(CreateConsumerConfig(kafkaConfig))
+                    .SetPartitionsAssignedHandler(
+                        (_, partitions) => onPartitionsAssigned(partitions)
+                    )
+                    .SetPartitionsRevokedHandler(
+                        (_, partitions) =>
+                            onPartitionsRevoked([.. partitions.Select(p => p.TopicPartition)])
+                    )
+                    .SetPartitionsLostHandler(
+                        (_, partitions) =>
+                            onPartitionsLost([.. partitions.Select(p => p.TopicPartition)])
+                    )
+                    .SetErrorHandler((_, error) => LogClientError(logger, error))
+                    .SetLogHandler((_, message) => LogClientMessage(logger, message))
+                    .Build();
+            }
         );
 
         services.AddHostedService<KafkaConsumerService>();
@@ -60,7 +83,7 @@ public static class KafkaExtensions
 
     /// <summary>
     ///     Registers the shared <see cref="IProducer{TKey,TValue}" /> used both by
-    ///     <see cref="KafkaConsumerService" /> to publish anonymized messages, and by
+    ///     <see cref="KafkaMessageProcessor" /> to publish anonymized messages, and by
     ///     <see cref="KafkaProvenancePublisher" /> to publish provenance bundles - the latter of
     ///     which can be needed even when reading from Kafka (<see cref="AddKafkaConsumer" />) is
     ///     not enabled, e.g. when only pseudonymizing over the REST API.
@@ -70,11 +93,48 @@ public static class KafkaExtensions
         KafkaConfig kafkaConfig
     )
     {
-        services.AddSingleton(_ =>
-            new ProducerBuilder<byte[], string>(CreateProducerConfig(kafkaConfig)).Build()
-        );
+        services.AddSingleton(serviceProvider =>
+        {
+            var logger = serviceProvider
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger("FhirPseudonymizer.Kafka.Producer");
+
+            return new ProducerBuilder<byte[], string>(CreateProducerConfig(kafkaConfig))
+                .SetErrorHandler((_, error) => LogClientError(logger, error))
+                .SetLogHandler((_, message) => LogClientMessage(logger, message))
+                .Build();
+        });
 
         return services;
+    }
+
+    /// <summary>
+    ///     librdkafka mostly reports errors it recovers from by itself (e.g. a broker connection
+    ///     going down) this way, so only fatal ones are logged as more than a warning.
+    /// </summary>
+    private static void LogClientError(ILogger logger, Error error)
+    {
+        logger.Log(
+            error.IsFatal ? LogLevel.Critical : LogLevel.Warning,
+            "Kafka client error {ErrorCode}: {Reason}",
+            error.Code,
+            error.Reason
+        );
+    }
+
+    /// <summary>
+    ///     Routes librdkafka's own log output through the application's logging instead of letting
+    ///     it be written straight to stderr.
+    /// </summary>
+    private static void LogClientMessage(ILogger logger, LogMessage message)
+    {
+        logger.Log(
+            (LogLevel)message.LevelAs(LogLevelType.MicrosoftExtensionsLogging),
+            "{ClientName} {Facility}: {Message}",
+            message.Name,
+            message.Facility,
+            message.Message
+        );
     }
 
     /// <summary>
@@ -104,8 +164,8 @@ public static class KafkaExtensions
             consumerConfig.Set(key, value);
         }
 
-        // offsets are stored manually (via IConsumer.StoreOffset) only after a message has been
-        // anonymized and produced to its output topic, but are still committed to the broker
+        // offsets are stored manually (via IConsumer.StoreOffset) only after the message a consumed
+        // one was turned into has been acknowledged by the broker, but are still committed to the broker
         // periodically in the background instead of blocking on every message. KafkaConsumerService's
         // correctness depends on this, so it is not overridable via Kafka__Consumer__*.
         consumerConfig.EnableAutoCommit = true;

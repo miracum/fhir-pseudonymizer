@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Text;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
@@ -11,546 +13,38 @@ namespace FhirPseudonymizer.Tests.Kafka;
 
 public class KafkaConsumerServiceTests
 {
-    private static ConsumeResult<byte[], string> CreateConsumeResult(
-        string topic,
-        int partition,
-        long offset,
-        string json,
-        byte[] key = null,
-        Headers headers = null
-    )
+    private const string InputTopic = "input-topic";
+    private const string OutputTopic = "pseudonymized.input-topic";
+
+    private static TopicPartition InputPartition(int partition) =>
+        new(InputTopic, new Partition(partition));
+
+    /// <summary>
+    ///     A message whose key and Patient id both identify it as "p{partition}-o{offset}".
+    /// </summary>
+    private static ConsumeResult<byte[], string> Message(int partition, long offset)
     {
+        var id = $"p{partition}-o{offset}";
         return new ConsumeResult<byte[], string>
         {
             TopicPartitionOffset = new TopicPartitionOffset(
-                new TopicPartition(topic, new Partition(partition)),
+                InputPartition(partition),
                 new Offset(offset)
             ),
             Message = new Message<byte[], string>
             {
-                Key = key,
-                Value = json,
-                Headers = headers,
+                Key = Encoding.UTF8.GetBytes(id),
+                Value = $$"""{"resourceType":"Patient","id":"{{id}}"}""",
             },
         };
     }
 
-    private static KafkaConsumerService CreateService(
-        IAnonymizerEngine anonymizer,
-        IProducer<byte[], string> producer,
-        KafkaConfig kafkaConfig = null,
-        IProvenancePublisher provenancePublisher = null
-    )
+    /// <summary>
+    ///     Passes resources through unchanged, first awaiting <paramref name="beforeReturning" />
+    ///     for each, if given.
+    /// </summary>
+    private static IAnonymizerEngine CreateAnonymizer(Func<Resource, Task> beforeReturning = null)
     {
-        return new KafkaConsumerService(
-            A.Fake<IConsumer<byte[], string>>(),
-            producer,
-            anonymizer,
-            A.Fake<AnonymizationConfig>(),
-            kafkaConfig ?? new KafkaConfig(),
-            provenancePublisher ?? A.Fake<IProvenancePublisher>(),
-            A.Fake<ILogger<KafkaConsumerService>>()
-        );
-    }
-
-    [Fact]
-    public async Task AnonymizeMessageAsync_ReturnsAnonymizedResource()
-    {
-        var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() =>
-                anonymizer.AnonymizeResourceAsync(
-                    A<Resource>._,
-                    A<AnonymizerSettings>._,
-                    A<CancellationToken>._
-                )
-            )
-            .ReturnsLazily(
-                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
-                    Task.FromResult(resource)
-            );
-
-        var service = CreateService(anonymizer, A.Fake<IProducer<byte[], string>>());
-
-        var patient = new Patient { Id = "123" };
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(patient);
-
-        var output = await service.AnonymizeMessageAsync("input-topic", json);
-
-        output.Should().Contain("\"id\":\"123\"");
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_AnonymizesResourceAndProducesToPrefixedTopic()
-    {
-        var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() =>
-                anonymizer.AnonymizeResourceAsync(
-                    A<Resource>._,
-                    A<AnonymizerSettings>._,
-                    A<CancellationToken>._
-                )
-            )
-            .ReturnsLazily(
-                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
-                    Task.FromResult(resource)
-            );
-
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(anonymizer, producer);
-
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
-        var result = CreateConsumeResult("input-topic", 0, 0, json);
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        A.CallTo(() =>
-                producer.Produce(
-                    "pseudonymized.input-topic",
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .MustHaveHappenedOnceExactly();
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_PreservesOriginalMessageKey()
-    {
-        var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() =>
-                anonymizer.AnonymizeResourceAsync(
-                    A<Resource>._,
-                    A<AnonymizerSettings>._,
-                    A<CancellationToken>._
-                )
-            )
-            .ReturnsLazily(
-                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
-                    Task.FromResult(resource)
-            );
-
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(anonymizer, producer);
-
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
-        var key = "patient-123"u8.ToArray();
-        var result = CreateConsumeResult("input-topic", 0, 0, json, key);
-
-        Message<byte[], string> producedMessage = null;
-        A.CallTo(() =>
-                producer.Produce(
-                    A<string>._,
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .Invokes(
-                (
-                    string _,
-                    Message<byte[], string> message,
-                    Action<DeliveryReport<byte[], string>> _
-                ) => producedMessage = message
-            );
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        producedMessage.Key.Should().BeEquivalentTo(key);
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_ForwardsOriginalMessageHeaders()
-    {
-        var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() =>
-                anonymizer.AnonymizeResourceAsync(
-                    A<Resource>._,
-                    A<AnonymizerSettings>._,
-                    A<CancellationToken>._
-                )
-            )
-            .ReturnsLazily(
-                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
-                    Task.FromResult(resource)
-            );
-
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(anonymizer, producer);
-
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
-        var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
-        var result = CreateConsumeResult("input-topic", 0, 0, json, headers: headers);
-
-        Message<byte[], string> producedMessage = null;
-        A.CallTo(() =>
-                producer.Produce(
-                    A<string>._,
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .Invokes(
-                (
-                    string _,
-                    Message<byte[], string> message,
-                    Action<DeliveryReport<byte[], string>> _
-                ) => producedMessage = message
-            );
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        producedMessage
-            .Headers.Should()
-            .Contain(h => h.Key == "traceparent")
-            .Which.GetValueBytes()
-            .Should()
-            .BeEquivalentTo("trace-123"u8.ToArray());
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_DoesNotProduceToOutputTopic()
-    {
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(A.Fake<IAnonymizerEngine>(), producer);
-
-        var result = CreateConsumeResult("input-topic", 0, 0, "not valid fhir json");
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        A.CallTo(() =>
-                producer.Produce(
-                    "pseudonymized.input-topic",
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .MustNotHaveHappened();
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_SendsOriginalMessageToDeadLetterTopic()
-    {
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(A.Fake<IAnonymizerEngine>(), producer);
-
-        var key = "patient-123"u8.ToArray();
-        var result = CreateConsumeResult("input-topic", 0, 0, "not valid fhir json", key);
-
-        Message<byte[], string> deadLetterMessage = null;
-        A.CallTo(() =>
-                producer.Produce(
-                    "error.input-topic.fhir-pseudonymizer",
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .Invokes(
-                (
-                    string _,
-                    Message<byte[], string> message,
-                    Action<DeliveryReport<byte[], string>> _
-                ) => deadLetterMessage = message
-            );
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        deadLetterMessage.Should().NotBeNull();
-        deadLetterMessage.Key.Should().BeEquivalentTo(key);
-        deadLetterMessage.Value.Should().Be("not valid fhir json");
-        deadLetterMessage
-            .Headers.Should()
-            .Contain(h => h.Key == "x-source-topic")
-            .Which.GetValueBytes()
-            .Should()
-            .BeEquivalentTo("input-topic"u8.ToArray());
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_ForwardsOriginalMessageHeadersToDeadLetterTopic()
-    {
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(A.Fake<IAnonymizerEngine>(), producer);
-
-        var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
-        var result = CreateConsumeResult(
-            "input-topic",
-            0,
-            0,
-            "not valid fhir json",
-            headers: headers
-        );
-
-        Message<byte[], string> deadLetterMessage = null;
-        A.CallTo(() =>
-                producer.Produce(
-                    "error.input-topic.fhir-pseudonymizer",
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .Invokes(
-                (
-                    string _,
-                    Message<byte[], string> message,
-                    Action<DeliveryReport<byte[], string>> _
-                ) => deadLetterMessage = message
-            );
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        deadLetterMessage
-            .Headers.Should()
-            .Contain(h => h.Key == "traceparent")
-            .Which.GetValueBytes()
-            .Should()
-            .BeEquivalentTo("trace-123"u8.ToArray());
-        deadLetterMessage.Headers.Should().Contain(h => h.Key == "x-error-type");
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_WhenPseudonymizationBackendThrows_SendsOriginalMessageToDeadLetterTopic()
-    {
-        var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() =>
-                anonymizer.AnonymizeResourceAsync(
-                    A<Resource>._,
-                    A<AnonymizerSettings>._,
-                    A<CancellationToken>._
-                )
-            )
-            .Throws(new InvalidTimeZoneException("simulated non-Kafka, non-format exception"));
-
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(anonymizer, producer);
-
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
-        var result = CreateConsumeResult("input-topic", 0, 0, json);
-
-        Message<byte[], string> deadLetterMessage = null;
-        A.CallTo(() =>
-                producer.Produce(
-                    "error.input-topic.fhir-pseudonymizer",
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .Invokes(
-                (
-                    string _,
-                    Message<byte[], string> message,
-                    Action<DeliveryReport<byte[], string>> _
-                ) => deadLetterMessage = message
-            );
-
-        await service.Invoking(s => s.ProcessResultAsync(result)).Should().NotThrowAsync();
-
-        deadLetterMessage.Should().NotBeNull();
-        deadLetterMessage.Value.Should().Be(json);
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_WhenDeadLetterProduceAlsoFails_DoesNotThrow()
-    {
-        var producer = A.Fake<IProducer<byte[], string>>();
-        A.CallTo(() =>
-                producer.Produce(
-                    A<string>._,
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .Throws(new KafkaException(ErrorCode.Local_Transport));
-
-        var service = CreateService(A.Fake<IAnonymizerEngine>(), producer);
-        var result = CreateConsumeResult("input-topic", 0, 0, "not valid fhir json");
-
-        await service.Invoking(s => s.ProcessResultAsync(result)).Should().NotThrowAsync();
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_PublishesProvenanceForTheOriginalAndAnonymizedResourceWithForwardedHeaders()
-    {
-        var anonymized = new Patient { Id = "hashed-456" };
-        var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() =>
-                anonymizer.AnonymizeResourceAsync(
-                    A<Resource>._,
-                    A<AnonymizerSettings>._,
-                    A<CancellationToken>._
-                )
-            )
-            .Returns(Task.FromResult<Resource>(anonymized));
-
-        var provenancePublisher = A.Fake<IProvenancePublisher>();
-        var service = CreateService(
-            anonymizer,
-            A.Fake<IProducer<byte[], string>>(),
-            provenancePublisher: provenancePublisher
-        );
-
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
-        var headers = new Headers { { "traceparent", "trace-123"u8.ToArray() } };
-        var result = CreateConsumeResult("input-topic", 0, 0, json, headers: headers);
-
-        Resource publishedOriginal = null;
-        Resource publishedPseudonymized = null;
-        Headers publishedHeaders = null;
-        A.CallTo(() => provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<Headers>._))
-            .Invokes(
-                (Resource o, Resource p, Headers h) =>
-                {
-                    publishedOriginal = o;
-                    publishedPseudonymized = p;
-                    publishedHeaders = h;
-                }
-            );
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        publishedOriginal.Id.Should().Be("123");
-        publishedPseudonymized.Should().BeSameAs(anonymized);
-        publishedHeaders.Should().Contain(h => h.Key == "traceparent");
-    }
-
-    [Fact]
-    public async System.Threading.Tasks.Task ProcessResultAsync_WithInvalidJson_DoesNotPublishProvenance()
-    {
-        var provenancePublisher = A.Fake<IProvenancePublisher>();
-        var service = CreateService(
-            A.Fake<IAnonymizerEngine>(),
-            A.Fake<IProducer<byte[], string>>(),
-            provenancePublisher: provenancePublisher
-        );
-
-        var result = CreateConsumeResult("input-topic", 0, 0, "not valid fhir json");
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        A.CallTo(() => provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<Headers>._))
-            .MustNotHaveHappened();
-    }
-
-    [Fact]
-    public async Task ProcessResultAsync_WhenPseudonymizationBackendIsTransientlyUnavailable_RetriesUntilItSucceeds()
-    {
-        var attempt = 0;
-        var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() =>
-                anonymizer.AnonymizeResourceAsync(
-                    A<Resource>._,
-                    A<AnonymizerSettings>._,
-                    A<CancellationToken>._
-                )
-            )
-            .ReturnsLazily(
-                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
-                {
-                    if (Interlocked.Increment(ref attempt) < 3)
-                    {
-                        throw new TransientPseudonymizationException(
-                            "backend unavailable",
-                            new InvalidOperationException()
-                        );
-                    }
-
-                    return Task.FromResult(resource);
-                }
-            );
-
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(anonymizer, producer);
-
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
-        var result = CreateConsumeResult("input-topic", 0, 0, json);
-
-        await service.ProcessResultAsync(result, TestContext.Current.CancellationToken);
-
-        attempt.Should().Be(3);
-        A.CallTo(() =>
-                producer.Produce(
-                    "pseudonymized.input-topic",
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .MustHaveHappenedOnceExactly();
-        A.CallTo(() =>
-                producer.Produce(
-                    "error.input-topic.fhir-pseudonymizer",
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .MustNotHaveHappened();
-    }
-
-    [Fact]
-    public async Task ProcessResultAsync_WhenCancelledWhileRetryingATransientFailure_StopsRetryingWithoutDeadLettering()
-    {
-        var anonymizer = A.Fake<IAnonymizerEngine>();
-        A.CallTo(() =>
-                anonymizer.AnonymizeResourceAsync(
-                    A<Resource>._,
-                    A<AnonymizerSettings>._,
-                    A<CancellationToken>._
-                )
-            )
-            .Throws(
-                new TransientPseudonymizationException(
-                    "backend unavailable",
-                    new InvalidOperationException()
-                )
-            );
-
-        var producer = A.Fake<IProducer<byte[], string>>();
-        var service = CreateService(anonymizer, producer);
-
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
-        var result = CreateConsumeResult("input-topic", 0, 0, json);
-
-        using var cts = new CancellationTokenSource();
-        await cts.CancelAsync();
-
-        await service
-            .Invoking(s => s.ProcessResultAsync(result, cts.Token))
-            .Should()
-            .NotThrowAsync();
-
-        A.CallTo(() =>
-                producer.Produce(
-                    A<string>._,
-                    A<Message<byte[], string>>._,
-                    A<Action<DeliveryReport<byte[], string>>>._
-                )
-            )
-            .MustNotHaveHappened();
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WhenAWorkerChannelFillsUp_PausesTheStuckPartitionThenResumesItOnceDrained()
-    {
-        var cancellationToken = TestContext.Current.CancellationToken;
-        var partition = new TopicPartition("input-topic", new Partition(0));
-        var json = new Hl7.Fhir.Serialization.FhirJsonSerializer().SerializeToString(
-            new Patient { Id = "123" }
-        );
-
-        var release = new TaskCompletionSource();
-        var processedCount = 0;
-
         var anonymizer = A.Fake<IAnonymizerEngine>();
         A.CallTo(() =>
                 anonymizer.AnonymizeResourceAsync(
@@ -562,70 +56,248 @@ public class KafkaConsumerServiceTests
             .ReturnsLazily(
                 async (Resource resource, AnonymizerSettings _, CancellationToken _) =>
                 {
-                    // Hold the only worker busy on the first message so its channel (capacity 1)
-                    // backs up once a third message for the same partition arrives.
-                    if (Interlocked.Increment(ref processedCount) == 1)
+                    if (beforeReturning is not null)
                     {
-                        await release.Task;
+                        await beforeReturning(resource);
                     }
 
                     return resource;
                 }
             );
+        return anonymizer;
+    }
 
-        var pending = new Queue<ConsumeResult<byte[], string>>(
-            Enumerable.Range(0, 3).Select(i => CreateConsumeResult("input-topic", 0, i, json))
-        );
-
-        var consumer = A.Fake<IConsumer<byte[], string>>();
-        A.CallTo(() => consumer.Consume(A<TimeSpan>._))
-            .ReturnsLazily(() => pending.TryDequeue(out var result) ? result : null);
-
-        var producer = A.Fake<IProducer<byte[], string>>();
-
-        var service = new KafkaConsumerService(
-            consumer,
-            producer,
+    private static KafkaConsumerService CreateService(
+        ScriptedConsumer consumer,
+        RecordingProducer producer,
+        IAnonymizerEngine anonymizer,
+        KafkaConfig kafkaConfig
+    )
+    {
+        var processor = new KafkaMessageProcessor(
+            producer.Producer,
             anonymizer,
             A.Fake<AnonymizationConfig>(),
-            new KafkaConfig { WorkerCount = 1, WorkerChannelCapacity = 1 },
+            kafkaConfig,
             A.Fake<IProvenancePublisher>(),
-            A.Fake<ILogger<KafkaConsumerService>>()
+            A.Fake<ILogger<KafkaMessageProcessor>>()
         );
 
-        await service.StartAsync(cancellationToken);
+        return new KafkaConsumerService(
+            consumer.Factory,
+            processor,
+            kafkaConfig,
+            A.Fake<ILogger<KafkaConsumerService>>()
+        );
+    }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(8)]
+    [InlineData(12)]
+    [InlineData(16)]
+    public async Task AssignedPartitionsAreSpreadEvenlyAcrossWorkers(int workerCount)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var consumer = new ScriptedConsumer();
+        var service = CreateService(
+            consumer,
+            new RecordingProducer(),
+            CreateAnonymizer(),
+            new KafkaConfig { WorkerCount = workerCount }
+        );
+
+        consumer.Assign([.. Enumerable.Range(0, 12).Select(InputPartition)]);
+        var assignments = consumer.RunOnPollThread(service.GetWorkerAssignments);
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            var partitionsPerWorker = (await assignments.WaitAsync(cancellationToken))
+                .Values.GroupBy(worker => worker)
+                .Select(group => group.Count())
+                .ToList();
+
+            partitionsPerWorker.Should().HaveCount(Math.Min(12, workerCount));
+            (partitionsPerWorker.Max() - partitionsPerWorker.Min()).Should().BeLessThanOrEqualTo(1);
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+    }
+
+    [Fact]
+    public async Task PartitionsAssignedInALaterRebalanceGoToTheLeastLoadedWorkers()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var consumer = new ScriptedConsumer();
+        var service = CreateService(
+            consumer,
+            new RecordingProducer(),
+            CreateAnonymizer(),
+            new KafkaConfig { WorkerCount = 2 }
+        );
+
+        consumer.Assign(InputPartition(0), InputPartition(1), InputPartition(2), InputPartition(3));
+        var initial = consumer.RunOnPollThread(service.GetWorkerAssignments);
+        consumer.Revoke(InputPartition(0), InputPartition(2));
+        consumer.Assign(InputPartition(4), InputPartition(5));
+        var rebalanced = consumer.RunOnPollThread(service.GetWorkerAssignments);
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            var before = await initial.WaitAsync(cancellationToken);
+            var after = await rebalanced.WaitAsync(cancellationToken);
+
+            // partitions 0 and 2 shared a worker, so both new ones must go to that one
+            before[InputPartition(0)].Should().Be(before[InputPartition(2)]);
+            after
+                .Keys.Should()
+                .BeEquivalentTo(
+                    new[]
+                    {
+                        InputPartition(1),
+                        InputPartition(3),
+                        InputPartition(4),
+                        InputPartition(5),
+                    }
+                );
+            after[InputPartition(4)].Should().Be(before[InputPartition(0)]);
+            after[InputPartition(5)].Should().Be(before[InputPartition(0)]);
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+    }
+
+    [Fact]
+    public async Task OffsetsAreOnlyStoredOnceTheMessageAndAllItsPredecessorsWereAcknowledged()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer { DeliverImmediately = false };
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(),
+            new KafkaConfig { WorkerCount = 1 }
+        );
+
+        consumer.Assign(InputPartition(0));
+        consumer.Deliver(Message(0, 0), Message(0, 1), Message(0, 2));
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await WaitUntilAsync(() => producer.Produced.Count == 3, cancellationToken);
+            var produced = producer.Produced.ToArray();
+
+            produced[1].Acknowledge();
+            await consumer.RunOnPollThread(() => true).WaitAsync(cancellationToken);
+            await consumer.RunOnPollThread(() => true).WaitAsync(cancellationToken);
+            consumer.StoredOffsets.Should().BeEmpty();
+
+            produced[0].Acknowledge();
+            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 1, cancellationToken);
+            consumer.StoredOffsets.Should().Equal(new TopicPartitionOffset(InputPartition(0), 2));
+
+            produced[2].Acknowledge();
+            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 2, cancellationToken);
+            consumer.StoredOffsets[1].Should().Be(new TopicPartitionOffset(InputPartition(0), 3));
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+
+        A.CallTo(() => consumer.Consumer.Close()).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task AWorkerThatIsBusyButKeepsUp_DoesNotGetItsPartitionPaused()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer();
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(_ => Task.Delay(20, cancellationToken)),
+            new KafkaConfig
+            {
+                WorkerCount = 1,
+                WorkerChannelCapacity = 1,
+                WorkerBusyTimeoutMs = 10_000,
+            }
+        );
+
+        consumer.Assign(InputPartition(0));
+        consumer.Deliver([.. Enumerable.Range(0, 5).Select(offset => Message(0, offset))]);
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await WaitUntilAsync(() => producer.Produced.Count == 5, cancellationToken);
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+
+        consumer.PausedPartitions.Should().BeEmpty();
+        producer
+            .Produced.Select(p => p.Key)
+            .Should()
+            .Equal("p0-o0", "p0-o1", "p0-o2", "p0-o3", "p0-o4");
+    }
+
+    [Fact]
+    public async Task AWorkerThatStopsAcceptingMessages_GetsItsPartitionPausedUntilItCatchesUp()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var release = new TaskCompletionSource();
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer();
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(resource =>
+                resource.Id == "p0-o0" ? release.Task : Task.CompletedTask
+            ),
+            new KafkaConfig
+            {
+                WorkerCount = 1,
+                WorkerChannelCapacity = 1,
+                WorkerBusyTimeoutMs = 50,
+            }
+        );
+
+        // the first message blocks the only worker, the second fills its queue, and the third
+        // can't be handed over
+        consumer.Assign(InputPartition(0));
+        consumer.Deliver(Message(0, 0), Message(0, 1), Message(0, 2));
+
+        await service.StartAsync(cancellationToken);
         try
         {
             await WaitUntilAsync(
-                () =>
-                    Fake.GetCalls(consumer)
-                        .Any(call =>
-                            call.Method.Name == nameof(IConsumer<byte[], string>.Pause)
-                            && ((IEnumerable<TopicPartition>)call.Arguments[0]).Contains(partition)
-                        ),
+                () => consumer.PausedPartitions.Contains(InputPartition(0)),
                 cancellationToken
             );
 
             release.TrySetResult();
 
+            await WaitUntilAsync(() => producer.Produced.Count == 3, cancellationToken);
             await WaitUntilAsync(
-                () =>
-                    Fake.GetCalls(producer)
-                        .Count(call =>
-                            call.Method.Name == nameof(IProducer<byte[], string>.Produce)
-                            && (string)call.Arguments[0] == "pseudonymized.input-topic"
-                        ) == 3,
+                () => consumer.ResumedPartitions.Contains(InputPartition(0)),
                 cancellationToken
             );
-
             await WaitUntilAsync(
-                () =>
-                    Fake.GetCalls(consumer)
-                        .Any(call =>
-                            call.Method.Name == nameof(IConsumer<byte[], string>.Resume)
-                            && ((IEnumerable<TopicPartition>)call.Arguments[0]).Contains(partition)
-                        ),
+                () => consumer.StoredOffsets.LastOrDefault()?.Offset.Value == 3,
                 cancellationToken
             );
         }
@@ -634,6 +306,217 @@ public class KafkaConsumerServiceTests
             release.TrySetResult();
             await service.StopAsync(cancellationToken);
         }
+
+        producer.Produced.Select(p => p.Key).Should().Equal("p0-o0", "p0-o1", "p0-o2");
+    }
+
+    [Fact]
+    public async Task WhileOneWorkerIsStuck_PartitionsOfOtherWorkersKeepBeingProcessed()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var release = new TaskCompletionSource();
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer();
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(resource =>
+                resource.Id.StartsWith("p0-", StringComparison.Ordinal)
+                    ? release.Task
+                    : Task.CompletedTask
+            ),
+            new KafkaConfig
+            {
+                WorkerCount = 2,
+                WorkerChannelCapacity = 1,
+                WorkerBusyTimeoutMs = 50,
+            }
+        );
+
+        consumer.Assign(InputPartition(0), InputPartition(1));
+        consumer.Deliver(Message(0, 0), Message(0, 1), Message(0, 2), Message(0, 3));
+        consumer.Deliver(Message(1, 0), Message(1, 1), Message(1, 2));
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await WaitUntilAsync(
+                () =>
+                    producer.Produced.Count(p => p.Key.StartsWith("p1-", StringComparison.Ordinal))
+                    == 3,
+                cancellationToken
+            );
+
+            producer
+                .Produced.Should()
+                .NotContain(p => p.Key.StartsWith("p0-", StringComparison.Ordinal));
+            consumer.PausedPartitions.Should().Equal(InputPartition(0));
+
+            release.TrySetResult();
+
+            await WaitUntilAsync(() => producer.Produced.Count == 7, cancellationToken);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await service.StopAsync(cancellationToken);
+        }
+
+        producer
+            .Produced.Where(p => p.Key.StartsWith("p0-", StringComparison.Ordinal))
+            .Select(p => p.Key)
+            .Should()
+            .Equal("p0-o0", "p0-o1", "p0-o2", "p0-o3");
+    }
+
+    [Fact]
+    public async Task AMessageThatCanNeitherBeProducedNorDeadLettered_StopsTheServiceWithoutStoringItsOffset()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer { FailDeliveryOf = key => key == "p0-o0" };
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(),
+            new KafkaConfig { WorkerCount = 1 }
+        );
+
+        consumer.Assign(InputPartition(0));
+        consumer.Deliver(Message(0, 0), Message(0, 1));
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await service
+                .Invoking(s => s.ExecuteTask.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken))
+                .Should()
+                .ThrowAsync<InvalidOperationException>()
+                .WithMessage("*could neither be processed nor sent to its dead letter topic*");
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+
+        // the later message was produced fine, but storing its offset would skip the failed one
+        producer.Produced.Should().Contain(p => p.Key == "p0-o1" && p.Topic == OutputTopic);
+        consumer.StoredOffsets.Should().BeEmpty();
+        A.CallTo(() => consumer.Consumer.Close()).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task RevokingAPartition_LetsItsMessageInProgressFinishAndStoresItsOffsetBeforeHandingItOver()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var processingStarted = new TaskCompletionSource();
+        var release = new TaskCompletionSource();
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer();
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(resource =>
+            {
+                if (resource.Id != "p0-o0")
+                {
+                    return Task.CompletedTask;
+                }
+
+                processingStarted.TrySetResult();
+                return release.Task;
+            }),
+            new KafkaConfig { WorkerCount = 1 }
+        );
+
+        consumer.Assign(InputPartition(0), InputPartition(1));
+        consumer.Deliver(Message(0, 0), Message(0, 1), Message(0, 2));
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await processingStarted.Task.WaitAsync(cancellationToken);
+
+            consumer.Revoke(InputPartition(0));
+            var storedOnceRevoked = consumer.RunOnPollThread(() => consumer.StoredOffsets);
+
+            // the revocation waits for the message being processed
+            await Task.Delay(100, cancellationToken);
+            storedOnceRevoked.IsCompleted.Should().BeFalse();
+            release.TrySetResult();
+
+            (await storedOnceRevoked.WaitAsync(cancellationToken))
+                .Should()
+                .Equal(new TopicPartitionOffset(InputPartition(0), 1));
+
+            // queued behind the revoked partition's skipped messages on the only worker
+            consumer.Deliver(Message(1, 0));
+            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 2, cancellationToken);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await service.StopAsync(cancellationToken);
+        }
+
+        producer.Produced.Select(p => p.Key).Should().Equal("p0-o0", "p1-o0");
+        consumer
+            .StoredOffsets.Should()
+            .Equal(
+                new TopicPartitionOffset(InputPartition(0), 1),
+                new TopicPartitionOffset(InputPartition(1), 1)
+            );
+    }
+
+    [Fact]
+    public async Task RevokingAPartition_AbandonsItsMessageStuckRetryingATransientFailureRightAway()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var firstAttempt = new TaskCompletionSource();
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer();
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(resource =>
+            {
+                if (!resource.Id.StartsWith("p0-", StringComparison.Ordinal))
+                {
+                    return Task.CompletedTask;
+                }
+
+                firstAttempt.TrySetResult();
+                throw new TransientPseudonymizationException(
+                    "backend unavailable",
+                    new InvalidOperationException()
+                );
+            }),
+            new KafkaConfig { WorkerCount = 1 }
+        );
+
+        consumer.Assign(InputPartition(0), InputPartition(1));
+        consumer.Deliver(Message(0, 0));
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await firstAttempt.Task.WaitAsync(cancellationToken);
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            consumer.Revoke(InputPartition(0));
+            await consumer.RunOnPollThread(() => true).WaitAsync(cancellationToken);
+            stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5));
+
+            consumer.Deliver(Message(1, 0));
+            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 1, cancellationToken);
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+
+        producer.Produced.Select(p => p.Key).Should().Equal("p1-o0");
+        consumer.StoredOffsets.Should().Equal(new TopicPartitionOffset(InputPartition(1), 1));
     }
 
     private static async Task WaitUntilAsync(
@@ -642,7 +525,7 @@ public class KafkaConsumerServiceTests
         TimeSpan? timeout = null
     )
     {
-        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(5));
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
 
         while (!condition())
         {
@@ -655,98 +538,166 @@ public class KafkaConsumerServiceTests
         }
     }
 
-    [Fact]
-    public void GetOutputTopic_WithDefaultConfig_PrependsPseudonymizedPrefix()
+    /// <summary>
+    ///     A fake consumer that plays back a script of rebalances, messages, and arbitrary actions,
+    ///     one step per call to Consume - so each of them runs on the service's poll thread, just
+    ///     like librdkafka invokes rebalance callbacks from within Consume.
+    /// </summary>
+    private sealed class ScriptedConsumer
     {
-        var service = CreateService(
-            A.Fake<IAnonymizerEngine>(),
-            A.Fake<IProducer<byte[], string>>()
-        );
+        private readonly ConcurrentQueue<Func<ConsumeResult<byte[], string>>> script = new();
+        private Action<IReadOnlyList<TopicPartition>> onPartitionsAssigned;
+        private Action<IReadOnlyList<TopicPartition>> onPartitionsRevoked;
 
-        service.GetOutputTopic("input-topic").Should().Be("pseudonymized.input-topic");
-    }
+        public ScriptedConsumer()
+        {
+            A.CallTo(() => Consumer.Consume(A<TimeSpan>._))
+                .ReturnsLazily(() =>
+                {
+                    if (script.TryDequeue(out var step))
+                    {
+                        return step();
+                    }
 
-    [Fact]
-    public void GetOutputTopic_WithCustomPattern_ReplacesMatchedSegment()
-    {
-        var service = CreateService(
-            A.Fake<IAnonymizerEngine>(),
-            A.Fake<IProducer<byte[], string>>(),
-            new KafkaConfig
+                    Thread.Sleep(1);
+                    return null;
+                });
+        }
+
+        public IConsumer<byte[], string> Consumer { get; } = A.Fake<IConsumer<byte[], string>>();
+
+        public KafkaConsumerFactory Factory =>
+            (onAssigned, onRevoked, _) =>
             {
-                OutputTopicPattern = "^fhir\\.",
-                OutputTopicReplacement = "fhir.pseudonymized.",
+                onPartitionsAssigned = onAssigned;
+                onPartitionsRevoked = onRevoked;
+                return Consumer;
+            };
+
+        public List<TopicPartitionOffset> StoredOffsets =>
+            [
+                .. Fake.GetCalls(Consumer)
+                    .Where(call =>
+                        call.Method.Name == nameof(IConsumer<byte[], string>.StoreOffset)
+                    )
+                    .Select(call =>
+                        call.Arguments[0] switch
+                        {
+                            ConsumeResult<byte[], string> result => new TopicPartitionOffset(
+                                result.TopicPartition,
+                                result.Offset + 1
+                            ),
+                            TopicPartitionOffset offset => offset,
+                            _ => null,
+                        }
+                    ),
+            ];
+
+        public List<TopicPartition> PausedPartitions =>
+            CallsTo(nameof(IConsumer<byte[], string>.Pause));
+
+        public List<TopicPartition> ResumedPartitions =>
+            CallsTo(nameof(IConsumer<byte[], string>.Resume));
+
+        public void Assign(params TopicPartition[] partitions) =>
+            script.Enqueue(() =>
+            {
+                onPartitionsAssigned(partitions);
+                return null;
+            });
+
+        public void Revoke(params TopicPartition[] partitions) =>
+            script.Enqueue(() =>
+            {
+                onPartitionsRevoked(partitions);
+                return null;
+            });
+
+        public void Deliver(params ConsumeResult<byte[], string>[] results)
+        {
+            foreach (var result in results)
+            {
+                script.Enqueue(() => result);
             }
-        );
+        }
 
-        service.GetOutputTopic("fhir.test").Should().Be("fhir.pseudonymized.test");
+        public Task<T> RunOnPollThread<T>(Func<T> action)
+        {
+            var completion = new TaskCompletionSource<T>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
+            script.Enqueue(() =>
+            {
+                completion.SetResult(action());
+                return null;
+            });
+            return completion.Task;
+        }
+
+        private List<TopicPartition> CallsTo(string methodName) =>
+            [
+                .. Fake.GetCalls(Consumer)
+                    .Where(call => call.Method.Name == methodName)
+                    .SelectMany(call => (IEnumerable<TopicPartition>)call.Arguments[0]),
+            ];
     }
 
-    [Fact]
-    public void GetDeadLetterTopic_WithDefaultGroupId_UsesDefaultGroupIdInTopicName()
+    /// <summary>
+    ///     A fake producer recording every produced message, which by default acknowledges each
+    ///     one right away.
+    /// </summary>
+    private sealed class RecordingProducer
     {
-        var service = CreateService(
-            A.Fake<IAnonymizerEngine>(),
-            A.Fake<IProducer<byte[], string>>()
-        );
-
-        service
-            .GetDeadLetterTopic("input-topic")
-            .Should()
-            .Be("error.input-topic.fhir-pseudonymizer");
-    }
-
-    [Fact]
-    public void GetDeadLetterTopic_WithCustomGroupId_UsesConfiguredGroupIdInTopicName()
-    {
-        var service = CreateService(
-            A.Fake<IAnonymizerEngine>(),
-            A.Fake<IProducer<byte[], string>>(),
-            new KafkaConfig { Consumer = new ConsumerConfig { GroupId = "my-group" } }
-        );
-
-        service.GetDeadLetterTopic("input-topic").Should().Be("error.input-topic.my-group");
-    }
-
-    [Fact]
-    public void GetWorkerIndex_IsStableForTheSamePartition()
-    {
-        var service = CreateService(
-            A.Fake<IAnonymizerEngine>(),
-            A.Fake<IProducer<byte[], string>>(),
-            new KafkaConfig { WorkerCount = 8 }
-        );
-
-        var partition = new TopicPartition("input-topic", new Partition(3));
-
-        var firstIndex = service.GetWorkerIndex(partition);
-        var secondIndex = service.GetWorkerIndex(partition);
-
-        firstIndex.Should().Be(secondIndex);
-        firstIndex.Should().BeInRange(0, 7);
-    }
-
-    [Fact]
-    public void GetWorkerIndex_DistributesPartitionsAcrossAllWorkers()
-    {
-        const int workerCount = 4;
-        var service = CreateService(
-            A.Fake<IAnonymizerEngine>(),
-            A.Fake<IProducer<byte[], string>>(),
-            new KafkaConfig { WorkerCount = workerCount }
-        );
-
-        var usedIndices = Enumerable
-            .Range(0, 12)
-            .Select(partitionNumber =>
-                service.GetWorkerIndex(
-                    new TopicPartition("input-topic", new Partition(partitionNumber))
+        public RecordingProducer()
+        {
+            A.CallTo(() =>
+                    Producer.Produce(
+                        A<string>._,
+                        A<Message<byte[], string>>._,
+                        A<Action<DeliveryReport<byte[], string>>>._
+                    )
                 )
-            )
-            .Distinct()
-            .ToList();
+                .Invokes(
+                    (
+                        string topic,
+                        Message<byte[], string> message,
+                        Action<DeliveryReport<byte[], string>> deliveryHandler
+                    ) =>
+                    {
+                        var key = Encoding.UTF8.GetString(message.Key);
+                        var produced = new ProducedMessage(
+                            topic,
+                            key,
+                            () =>
+                                deliveryHandler(
+                                    new DeliveryReport<byte[], string>
+                                    {
+                                        Topic = topic,
+                                        Message = message,
+                                        Error = FailDeliveryOf(key)
+                                            ? new Error(ErrorCode.Local_MsgTimedOut)
+                                            : new Error(ErrorCode.NoError),
+                                    }
+                                )
+                        );
+                        Produced.Enqueue(produced);
 
-        usedIndices.Should().HaveCountGreaterThan(1);
-        usedIndices.Should().OnlyContain(index => index >= 0 && index < workerCount);
+                        if (DeliverImmediately)
+                        {
+                            produced.Acknowledge();
+                        }
+                    }
+                );
+        }
+
+        public IProducer<byte[], string> Producer { get; } = A.Fake<IProducer<byte[], string>>();
+
+        public ConcurrentQueue<ProducedMessage> Produced { get; } = new();
+
+        public bool DeliverImmediately { get; init; } = true;
+
+        public Func<string, bool> FailDeliveryOf { get; init; } = _ => false;
     }
+
+    private sealed record ProducedMessage(string Topic, string Key, Action Acknowledge);
 }
