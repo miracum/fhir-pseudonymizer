@@ -49,7 +49,29 @@ public record KafkaConfig
     public string OutputTopicPattern { get; init; } = "^";
     public string OutputTopicReplacement { get; init; } = "pseudonymized.";
     public int WorkerCount { get; init; } = Environment.ProcessorCount;
-    public int WorkerChannelCapacity { get; init; } = 100;
+
+    /// <summary>
+    ///     The maximum number of messages queued per worker. Together with
+    ///     <see cref="WorkerChannelCapacityBytes" />, whichever is reached first, this should
+    ///     comfortably exceed what librdkafka hands out for a single partition in one go (up to
+    ///     max.partition.fetch.bytes, 1 MiB by default) - otherwise the other workers run dry while
+    ///     one partition's messages are handed to their (busy) worker.
+    /// </summary>
+    public int WorkerChannelCapacity { get; init; } = 10_000;
+
+    /// <summary>
+    ///     The maximum approximate in-memory size of the messages queued per worker. A message is
+    ///     always accepted into an empty queue, however large it is.
+    /// </summary>
+    public long WorkerChannelCapacityBytes { get; init; } = 16 * 1024 * 1024;
+
+    /// <summary>
+    ///     How long the consumer waits for a worker with a full queue to accept another message
+    ///     before pausing the partitions that worker processes (e.g. because it is retrying a
+    ///     pseudonymization backend that is down), so that all other partitions keep being
+    ///     consumed meanwhile.
+    /// </summary>
+    public int WorkerBusyTimeoutMs { get; init; } = 1000;
 
     /// <summary>
     ///     The topic that FHIR Provenance resources documenting the pseudonymization of a message

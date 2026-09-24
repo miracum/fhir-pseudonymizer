@@ -2,6 +2,9 @@ using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Health.Fhir.Anonymizer.Core;
 
 namespace FhirPseudonymizer.Tests.Kafka;
 
@@ -201,5 +204,39 @@ public class KafkaExtensionsTests
         var topics = KafkaExtensions.NormalizeTopics(configuration, ["", "  "]);
 
         topics.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void AddKafkaConsumer_RegistersTheConsumerServiceWithAllOfItsDependencies()
+    {
+        var kafkaConfig = new KafkaConfig
+        {
+            Topics = ["input-topic"],
+            Client = new ClientConfig { BootstrapServers = "localhost:9092" },
+        };
+        var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton(A.Fake<IAnonymizerEngine>())
+            .AddSingleton(new AnonymizationConfig())
+            .AddSingleton(kafkaConfig)
+            .AddSingleton<IProvenancePublisher, NoopProvenancePublisher>()
+            .AddKafkaProducer(kafkaConfig)
+            .AddKafkaConsumer(kafkaConfig);
+
+        using var serviceProvider = services.BuildServiceProvider(
+            new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true }
+        );
+
+        serviceProvider
+            .GetServices<IHostedService>()
+            .Should()
+            .ContainSingle(service => service is KafkaConsumerService);
+
+        using var consumer = serviceProvider.GetRequiredService<KafkaConsumerFactory>()(
+            _ => { },
+            _ => { },
+            _ => { }
+        );
+        consumer.Should().NotBeNull();
     }
 }

@@ -129,7 +129,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     // FHIRPath query below lazily enumerates. Without ToList(), removing one match
                     // while a later match is still being lazily computed throws
                     // "Collection was modified; enumeration operation may not execute."
-                    matchNodes = node.Select(rule.Expression).CastElementNodes().ToList();
+                    matchNodes = [.. rule.Evaluate(node).CastElementNodes()];
                 }
 
                 foreach (var matchNode in matchNodes)
