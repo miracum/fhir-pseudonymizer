@@ -66,6 +66,16 @@ public class KafkaConsumerService : BackgroundService
             description: "Number of partitions currently paused because the worker processing them stopped accepting new messages - most likely because it is retrying a transient pseudonymization backend failure."
         );
 
+    private static readonly Gauge<int> WorkerQueueDepthGauge = Program.Meter.CreateGauge<int>(
+        "fhirpseudonymizer.kafka.worker.queue_depth",
+        description: "Number of messages currently queued in a worker's channel."
+    );
+
+    private static readonly Gauge<int> PartitionsAssignedGauge = Program.Meter.CreateGauge<int>(
+        "fhirpseudonymizer.kafka.partitions_assigned",
+        description: "Number of partitions currently assigned to this consumer instance across all subscribed topics."
+    );
+
     private static readonly TimeSpan PollTimeout = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan ShutdownFlushTimeout = TimeSpan.FromSeconds(10);
 
@@ -228,7 +238,21 @@ public class KafkaConsumerService : BackgroundService
 
             ResumeRecoveredWorkers();
             StoreCompletedOffsets();
+            RecordQueueDepthMetrics();
         }
+    }
+
+    private void RecordQueueDepthMetrics()
+    {
+        foreach (var worker in workers)
+        {
+            WorkerQueueDepthGauge.Record(
+                worker.QueuedCount,
+                new TagList { { "worker", worker.Index } }
+            );
+        }
+
+        PartitionsAssignedGauge.Record(partitions.Count);
     }
 
     private void Dispatch(ConsumeResult<byte[], string> result, CancellationToken stoppingToken)
@@ -754,6 +778,8 @@ public class KafkaConsumerService : BackgroundService
 
         /// <summary>Set whenever the worker takes a message off its queue.</summary>
         public ManualResetEventSlim SpaceAvailable { get; } = new(false);
+
+        public int QueuedCount => Volatile.Read(ref queuedCount);
 
         public bool IsAtMostHalfFull =>
             Volatile.Read(ref queuedCount) <= maxCount / 2

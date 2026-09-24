@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -56,6 +57,13 @@ public class KafkaMessageProcessor
         Program.Meter.CreateCounter<long>(
             "fhirpseudonymizer.kafka.messages",
             description: "Total number of FHIR resources consumed from Kafka, by source topic and outcome (success, dead-lettered, or error), counted once the broker acknowledged the produced message."
+        );
+
+    private static readonly Histogram<double> MessageProcessingDuration =
+        Program.Meter.CreateHistogram<double>(
+            "fhirpseudonymizer.kafka.message.duration",
+            unit: "s",
+            description: "Time spent processing a single Kafka message end-to-end."
         );
 
     // Shared, like the REST API's System.Text.Json formatters, see FhirFormatter.
@@ -117,6 +125,12 @@ public class KafkaMessageProcessor
         CancellationToken cancellationToken = default
     )
     {
+        var startTimestamp = Stopwatch.GetTimestamp();
+
+        // the anonymization attempt currently being made, updated by AnonymizeWithRetryAsync
+        // for the processing duration metric
+        var attempt = new StrongBox<int>(1);
+
         Resource original;
         Resource anonymized;
         string output;
@@ -124,7 +138,12 @@ public class KafkaMessageProcessor
         try
         {
             original = ParseResource(result.Message.Value);
-            anonymized = await AnonymizeWithRetryAsync(original, result.Topic, cancellationToken);
+            anonymized = await AnonymizeWithRetryAsync(
+                original,
+                result.Topic,
+                attempt,
+                cancellationToken
+            );
             output = JsonSerializer.Serialize(anonymized, FhirJsonOptions);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -140,7 +159,14 @@ public class KafkaMessageProcessor
                 result.TopicPartitionOffset
             );
 
-            await SendToDeadLetterTopicAsync(result, exc, onCompleted, cancellationToken);
+            await SendToDeadLetterTopicAsync(
+                result,
+                exc,
+                onCompleted,
+                startTimestamp,
+                attempt.Value,
+                cancellationToken
+            );
             return;
         }
 
@@ -159,6 +185,15 @@ public class KafkaMessageProcessor
                     1,
                     new TagList { { "topic", result.Topic }, { "outcome", "success" } }
                 );
+                MessageProcessingDuration.Record(
+                    Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
+                    new TagList
+                    {
+                        { "topic", result.Topic },
+                        { "outcome", "success" },
+                        { "attempts", attempt.Value },
+                    }
+                );
                 onCompleted(KafkaMessageOutcome.Produced);
                 return;
             }
@@ -173,7 +208,14 @@ public class KafkaMessageProcessor
 
             // Runs on the producer's delivery report thread, which must not be blocked; the
             // dead letter send handles (and reports) all of its own failures.
-            _ = SendToDeadLetterTopicAsync(result, exc, onCompleted, CancellationToken.None);
+            _ = SendToDeadLetterTopicAsync(
+                result,
+                exc,
+                onCompleted,
+                startTimestamp,
+                attempt.Value,
+                CancellationToken.None
+            );
         }
 
         try
@@ -199,7 +241,14 @@ public class KafkaMessageProcessor
                 result.TopicPartitionOffset
             );
 
-            await SendToDeadLetterTopicAsync(result, exc, onCompleted, cancellationToken);
+            await SendToDeadLetterTopicAsync(
+                result,
+                exc,
+                onCompleted,
+                startTimestamp,
+                attempt.Value,
+                cancellationToken
+            );
             return;
         }
 
@@ -235,10 +284,11 @@ public class KafkaMessageProcessor
     private async System.Threading.Tasks.Task<Resource> AnonymizeWithRetryAsync(
         Resource resource,
         string sourceTopic,
+        StrongBox<int> attempt,
         CancellationToken cancellationToken
     )
     {
-        for (var attempt = 1; ; attempt++)
+        for (; ; attempt.Value++)
         {
             try
             {
@@ -258,10 +308,10 @@ public class KafkaMessageProcessor
                     exc,
                     "Pseudonymization backend unavailable while processing message from topic {Topic} (attempt {Attempt}); retrying",
                     sourceTopic,
-                    attempt
+                    attempt.Value
                 );
 
-                var delaySeconds = Math.Min(60, Math.Pow(2, attempt - 1));
+                var delaySeconds = Math.Min(60, Math.Pow(2, attempt.Value - 1));
                 await System.Threading.Tasks.Task.Delay(
                     TimeSpan.FromSeconds(delaySeconds),
                     cancellationToken
@@ -279,6 +329,8 @@ public class KafkaMessageProcessor
         ConsumeResult<byte[], string> result,
         Exception exc,
         Action<KafkaMessageOutcome> onCompleted,
+        long startTimestamp,
+        int attempt,
         CancellationToken cancellationToken
     )
     {
@@ -311,6 +363,15 @@ public class KafkaMessageProcessor
                 1,
                 new TagList { { "topic", result.Topic }, { "outcome", "error" } }
             );
+            MessageProcessingDuration.Record(
+                Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
+                new TagList
+                {
+                    { "topic", result.Topic },
+                    { "outcome", "error" },
+                    { "attempts", attempt },
+                }
+            );
             logger.LogError(
                 deadLetterExc,
                 "Failed to send message from {TopicPartitionOffset} to the dead letter topic",
@@ -335,6 +396,15 @@ public class KafkaMessageProcessor
                     ProcessedMessagesCounter.Add(
                         1,
                         new TagList { { "topic", result.Topic }, { "outcome", "dead-lettered" } }
+                    );
+                    MessageProcessingDuration.Record(
+                        Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
+                        new TagList
+                        {
+                            { "topic", result.Topic },
+                            { "outcome", "dead-lettered" },
+                            { "attempts", attempt },
+                        }
                     );
                     onCompleted(KafkaMessageOutcome.DeadLettered);
                 },

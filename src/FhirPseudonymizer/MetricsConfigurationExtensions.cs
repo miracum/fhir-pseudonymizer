@@ -35,6 +35,28 @@ public static class MetricsConfigurationExtensions
                             Boundaries = [.. Enumerable.Range(0, 20).Select(i => 1d + (5d * i))],
                         }
                     )
+                    .AddView(
+                        "fhirpseudonymizer.kafka.message.duration",
+                        new ExplicitBucketHistogramConfiguration
+                        {
+                            Boundaries =
+                            [
+                                0.05,
+                                0.1,
+                                0.25,
+                                0.5,
+                                1,
+                                2.5,
+                                5,
+                                10,
+                                20,
+                                30,
+                                60,
+                                120,
+                                300,
+                            ],
+                        }
+                    )
                     // A standalone HttpListener on its own port, rather than
                     // AddPrometheusExporter()/MapPrometheusScrapingEndpoint(): that alternative
                     // maps /metrics onto the app's own Kestrel pipeline, which means adding a
