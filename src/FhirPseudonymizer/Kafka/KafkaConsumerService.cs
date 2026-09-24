@@ -378,47 +378,49 @@ public class KafkaConsumerService : BackgroundService
     {
         while (completedItems.Reader.TryRead(out var completed))
         {
-            var partition = completed.Partition;
-            if (partition.IsRevoked)
+            if (!completed.Partition.IsRevoked)
             {
-                continue;
+                StoreCompletedOffsets(completed.Partition);
+            }
+        }
+    }
+
+    private void StoreCompletedOffsets(PartitionState partition)
+    {
+        WorkItem lastCompleted = null;
+        while (partition.InFlight.TryPeek(out var item) && item.Outcome is { } outcome)
+        {
+            if (outcome == KafkaMessageOutcome.Abandoned)
+            {
+                break;
             }
 
-            WorkItem lastCompleted = null;
-            while (partition.InFlight.TryPeek(out var item) && item.Outcome is { } outcome)
+            if (outcome == KafkaMessageOutcome.Failed)
             {
-                if (outcome == KafkaMessageOutcome.Abandoned)
-                {
-                    break;
-                }
-
-                if (outcome == KafkaMessageOutcome.Failed)
-                {
-                    failedItem ??= item;
-                    break;
-                }
-
-                lastCompleted = partition.InFlight.Dequeue();
+                failedItem ??= item;
+                break;
             }
 
-            if (lastCompleted is null)
-            {
-                continue;
-            }
+            lastCompleted = partition.InFlight.Dequeue();
+        }
 
-            try
-            {
-                consumer.StoreOffset(lastCompleted.Result);
-            }
-            catch (KafkaException exc)
-            {
-                // e.g. the partition was revoked in the meantime without us being told
-                logger.LogWarning(
-                    exc,
-                    "Failed to store offset {TopicPartitionOffset}",
-                    lastCompleted.Result.TopicPartitionOffset
-                );
-            }
+        if (lastCompleted is null)
+        {
+            return;
+        }
+
+        try
+        {
+            consumer.StoreOffset(lastCompleted.Result);
+        }
+        catch (KafkaException exc)
+        {
+            // e.g. the partition was revoked in the meantime without us being told
+            logger.LogWarning(
+                exc,
+                "Failed to store offset {TopicPartitionOffset}",
+                lastCompleted.Result.TopicPartitionOffset
+            );
         }
     }
 
@@ -481,12 +483,18 @@ public class KafkaConsumerService : BackgroundService
 
         while (true)
         {
-            StoreCompletedOffsets();
-
+            // Goes by the messages' outcomes themselves rather than the notifications about
+            // them, which workers only post after recording an outcome - so everything seen as
+            // done here is sure to be stored below, before the partitions are handed over.
             var inProgress = revokedPartitions
                 .SelectMany(partition => partition.InFlight)
                 .Where(item => item.IsStarted && item.Outcome is null)
                 .ToList();
+
+            foreach (var partition in revokedPartitions)
+            {
+                StoreCompletedOffsets(partition);
+            }
 
             if (inProgress.Count == 0)
             {
