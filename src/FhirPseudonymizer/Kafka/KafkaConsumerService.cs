@@ -53,6 +53,23 @@ public class KafkaConsumerService : BackgroundService
             description: "Number of partitions currently paused because their worker's processing channel is full - most likely because that worker is retrying a transient pseudonymization backend failure."
         );
 
+    private static readonly Histogram<double> MessageProcessingDuration =
+        Program.Meter.CreateHistogram<double>(
+            "fhirpseudonymizer.kafka.message.duration",
+            unit: "s",
+            description: "Time spent processing a single Kafka message end-to-end."
+        );
+
+    private static readonly Gauge<int> WorkerQueueDepthGauge = Program.Meter.CreateGauge<int>(
+        "fhirpseudonymizer.kafka.worker.queue_depth",
+        description: "Number of messages currently queued in a worker's channel."
+    );
+
+    private static readonly Gauge<int> PartitionsAssignedGauge = Program.Meter.CreateGauge<int>(
+        "fhirpseudonymizer.kafka.partitions_assigned",
+        description: "Number of partitions currently assigned to this consumer instance across all subscribed topics."
+    );
+
     private readonly IConsumer<byte[], string> consumer;
     private readonly IProducer<byte[], string> producer;
     private readonly IAnonymizerEngine anonymizer;
@@ -172,7 +189,21 @@ public class KafkaConsumerService : BackgroundService
 
             RetryPausedPartitionBacklogs();
             StoreCompletedOffsets();
+            RecordQueueDepthMetrics();
         }
+    }
+
+    private void RecordQueueDepthMetrics()
+    {
+        for (var i = 0; i < workerChannels.Length; i++)
+        {
+            WorkerQueueDepthGauge.Record(
+                workerChannels[i].Reader.Count,
+                new TagList { { "worker", i } }
+            );
+        }
+
+        PartitionsAssignedGauge.Record(consumer.Assignment.Count);
     }
 
     /// <summary>
@@ -286,6 +317,8 @@ public class KafkaConsumerService : BackgroundService
         // relies on EnqueueOrPause/RetryPausedPartitionBacklogs in the poll loop to keep this
         // worker's channel from backing up the whole consumer while that happens; this method
         // itself doesn't need to know anything about partitions or pausing.
+        var startTimestamp = Stopwatch.GetTimestamp();
+
         for (var attempt = 1; ; attempt++)
         {
             try
@@ -308,6 +341,16 @@ public class KafkaConsumerService : BackgroundService
                 ProcessedMessagesCounter.Add(
                     1,
                     new TagList { { "topic", result.Topic }, { "outcome", "success" } }
+                );
+
+                MessageProcessingDuration.Record(
+                    Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
+                    new TagList
+                    {
+                        { "topic", result.Topic },
+                        { "outcome", "success" },
+                        { "attempts", attempt },
+                    }
                 );
 
                 provenancePublisher.Publish(
@@ -353,7 +396,7 @@ public class KafkaConsumerService : BackgroundService
                     result.Topic
                 );
 
-                await SendToDeadLetterQueueAsync(result, exc);
+                await SendToDeadLetterQueueAsync(result, exc, startTimestamp, attempt);
                 return;
             }
         }
@@ -367,7 +410,9 @@ public class KafkaConsumerService : BackgroundService
     /// </summary>
     private async System.Threading.Tasks.Task SendToDeadLetterQueueAsync(
         ConsumeResult<byte[], string> result,
-        Exception exc
+        Exception exc,
+        long startTimestamp,
+        int attempt
     )
     {
         try
@@ -406,6 +451,16 @@ public class KafkaConsumerService : BackgroundService
                 new TagList { { "topic", result.Topic }, { "outcome", "dead-lettered" } }
             );
 
+            MessageProcessingDuration.Record(
+                Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
+                new TagList
+                {
+                    { "topic", result.Topic },
+                    { "outcome", "dead-lettered" },
+                    { "attempts", attempt },
+                }
+            );
+
             await completedResults.Writer.WriteAsync(result, CancellationToken.None);
         }
         catch (Exception dlqExc)
@@ -414,6 +469,17 @@ public class KafkaConsumerService : BackgroundService
                 1,
                 new TagList { { "topic", result.Topic }, { "outcome", "error" } }
             );
+
+            MessageProcessingDuration.Record(
+                Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
+                new TagList
+                {
+                    { "topic", result.Topic },
+                    { "outcome", "error" },
+                    { "attempts", attempt },
+                }
+            );
+
             logger.LogError(
                 dlqExc,
                 "Failed to send message from topic {Topic} to dead letter queue",
