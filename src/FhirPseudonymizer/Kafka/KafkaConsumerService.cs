@@ -49,6 +49,13 @@ public delegate IConsumer<byte[], string> KafkaConsumerFactory(
 ///             processed nor sent to its dead letter topic, its partition can't move past it, so
 ///             the service stops: after a restart, it is reprocessed from the last committed offset.
 ///         </item>
+///         <item>
+///             When a rebalance revokes a partition (e.g. because another replica joined the
+///             group), its queued messages are dropped, but the one already being processed is
+///             given up to <see cref="RevocationTimeout" /> to be acknowledged, and its offset
+///             stored before the partition is handed over. That way, its new owner doesn't process
+///             and produce it a second time - out of order with the newer messages it produces.
+///         </item>
 ///     </list>
 /// </summary>
 public class KafkaConsumerService : BackgroundService
@@ -61,6 +68,10 @@ public class KafkaConsumerService : BackgroundService
 
     private static readonly TimeSpan PollTimeout = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan ShutdownFlushTimeout = TimeSpan.FromSeconds(10);
+
+    // Bounded well below the rebalance timeout (max.poll.interval.ms, 5 minutes by default),
+    // since the revoked partitions aren't consumed by anyone until this consumer lets go of them.
+    private static readonly TimeSpan RevocationTimeout = TimeSpan.FromSeconds(10);
 
     private readonly KafkaConsumerFactory consumerFactory;
     private readonly KafkaMessageProcessor processor;
@@ -152,6 +163,11 @@ public class KafkaConsumerService : BackgroundService
         finally
         {
             workersCancellation.Cancel();
+            foreach (var partition in partitions.Values)
+            {
+                partition.Cancellation.Cancel();
+            }
+
             foreach (var worker in workers)
             {
                 worker.Complete();
@@ -355,7 +371,8 @@ public class KafkaConsumerService : BackgroundService
     /// <summary>
     ///     Stores the offset of every partition up to (and including) its last message that - like
     ///     all of its predecessors - was either produced or dead-lettered. Stops at the first message
-    ///     that failed both, remembering it to stop the service.
+    ///     that was abandoned (only happens when stopping to process a partition anyway) or that
+    ///     failed both, remembering the latter to stop the service.
     /// </summary>
     private void StoreCompletedOffsets()
     {
@@ -370,6 +387,11 @@ public class KafkaConsumerService : BackgroundService
             WorkItem lastCompleted = null;
             while (partition.InFlight.TryPeek(out var item) && item.Outcome is { } outcome)
             {
+                if (outcome == KafkaMessageOutcome.Abandoned)
+                {
+                    break;
+                }
+
                 if (outcome == KafkaMessageOutcome.Failed)
                 {
                     failedItem ??= item;
@@ -431,12 +453,73 @@ public class KafkaConsumerService : BackgroundService
             return;
         }
 
-        // store what has completed so far, so that it is included in the commit librdkafka makes
-        // for the revoked partitions before handing them over
-        StoreCompletedOffsets();
+        var revokedPartitions = revoked
+            .Select(topicPartition => partitions.GetValueOrDefault(topicPartition))
+            .Where(partition => partition is not null)
+            .ToList();
+
+        foreach (var partition in revokedPartitions)
+        {
+            StopProcessing(partition);
+        }
+
+        WaitForStartedMessages(revokedPartitions);
         RemovePartitions(revoked);
 
         logger.LogInformation("Revoked partitions {Partitions}", string.Join(", ", revoked));
+    }
+
+    /// <summary>
+    ///     Waits for those messages of revoked partitions that were already being processed to be
+    ///     acknowledged (or abandoned), for up to <see cref="RevocationTimeout" />, storing their
+    ///     offsets. librdkafka commits them right after the rebalance callback returns, before the
+    ///     partitions are handed over.
+    /// </summary>
+    private void WaitForStartedMessages(List<PartitionState> revokedPartitions)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        while (true)
+        {
+            StoreCompletedOffsets();
+
+            var inProgress = revokedPartitions
+                .SelectMany(partition => partition.InFlight)
+                .Where(item => item.IsStarted && item.Outcome is null)
+                .ToList();
+
+            if (inProgress.Count == 0)
+            {
+                return;
+            }
+
+            if (stopwatch.Elapsed > RevocationTimeout)
+            {
+                logger.LogWarning(
+                    "Messages {TopicPartitionOffsets} were still being processed {Timeout} after their partitions were revoked; their partitions' new owners will process them again",
+                    string.Join(", ", inProgress.Select(item => item.Result.TopicPartitionOffset)),
+                    RevocationTimeout
+                );
+                return;
+            }
+
+            Thread.Sleep(10);
+        }
+    }
+
+    /// <summary>
+    ///     Makes sure none of a partition's messages that haven't been started yet will be, and
+    ///     cancels retrying the one being processed, if it is.
+    /// </summary>
+    private static void StopProcessing(PartitionState partition)
+    {
+        foreach (var item in partition.InFlight)
+        {
+            item.TrySkip();
+        }
+
+        partition.HeldBack.Clear();
+        partition.Cancellation.Cancel();
     }
 
     private void OnPartitionsLost(IReadOnlyList<TopicPartition> lost)
@@ -459,7 +542,7 @@ public class KafkaConsumerService : BackgroundService
 
     /// <summary>
     ///     Forgets partitions this consumer no longer owns. Their messages still queued for a
-    ///     worker are skipped, since their new owner processes them again anyway.
+    ///     worker are skipped, since their new owner processes them anyway.
     /// </summary>
     private void RemovePartitions(IReadOnlyList<TopicPartition> removed)
     {
@@ -470,6 +553,7 @@ public class KafkaConsumerService : BackgroundService
                 continue;
             }
 
+            StopProcessing(partition);
             partition.IsRevoked = true;
             workers[partition.WorkerIndex].Partitions.Remove(partition);
 
@@ -504,7 +588,8 @@ public class KafkaConsumerService : BackgroundService
         {
             await foreach (var item in worker.ReadAllAsync(cancellationToken))
             {
-                if (item.Partition.IsRevoked)
+                // skipped because its partition was revoked in the meantime
+                if (!item.TryStart())
                 {
                     continue;
                 }
@@ -514,15 +599,13 @@ public class KafkaConsumerService : BackgroundService
                     await processor.ProcessAsync(
                         item.Result,
                         outcome => Complete(item, outcome),
-                        cancellationToken
+                        item.Partition.Cancellation.Token
                     );
                 }
                 catch (Exception exc)
-                    when (exc is not OperationCanceledException
-                        || !cancellationToken.IsCancellationRequested
-                    )
                 {
-                    // ProcessAsync handles all expected failures itself; anything else is a bug
+                    // ProcessAsync handles all expected failures, and cancellation, itself;
+                    // anything else is a bug
                     logger.LogError(
                         exc,
                         "Unexpected error processing message from {TopicPartitionOffset}",
@@ -552,6 +635,11 @@ public class KafkaConsumerService : BackgroundService
 
     private sealed class WorkItem(ConsumeResult<byte[], string> result, PartitionState partition)
     {
+        private const int Queued = 0;
+        private const int Started = 1;
+        private const int Skipped = 2;
+
+        private int state = Queued;
         private int outcome = -1;
 
         public ConsumeResult<byte[], string> Result { get; } = result;
@@ -574,6 +662,20 @@ public class KafkaConsumerService : BackgroundService
                 return value < 0 ? null : (KafkaMessageOutcome)value;
             }
         }
+
+        public bool IsStarted => Volatile.Read(ref state) == Started;
+
+        /// <summary>
+        ///     Called by the worker before processing the message. Fails if the message was skipped
+        ///     before, the two being atomic, so a message is either processed or skipped, never both.
+        /// </summary>
+        public bool TryStart() => Interlocked.CompareExchange(ref state, Started, Queued) == Queued;
+
+        /// <summary>
+        ///     Called by the poll thread to make sure the message won't be processed, unless it
+        ///     already is.
+        /// </summary>
+        public bool TrySkip() => Interlocked.CompareExchange(ref state, Skipped, Queued) == Queued;
 
         /// <summary>Called once, by whichever thread learns how the message was handled.</summary>
         public void SetOutcome(KafkaMessageOutcome value) =>
@@ -601,7 +703,16 @@ public class KafkaConsumerService : BackgroundService
 
         public bool IsPaused { get; set; }
 
-        /// <summary>Read by the workers to skip messages of partitions no longer owned.</summary>
+        /// <summary>
+        ///     Cancelled when this consumer stops processing the partition, to stop retrying a
+        ///     message that is stuck, e.g. on an unavailable pseudonymization backend.
+        /// </summary>
+        public CancellationTokenSource Cancellation { get; } = new();
+
+        /// <summary>
+        ///     Set once the partition is no longer owned, so that outcomes still being reported for
+        ///     its messages are ignored.
+        /// </summary>
         public bool IsRevoked
         {
             get => isRevoked;

@@ -35,6 +35,13 @@ public enum KafkaMessageOutcome
     ///     the message was not handled at all and must not be marked as consumed.
     /// </summary>
     Failed,
+
+    /// <summary>
+    ///     Processing was cancelled (because the service is stopping, or the message's partition
+    ///     was revoked) before anything was produced for it: the message was not handled, so it
+    ///     must not be marked as consumed, but that's no reason to stop.
+    /// </summary>
+    Abandoned,
 }
 
 /// <summary>
@@ -93,16 +100,16 @@ public class KafkaMessageProcessor
     ///
     ///     The returned task completes as soon as the resulting message has been handed to the
     ///     producer, so the caller can move on to the next message (and messages produced in that
-    ///     order keep it). <paramref name="onCompleted" /> is called later, exactly once, once the
-    ///     broker acknowledged or rejected it - only then is the message actually safe to mark as
-    ///     consumed. It is called from the producer's delivery report thread, so must be fast and
-    ///     thread-safe.
+    ///     order keep it). <paramref name="onCompleted" /> is called exactly once, once the broker
+    ///     acknowledged or rejected it - only then is the message actually safe to mark as
+    ///     consumed. It may be called from the producer's delivery report thread, so must be fast
+    ///     and thread-safe.
     ///
     ///     A transient pseudonymization backend failure (<see cref="TransientPseudonymizationException" />)
     ///     is retried indefinitely with backoff rather than dead-lettered, since the message itself
     ///     isn't bad, just badly timed. If <paramref name="cancellationToken" /> is cancelled while
-    ///     retrying, or while waiting for room in the producer's queue, this returns without ever
-    ///     calling <paramref name="onCompleted" />: the message was simply not handled.
+    ///     retrying, or while waiting for room in the producer's queue, the message is reported as
+    ///     <see cref="KafkaMessageOutcome.Abandoned" /> instead.
     /// </summary>
     public async System.Threading.Tasks.Task ProcessAsync(
         ConsumeResult<byte[], string> result,
@@ -122,6 +129,7 @@ public class KafkaMessageProcessor
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            onCompleted(KafkaMessageOutcome.Abandoned);
             return;
         }
         catch (Exception exc)
@@ -179,6 +187,7 @@ public class KafkaMessageProcessor
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            onCompleted(KafkaMessageOutcome.Abandoned);
             return;
         }
         catch (KafkaException exc)
@@ -334,7 +343,8 @@ public class KafkaMessageProcessor
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // shutting down while waiting for room in the producer's queue: left unhandled
+            // cancelled while waiting for room in the producer's queue
+            onCompleted(KafkaMessageOutcome.Abandoned);
         }
         catch (Exception deadLetterExc)
         {

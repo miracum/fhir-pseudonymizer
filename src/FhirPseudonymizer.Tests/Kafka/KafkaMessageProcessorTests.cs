@@ -532,7 +532,7 @@ public class KafkaMessageProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenCancelledWhileRetryingATransientFailure_StopsWithoutReportingAnOutcome()
+    public async Task ProcessAsync_WhenCancelledWhileRetryingATransientFailure_ReportsAbandonedWithoutProducing()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
         A.CallTo(() =>
@@ -562,7 +562,7 @@ public class KafkaMessageProcessorTests
             .Should()
             .NotThrowAsync();
 
-        outcomes.Should().BeEmpty();
+        outcomes.Should().Equal(KafkaMessageOutcome.Abandoned);
         A.CallTo(() =>
                 producer.Produce(
                     A<string>._,

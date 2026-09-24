@@ -3,6 +3,7 @@ using System.Text;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
+using FhirPseudonymizer.Pseudonymization;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
@@ -405,7 +406,7 @@ public class KafkaConsumerServiceTests
     }
 
     [Fact]
-    public async Task MessagesOfARevokedPartitionThatAreStillQueued_AreSkipped()
+    public async Task RevokingAPartition_LetsItsMessageInProgressFinishAndStoresItsOffsetBeforeHandingItOver()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var processingStarted = new TaskCompletionSource();
@@ -437,16 +438,20 @@ public class KafkaConsumerServiceTests
             await processingStarted.Task.WaitAsync(cancellationToken);
 
             consumer.Revoke(InputPartition(0));
-            await consumer.RunOnPollThread(() => true).WaitAsync(cancellationToken);
+            var storedOnceRevoked = consumer.RunOnPollThread(() => consumer.StoredOffsets);
+
+            // the revocation waits for the message being processed
+            await Task.Delay(100, cancellationToken);
+            storedOnceRevoked.IsCompleted.Should().BeFalse();
             release.TrySetResult();
 
-            // queued behind the revoked partition's messages on the only worker
+            (await storedOnceRevoked.WaitAsync(cancellationToken))
+                .Should()
+                .Equal(new TopicPartitionOffset(InputPartition(0), 1));
+
+            // queued behind the revoked partition's skipped messages on the only worker
             consumer.Deliver(Message(1, 0));
-            await WaitUntilAsync(
-                () => producer.Produced.Any(p => p.Key == "p1-o0"),
-                cancellationToken
-            );
-            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 1, cancellationToken);
+            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 2, cancellationToken);
         }
         finally
         {
@@ -454,9 +459,63 @@ public class KafkaConsumerServiceTests
             await service.StopAsync(cancellationToken);
         }
 
-        // the message already being processed when its partition was revoked still gets
-        // produced, but neither is its offset stored nor are the queued ones processed at all
         producer.Produced.Select(p => p.Key).Should().Equal("p0-o0", "p1-o0");
+        consumer
+            .StoredOffsets.Should()
+            .Equal(
+                new TopicPartitionOffset(InputPartition(0), 1),
+                new TopicPartitionOffset(InputPartition(1), 1)
+            );
+    }
+
+    [Fact]
+    public async Task RevokingAPartition_AbandonsItsMessageStuckRetryingATransientFailureRightAway()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var firstAttempt = new TaskCompletionSource();
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer();
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(resource =>
+            {
+                if (!resource.Id.StartsWith("p0-", StringComparison.Ordinal))
+                {
+                    return Task.CompletedTask;
+                }
+
+                firstAttempt.TrySetResult();
+                throw new TransientPseudonymizationException(
+                    "backend unavailable",
+                    new InvalidOperationException()
+                );
+            }),
+            new KafkaConfig { WorkerCount = 1 }
+        );
+
+        consumer.Assign(InputPartition(0), InputPartition(1));
+        consumer.Deliver(Message(0, 0));
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await firstAttempt.Task.WaitAsync(cancellationToken);
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            consumer.Revoke(InputPartition(0));
+            await consumer.RunOnPollThread(() => true).WaitAsync(cancellationToken);
+            stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5));
+
+            consumer.Deliver(Message(1, 0));
+            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 1, cancellationToken);
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+
+        producer.Produced.Select(p => p.Key).Should().Equal("p1-o0");
         consumer.StoredOffsets.Should().Equal(new TopicPartitionOffset(InputPartition(1), 1));
     }
 
