@@ -1,7 +1,5 @@
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
-using Hl7.Fhir.ElementModel;
-using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 
@@ -57,7 +55,11 @@ public class GPasPseudonymizationProcessorTests
         var psnClient = A.Fake<IPseudonymServiceClient>();
         var processor = new PseudonymizationProcessor(psnClient, new FeatureManagement());
 
-        var node = ElementNode.FromElement(new FhirString("12345").ToTypedElement());
+        var node = PocoNodeOrList.Root(new FhirString("12345"));
+        while (node.GetValue() == null)
+        {
+            node = node.Children().CastPocoNodes().First();
+        }
 
         await processor.ProcessAsync(
             node,
@@ -93,10 +95,10 @@ public class GPasPseudonymizationProcessorTests
         var psnClient = A.Fake<IPseudonymServiceClient>();
         var processor = new PseudonymizationProcessor(psnClient, features);
 
-        var node = ElementNode.FromElement(element.ToTypedElement());
-        while (!node.HasValue())
+        var node = PocoNodeOrList.Root(element);
+        while (node.GetValue() == null)
         {
-            node = node.Children().CastElementNodes().First();
+            node = node.Children().CastPocoNodes().First();
         }
 
         await processor.ProcessAsync(

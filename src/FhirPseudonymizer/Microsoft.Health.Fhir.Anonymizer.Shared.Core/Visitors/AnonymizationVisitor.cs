@@ -1,18 +1,19 @@
 using System.Collections.Immutable;
 using System.Data;
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Hl7.FhirPath;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 {
-    public class AnonymizationVisitor : AbstractElementNodeVisitor
+    public class AnonymizationVisitor : AbstractPocoNodeVisitor
     {
-        private readonly Stack<Tuple<ElementNode, ProcessResult>> _contextStack =
-            new Stack<Tuple<ElementNode, ProcessResult>>();
+        private readonly Stack<Tuple<PocoNode, ProcessResult>> _contextStack =
+            new Stack<Tuple<PocoNode, ProcessResult>>();
 
         private readonly ILogger _logger = AnonymizerLogging.CreateLogger<AnonymizationVisitor>();
         private readonly Dictionary<string, IAnonymizerProcessor> _processors;
@@ -23,7 +24,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
         // is built fresh for each AnonymizeAsync call and is scoped to exactly that one run, and
         // EndVisitAsync has no use for it at all.
         private readonly CancellationToken _cancellationToken;
-        private readonly HashSet<ElementNode> _visitedNodes = new HashSet<ElementNode>();
+        private readonly HashSet<PocoNode> _visitedNodes = new HashSet<PocoNode>(
+            PocoNodeIdentityComparer.Instance
+        );
 
         public AnonymizationVisitor(
             AnonymizationFhirPathRule[] rules,
@@ -45,18 +48,18 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
 
         public bool AddSecurityTag { get; set; } = true;
 
-        public override async Task<bool> VisitAsync(ElementNode node)
+        public override async Task<bool> VisitAsync(PocoNode node)
         {
             if (node.IsFhirResource())
             {
                 var result = await ProcessResourceNodeAsync(node);
-                _contextStack.Push(new Tuple<ElementNode, ProcessResult>(node, result));
+                _contextStack.Push(new Tuple<PocoNode, ProcessResult>(node, result));
             }
 
             return true;
         }
 
-        public override Task EndVisitAsync(ElementNode node)
+        public override Task EndVisitAsync(PocoNode node)
         {
             if (node.IsFhirResource())
             {
@@ -83,11 +86,14 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             return Task.CompletedTask;
         }
 
-        private async Task<ProcessResult> ProcessResourceNodeAsync(ElementNode node)
+        private async Task<ProcessResult> ProcessResourceNodeAsync(PocoNode node)
         {
             var result = new ProcessResult();
-            var typeString = node.InstanceType;
+            var typeString = node.GetInstanceType();
             var resourceSpecificAndGeneralRules = GetRulesByType(typeString);
+
+            // Lets all rules using nodesByType()/nodesByName() share a single walk of the resource.
+            var nodeIndex = new ResourceNodeIndex(node);
 
             foreach (var rule in resourceSpecificAndGeneralRules)
             {
@@ -108,7 +114,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     continue;
                 }
 
-                IEnumerable<ElementNode> matchNodes;
+                IEnumerable<PocoNode> matchNodes;
                 if (rule.IsResourceTypeRule)
                 {
                     /*
@@ -119,7 +125,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                      * Current FHIR path lib do not support navigate such ResourceType FHIR path from resource in bundle.
                      * Example: navigate with FHIR path "Patient" from "Bundle.entry[0].resource[0]" is not support
                      */
-                    matchNodes = new List<ElementNode> { node };
+                    matchNodes = new List<PocoNode> { node };
                 }
                 else
                 {
@@ -129,7 +135,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     // FHIRPath query below lazily enumerates. Without ToList(), removing one match
                     // while a later match is still being lazily computed throws
                     // "Collection was modified; enumeration operation may not execute."
-                    matchNodes = [.. rule.Evaluate(node).CastElementNodes()];
+                    using (nodeIndex.Use())
+                    {
+                        matchNodes = [.. rule.Evaluate(node)];
+                    }
                 }
 
                 foreach (var matchNode in matchNodes)
@@ -142,6 +151,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                             MergeSettings(rule.RuleSettings)
                         )
                     );
+                }
+
+                // Every other method only changes primitive values in place, which leaves the
+                // resource's structure - and so the index - intact.
+                if (resultOnRule.IsRemoved || resultOnRule.IsSubstituted)
+                {
+                    nodeIndex.Invalidate();
                 }
 
                 LogProcessResult(node, rule, resultOnRule);
@@ -168,7 +184,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
         }
 
         private void LogProcessResult(
-            ElementNode node,
+            PocoNode node,
             AnonymizationFhirPathRule rule,
             ProcessResult resultOnRule
         )
@@ -199,7 +215,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
         }
 
         public async Task<ProcessResult> ProcessNodeRecursiveAsync(
-            ElementNode node,
+            PocoNode node,
             IAnonymizerProcessor processor,
             ProcessContext context,
             Dictionary<string, object> settings
@@ -221,7 +237,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             // match this rule (e.g. a removed Bundle.entry's "fullUrl" and "request"), a Remove
             // processor detaches each one from `node`'s own child list as it's visited, which
             // would otherwise invalidate this same enumeration mid-loop.
-            foreach (var child in node.Children().CastElementNodes().ToList())
+            var children = new List<PocoNode>();
+            node.AddChildren(children);
+
+            foreach (var child in children)
             {
                 if (child.IsFhirResource())
                 {

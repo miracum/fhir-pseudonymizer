@@ -78,7 +78,6 @@ public class KafkaMessageProcessor
     private readonly KafkaConfig kafkaConfig;
     private readonly IProvenancePublisher provenancePublisher;
     private readonly ILogger<KafkaMessageProcessor> logger;
-    private readonly FhirJsonParser legacyFhirJsonParser = new();
     private readonly Regex outputTopicPattern;
     private readonly string groupId;
 
@@ -131,15 +130,14 @@ public class KafkaMessageProcessor
         // for the processing duration metric
         var attempt = new StrongBox<int>(1);
 
-        Resource original;
+        Resource preImage;
         Resource anonymized;
         string output;
 
         try
         {
-            original = ParseResource(result.Message.Value);
-            anonymized = await AnonymizeWithRetryAsync(
-                original,
+            (preImage, anonymized) = await AnonymizeWithRetryAsync(
+                result.Message.Value,
                 result.Topic,
                 attempt,
                 cancellationToken
@@ -252,37 +250,25 @@ public class KafkaMessageProcessor
             return;
         }
 
-        provenancePublisher.Publish(original, anonymized, CopyHeaders(result.Message.Headers));
+        provenancePublisher.Publish(preImage, anonymized, CopyHeaders(result.Message.Headers));
     }
 
     /// <summary>
-    ///     Parses with the System.Text.Json-based deserializer, which is several times faster than
-    ///     the legacy <see cref="FhirJsonParser" /> and doesn't serialize all concurrent callers
-    ///     on a process-wide lock like it does. It also validates the resource though, rejecting
-    ///     inputs the legacy parser accepts (e.g. ids longer than 64 characters or containing an
-    ///     underscore, missing required elements, empty strings): to not start dead-lettering
-    ///     messages that used to be processed fine, those fall back to the legacy parser.
+    ///     Parses with the System.Text.Json-based deserializer, which also validates the resource:
+    ///     one that isn't valid FHIR (e.g. with an id containing characters FHIR doesn't allow, or
+    ///     missing required elements) is rejected, and so ends up in the dead letter topic.
     /// </summary>
-    private Resource ParseResource(string json)
+    private static Resource ParseResource(string json)
     {
-        try
-        {
-            return JsonSerializer.Deserialize<Resource>(json, FhirJsonOptions)
-                ?? throw new JsonException("The message is the JSON literal 'null'.");
-        }
-        catch (DeserializationFailedException exc)
-        {
-            logger.LogDebug(
-                exc,
-                "Message is not a strictly valid FHIR resource, falling back to the legacy parser"
-            );
-
-            return legacyFhirJsonParser.Parse<Resource>(json);
-        }
+        return JsonSerializer.Deserialize<Resource>(json, FhirJsonOptions)
+            ?? throw new JsonException("The message is the JSON literal 'null'.");
     }
 
-    private async System.Threading.Tasks.Task<Resource> AnonymizeWithRetryAsync(
-        Resource resource,
+    private async System.Threading.Tasks.Task<(
+        Resource PreImage,
+        Resource Anonymized
+    )> AnonymizeWithRetryAsync(
+        string json,
         string sourceTopic,
         StrongBox<int> attempt,
         CancellationToken cancellationToken
@@ -290,6 +276,16 @@ public class KafkaMessageProcessor
     {
         for (; ; attempt.Value++)
         {
+            // Parsed afresh for every attempt: the anonymizer modifies the resource it is given in
+            // place, so an attempt failing midway (e.g. after some of its pseudonymization calls
+            // already went through) would otherwise leave the next one a partially pseudonymized
+            // resource to pseudonymize again.
+            var resource = ParseResource(json);
+
+            // Snapshot before anonymizing: the anonymizer mutates `resource` in place and returns
+            // that same instance, so `resource` is no longer the pre-image afterwards.
+            var preImage = provenancePublisher.CapturePreImage(resource);
+
             try
             {
                 using var activity = Program.ActivitySource.StartActivity("AnonymizeMessageAsync");
@@ -300,7 +296,7 @@ public class KafkaMessageProcessor
                     ShouldAddSecurityTag = anonymizationConfig.ShouldAddSecurityTag,
                 };
 
-                return await anonymizer.AnonymizeResourceAsync(resource, settings);
+                return (preImage, await anonymizer.AnonymizeResourceAsync(resource, settings));
             }
             catch (TransientPseudonymizationException exc)
             {
