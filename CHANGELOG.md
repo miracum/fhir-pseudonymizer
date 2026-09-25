@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.38.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.37.3...v2.38.0) (2026-09-24)
+
+
+### Features
+
+* additional instrumentation for kafka processing ([#426](https://github.com/miracum/fhir-pseudonymizer/issues/426)) ([be82f77](https://github.com/miracum/fhir-pseudonymizer/commit/be82f77afb338857fee5e0b17abb3330bb68db0d))
+* refactor kafka processing for improved throughput ([#427](https://github.com/miracum/fhir-pseudonymizer/issues/427)) ([b77420a](https://github.com/miracum/fhir-pseudonymizer/commit/b77420a868738df569063c720c486470f2768cd9))
+
 ## [2.37.3](https://github.com/miracum/fhir-pseudonymizer/compare/v2.37.2...v2.37.3) (2026-09-23)
 
 
