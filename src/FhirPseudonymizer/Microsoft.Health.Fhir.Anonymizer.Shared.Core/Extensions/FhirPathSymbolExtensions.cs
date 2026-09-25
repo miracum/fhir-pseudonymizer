@@ -46,6 +46,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             string typeName
         )
         {
+            if (ResourceNodeIndex.TryGetFor(nodes, out var index))
+            {
+                return index.NodesByType(typeName);
+            }
+
             return nodes
                 .SelfAndDescendantsWithoutSubResource()
                 .Where(n => typeName.Equals(n.GetInstanceType()));
@@ -53,6 +58,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
         public static IEnumerable<PocoNode> NodesByName(IEnumerable<PocoNode> nodes, string name)
         {
+            if (ResourceNodeIndex.TryGetFor(nodes, out var index))
+            {
+                return index.NodesByName(name);
+            }
+
             return nodes.SelfAndDescendantsWithoutSubResource().Where(n => name.Equals(n.Name));
         }
     }

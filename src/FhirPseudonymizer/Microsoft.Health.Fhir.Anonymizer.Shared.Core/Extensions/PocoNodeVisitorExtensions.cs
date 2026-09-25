@@ -12,7 +12,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 
             if (shouldVisitChild)
             {
-                foreach (var child in node.Children().CastPocoNodes().ToList())
+                var children = new List<PocoNode>();
+                node.AddChildren(children);
+
+                foreach (var child in children)
                 {
                     await child.AcceptAsync(visitor);
                 }

@@ -32,18 +32,23 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
                 return true;
             }
 
-            var children = node.Children().CastPocoNodes().ToList();
+            var children = new List<PocoNode>();
+            node.AddChildren(children);
+
+            var removedChildren = 0;
             foreach (var child in children)
             {
                 // Remove child if it is null => return true
                 if (RemoveNullChildren(child))
                 {
                     node.RemoveChild(child);
+                    removedChildren++;
                 }
             }
 
-            var currentNodeIsEmpty =
-                !node.Children().CastPocoNodes().Any() && node.GetValue() == null;
+            // Counted rather than enumerating the children again, which allocates a new node
+            // wrapper and enumerators for each of them.
+            var currentNodeIsEmpty = removedChildren == children.Count && node.GetValue() == null;
             var currentNodeIsFhirResource = node.IsFhirResource();
             if (currentNodeIsEmpty && !currentNodeIsFhirResource)
             {

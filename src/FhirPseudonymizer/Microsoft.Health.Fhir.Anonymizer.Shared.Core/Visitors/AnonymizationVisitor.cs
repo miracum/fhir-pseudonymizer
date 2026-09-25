@@ -92,6 +92,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             var typeString = node.GetInstanceType();
             var resourceSpecificAndGeneralRules = GetRulesByType(typeString);
 
+            // Lets all rules using nodesByType()/nodesByName() share a single walk of the resource.
+            var nodeIndex = new ResourceNodeIndex(node);
+
             foreach (var rule in resourceSpecificAndGeneralRules)
             {
                 // Checked before the FHIRPath evaluation below, which is the most expensive step
@@ -132,7 +135,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                     // FHIRPath query below lazily enumerates. Without ToList(), removing one match
                     // while a later match is still being lazily computed throws
                     // "Collection was modified; enumeration operation may not execute."
-                    matchNodes = [.. rule.Evaluate(node)];
+                    using (nodeIndex.Use())
+                    {
+                        matchNodes = [.. rule.Evaluate(node)];
+                    }
                 }
 
                 foreach (var matchNode in matchNodes)
@@ -145,6 +151,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
                             MergeSettings(rule.RuleSettings)
                         )
                     );
+                }
+
+                // Every other method only changes primitive values in place, which leaves the
+                // resource's structure - and so the index - intact.
+                if (resultOnRule.IsRemoved || resultOnRule.IsSubstituted)
+                {
+                    nodeIndex.Invalidate();
                 }
 
                 LogProcessResult(node, rule, resultOnRule);
@@ -224,7 +237,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Visitors
             // match this rule (e.g. a removed Bundle.entry's "fullUrl" and "request"), a Remove
             // processor detaches each one from `node`'s own child list as it's visited, which
             // would otherwise invalidate this same enumeration mid-loop.
-            foreach (var child in node.Children().CastPocoNodes().ToList())
+            var children = new List<PocoNode>();
+            node.AddChildren(children);
+
+            foreach (var child in children)
             {
                 if (child.IsFhirResource())
                 {
