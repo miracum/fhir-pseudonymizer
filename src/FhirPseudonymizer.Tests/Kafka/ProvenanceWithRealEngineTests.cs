@@ -22,8 +22,6 @@ public class ProvenanceWithRealEngineTests
         fhirPathRules:
           - path: Patient.id
             method: cryptoHash
-        parameters:
-          cryptoHashKey: a-key
         """;
 
     private static AnonymizerEngine CreateEngine()

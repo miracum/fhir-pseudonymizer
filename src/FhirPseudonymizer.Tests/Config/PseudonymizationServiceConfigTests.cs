@@ -16,8 +16,6 @@ public class PseudonymizationServiceConfigTests
           - path: nodesByType('Identifier').value
             method: Pseudonymize
             domain: test
-        parameters:
-          cryptoHashKey: secret
         """;
 
     private const string NoPseudonymizeConfig = """
@@ -25,8 +23,6 @@ public class PseudonymizationServiceConfigTests
         fhirPathRules:
           - path: Resource.id
             method: cryptoHash
-        parameters:
-          cryptoHashKey: secret
         """;
 
     [Fact]

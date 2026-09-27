@@ -37,7 +37,7 @@ public class CancellationTests
             parameters:
               dateShiftKey: ""
               dateShiftScope: resource
-              cryptoHashKey: "secret"
+              cryptoHashKey: ""
               encryptKey: ""
               enablePartialAgesForRedact: true
               enablePartialDatesForRedact: true

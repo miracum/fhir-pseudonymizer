@@ -16,4 +16,4 @@ fhirPathRules:
     method: cryptoHash
     truncateToMaxLength: 32
 parameters:
-  cryptoHashKey: "fhir-pseudonymizer"
+  cryptoHashKey: 30c1395bd83653260b45a499ee75e901d2e6a02f1fdd859b30b915136d8bd70b
