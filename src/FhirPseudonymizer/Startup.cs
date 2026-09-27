@@ -49,7 +49,6 @@ public class Startup
         );
 
         services.AddSingleton(_ => appConfig);
-        services.AddSingleton(_ => appConfig.GPas);
         services.AddSingleton(_ => appConfig.Features);
         services.AddSingleton(_ => appConfig.Anonymization);
 
@@ -183,6 +182,12 @@ public class Startup
         // creates its loggers via AnonymizerLogging instead of using DI, so without this it never
         // picks up the app's configured logging providers/levels and silently discards all log output.
         AnonymizerLogging.LoggerFactory = loggerFactory;
+
+        AnonymizerEngineExtensions.LogErrorIfPseudonymizationServiceIsMissing(
+            app.ApplicationServices.GetRequiredService<AnonymizerConfigurationManager>(),
+            app.ApplicationServices.GetRequiredService<AppConfig>().PseudonymizationService,
+            loggerFactory.CreateLogger<Startup>()
+        );
 
         if (env.IsDevelopment())
         {

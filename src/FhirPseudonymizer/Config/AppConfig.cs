@@ -8,7 +8,8 @@ public record AppConfig
     public string AnonymizationEngineConfigPath { get; init; }
     public string AnonymizationEngineConfigInline { get; set; }
     public string ApiKey { get; init; }
-    public PseudonymizationServiceType PseudonymizationService { get; init; }
+    public PseudonymizationServiceType PseudonymizationService { get; init; } =
+        PseudonymizationServiceType.None;
     public CacheConfig Cache { get; init; } = new();
     public CacheConfig AnonymizerEngineCache { get; init; } = new();
     public GPasConfig GPas { get; init; } = new();
@@ -114,7 +115,6 @@ public record GPasConfig
 {
     public Uri Url { get; init; }
     public int RequestRetryCount { get; init; }
-    public string Version { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
 }
 
