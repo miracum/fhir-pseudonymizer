@@ -144,8 +144,21 @@ public class KafkaMessageProcessor
             );
             output = JsonSerializer.Serialize(anonymized, FhirJsonOptions);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (Exception exc) when (cancellationToken.IsCancellationRequested)
         {
+            // Failing once the message's processing was cancelled is more likely a consequence of
+            // stopping than of the message - e.g. the host disposing the services it depends on
+            // after its shutdown timeout - so it is abandoned (and reprocessed later, by this
+            // consumer after a restart or by the partition's new owner) rather than dead-lettered.
+            if (exc is not OperationCanceledException)
+            {
+                logger.LogWarning(
+                    exc,
+                    "Processing message from {TopicPartitionOffset} failed after it was cancelled, leaving it to be reprocessed",
+                    result.TopicPartitionOffset
+                );
+            }
+
             onCompleted(KafkaMessageOutcome.Abandoned);
             return;
         }

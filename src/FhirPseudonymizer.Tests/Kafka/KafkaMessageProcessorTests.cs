@@ -620,6 +620,48 @@ public class KafkaMessageProcessorTests
     }
 
     [Fact]
+    public async Task ProcessAsync_WhenProcessingFailsAfterItWasCancelled_ReportsAbandonedInsteadOfDeadLettering()
+    {
+        using var cts = new CancellationTokenSource();
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(
+                async Task<Resource> (Resource _, AnonymizerSettings _, CancellationToken _) =>
+                {
+                    // e.g. the host shutting down disposes the pseudonym cache under the message
+                    await cts.CancelAsync();
+                    throw new ObjectDisposedException("MemoryCache");
+                }
+            );
+        var producer = A.Fake<IProducer<byte[], string>>();
+        var processor = CreateProcessor(anonymizer, producer);
+
+        var outcomes = new List<KafkaMessageOutcome>();
+        await processor
+            .Invoking(p =>
+                p.ProcessAsync(CreateConsumeResult(PatientJson), outcomes.Add, cts.Token)
+            )
+            .Should()
+            .NotThrowAsync();
+
+        outcomes.Should().Equal(KafkaMessageOutcome.Abandoned);
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .MustNotHaveHappened();
+    }
+
+    [Fact]
     public void GetOutputTopic_WithDefaultConfig_PrependsPseudonymizedPrefix()
     {
         var processor = CreateProcessor(

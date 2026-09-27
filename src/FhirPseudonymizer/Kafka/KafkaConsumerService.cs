@@ -32,15 +32,14 @@ public delegate IConsumer<byte[], string> KafkaConsumerFactory(
 ///         </item>
 ///         <item>
 ///             Each worker has a bounded queue (by message count and approximate size). When a
-///             worker's queue is full, the poll thread waits for it to make room - that is the
-///             normal backpressure while working through a backlog. Only if the worker doesn't
-///             accept another message within <see cref="KafkaConfig.WorkerBusyTimeoutMs" /> (e.g.
-///             because it is retrying a pseudonymization backend that is down) are its partitions
-///             paused, so that the others keep being consumed and this consumer isn't kicked from
-///             its group for exceeding max.poll.interval.ms. They are resumed once the worker
-///             has worked off half of its queue. Pausing is deliberately kept out of the normal
-///             path: librdkafka discards everything it has already prefetched for a partition
-///             when pausing it, so pausing on every full queue means refetching most messages.
+///             worker's queue is full, its partitions are paused right away - that is the normal
+///             backpressure while working through a backlog - and resumed once it has worked off
+///             half of its queue. The poll thread never waits for a worker to make room:
+///             librdkafka hands out all partitions' prefetched messages through a single queue, in
+///             runs of thousands of messages per partition, so waiting for one worker would leave
+///             all others idle until it got through the whole run. Pausing makes librdkafka
+///             discard the rest of the run instead, which is fetched again after resuming - the
+///             halfway mark keeps that down to once per half a queue's worth of messages.
 ///         </item>
 ///         <item>
 ///             A message's offset is only stored (and later auto-committed) once the message it
@@ -63,7 +62,7 @@ public class KafkaConsumerService : BackgroundService
     private static readonly UpDownCounter<long> PausedPartitionsCounter =
         Program.Meter.CreateUpDownCounter<long>(
             "fhirpseudonymizer.kafka.partitions_paused",
-            description: "Number of partitions currently paused because the worker processing them stopped accepting new messages - most likely because it is retrying a transient pseudonymization backend failure."
+            description: "Number of partitions currently paused because the queue of the worker processing them is full - it is behind on a backlog, or retrying a transient pseudonymization backend failure."
         );
 
     private static readonly Gauge<int> WorkerQueueDepthGauge = Program.Meter.CreateGauge<int>(
@@ -88,7 +87,6 @@ public class KafkaConsumerService : BackgroundService
     private readonly KafkaConfig kafkaConfig;
     private readonly ILogger<KafkaConsumerService> logger;
     private readonly Worker[] workers;
-    private readonly TimeSpan workerBusyTimeout;
 
     // Written by whichever thread reports a message's outcome, read by the poll thread.
     private readonly Channel<WorkItem> completedItems = Channel.CreateUnbounded<WorkItem>(
@@ -113,7 +111,6 @@ public class KafkaConsumerService : BackgroundService
         this.kafkaConfig = kafkaConfig;
         this.logger = logger;
 
-        workerBusyTimeout = TimeSpan.FromMilliseconds(Math.Max(0, kafkaConfig.WorkerBusyTimeoutMs));
         workers =
         [
             .. Enumerable
@@ -165,10 +162,6 @@ public class KafkaConsumerService : BackgroundService
         try
         {
             RunConsumeLoop(stoppingToken);
-        }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-        {
-            // shutting down while waiting for a busy worker
         }
         finally
         {
@@ -233,7 +226,7 @@ public class KafkaConsumerService : BackgroundService
             // later message of the same partition is stored.
             if (result?.Message?.Value is not null)
             {
-                Dispatch(result, stoppingToken);
+                Dispatch(result);
             }
 
             ResumeRecoveredWorkers();
@@ -255,7 +248,7 @@ public class KafkaConsumerService : BackgroundService
         PartitionsAssignedGauge.Record(partitions.Count);
     }
 
-    private void Dispatch(ConsumeResult<byte[], string> result, CancellationToken stoppingToken)
+    private void Dispatch(ConsumeResult<byte[], string> result)
     {
         if (!partitions.TryGetValue(result.TopicPartition, out var partition))
         {
@@ -275,52 +268,20 @@ public class KafkaConsumerService : BackgroundService
             return;
         }
 
-        if (worker.TryEnqueue(item) || WaitToEnqueue(worker, item, stoppingToken))
+        if (worker.TryEnqueue(item))
         {
             return;
         }
 
-        logger.LogWarning(
-            "Worker {Worker} did not accept a new message within {Timeout}, pausing its partitions until it catches up",
-            worker.Index,
-            workerBusyTimeout
+        // Not waiting for the worker to make room, since the messages librdkafka hands out next
+        // may well be for other, idle workers - see the class summary.
+        logger.LogDebug(
+            "Worker {Worker}'s queue is full, pausing its partitions until it has worked off half of it",
+            worker.Index
         );
 
         worker.IsStalled = true;
         HoldBack(partition, item);
-    }
-
-    /// <summary>
-    ///     Waits for a worker with a full queue to make room for <paramref name="item" />, for up to
-    ///     <see cref="KafkaConfig.WorkerBusyTimeoutMs" />. Keeps storing the offsets of completed
-    ///     messages meanwhile, and stops early if one of them turned out to have failed.
-    /// </summary>
-    private bool WaitToEnqueue(Worker worker, WorkItem item, CancellationToken stoppingToken)
-    {
-        var stopwatch = Stopwatch.StartNew();
-
-        while (true)
-        {
-            worker.SpaceAvailable.Reset();
-
-            if (worker.TryEnqueue(item))
-            {
-                return true;
-            }
-
-            var remaining = workerBusyTimeout - stopwatch.Elapsed;
-            if (remaining <= TimeSpan.Zero || failedItem is not null)
-            {
-                return false;
-            }
-
-            worker.SpaceAvailable.Wait(
-                remaining < PollTimeout ? remaining : PollTimeout,
-                stoppingToken
-            );
-
-            StoreCompletedOffsets();
-        }
     }
 
     /// <summary>
@@ -378,7 +339,7 @@ public class KafkaConsumerService : BackgroundService
                 Resume(partition);
             }
 
-            logger.LogInformation(
+            logger.LogDebug(
                 "Worker {Worker} caught up, resumed consuming its partitions",
                 worker.Index
             );
@@ -620,6 +581,12 @@ public class KafkaConsumerService : BackgroundService
         {
             await foreach (var item in worker.ReadAllAsync(cancellationToken))
             {
+                // ReadAllAsync only observes cancellation while waiting for new messages, not
+                // while handing out those already queued - without this, stopping would first
+                // work off the whole queue, long past the host's shutdown timeout, after which
+                // the services processing depends on (like the pseudonym cache) are disposed
+                cancellationToken.ThrowIfCancellationRequested();
+
                 // skipped because its partition was revoked in the meantime
                 if (!item.TryStart())
                 {
@@ -771,13 +738,10 @@ public class KafkaConsumerService : BackgroundService
         public List<PartitionState> Partitions { get; } = [];
 
         /// <summary>
-        ///     Whether this worker didn't accept a message within the busy timeout and hasn't
-        ///     caught up since. Only used by the poll thread.
+        ///     Whether this worker's queue was full and it hasn't worked off half of it since, so
+        ///     its partitions are paused. Only used by the poll thread.
         /// </summary>
         public bool IsStalled { get; set; }
-
-        /// <summary>Set whenever the worker takes a message off its queue.</summary>
-        public ManualResetEventSlim SpaceAvailable { get; } = new(false);
 
         public int QueuedCount => Volatile.Read(ref queuedCount);
 
@@ -815,7 +779,6 @@ public class KafkaConsumerService : BackgroundService
             {
                 Interlocked.Decrement(ref queuedCount);
                 Interlocked.Add(ref queuedBytes, -item.Size);
-                SpaceAvailable.Set();
 
                 yield return item;
             }
