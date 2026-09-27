@@ -18,7 +18,6 @@ Based on the brilliant [Tools for Health Data Anonymization](https://github.com/
 ```sh
 docker run --rm -i -p 8080:8080 \
   -e PseudonymizationService="None" \
-  -e UseSystemTextJsonFhirSerializer="true" \
   ghcr.io/miracum/fhir-pseudonymizer:v2.38.0
 
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" -d @benchmark/observation.json
@@ -133,7 +132,6 @@ Additionally, there are some optional configuration values that can be set as en
 | `AnonymizationEngineConfigPath`       | Path to the `anonymization.yaml` that contains the rules to transform the resources.                                                                                                                                                                                                                                                                                                                                                                                                                      | `"/etc/anonymization.yaml"` |
 | `AnonymizationEngineConfigInline`     | The `anonymization.yaml` as an inline YAML string instead of a separate file. Takes precedence if both `Path` and `Inline` are set.                                                                                                                                                                                                                                                                                                                                                                       | `""`                        |
 | `ApiKey`                              | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                                                                                                                                                                                                                                                                                                  | `""`                        |
-| `UseSystemTextJsonFhirSerializer`     | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4>                                                                                                                                                                                                                                                                                  | `false`                     |
 | `PseudonymizationService`             | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `entici`, `Mii`, `None`                                                                                                                                                                                                                                                                                                                                                                                                               | `"gPAS"`                    |
 | `MetricsPort`                         | The port where metrics in Prometheus format should be exposed at under the `/metrics` route.                                                                                                                                                                                                                                                                                                                                                                                                              | `8081`                      |
 | `Kestrel__MaxRequestBodySize`         | The maximum allowed size, in bytes, of an incoming HTTP request body (e.g. a large FHIR Bundle posted to `$de-identify`). Requests exceeding this are rejected with `413 Payload Too Large`. Increase this if you need to process large Bundles.                                                                                                                                                                                                                                                          | `30000000`                  |
@@ -666,34 +664,6 @@ In a different terminal
 cd benchmark/
 $ ./bombardier.sh
 
-Bombarding http://localhost:5000/fhir/$de-identify for 1m0s using 125 connection(s)
-[====================================================================================================================] 1m0s
-Done!
-Statistics        Avg      Stdev        Max
-  Reqs/sec     13107.78    1552.49   18917.77
-  Latency        9.53ms   559.41us    53.88ms
-  Latency Distribution
-     50%     9.00ms
-     75%    11.00ms
-     90%    12.00ms
-     95%    13.00ms
-     99%    16.73ms
-  HTTP codes:
-    1xx - 0, 2xx - 786655, 3xx - 0, 4xx - 0, 5xx - 0
-    others - 0
-  Throughput:    96.37MB/s
-```
-
-### UseSystemTextJsonFhirSerializer
-
-You can improve throughput and P99 latencies by opting-in to using the System.Text.Json based FHIR resource serializer.
-It can be enabled via `appsettings.json` or using the `UseSystemTextJsonFhirSerializer` environment variable:
-
-```sh
-UseSystemTextJsonFhirSerializer=true dotnet run -c Release --project=src/FhirPseudonymizer
-```
-
-```console
 Bombarding http://localhost:5000/fhir/$de-identify for 1m0s using 125 connection(s)
 [====================================================================================================================] 1m0s
 Done!
