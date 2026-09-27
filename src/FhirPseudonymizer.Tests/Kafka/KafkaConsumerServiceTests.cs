@@ -406,6 +406,56 @@ public class KafkaConsumerServiceTests
     }
 
     [Fact]
+    public async Task StoppingTheService_LetsTheMessageInProgressFinishButLeavesTheQueuedOnesUnprocessed()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var processingStarted = new TaskCompletionSource();
+        var release = new TaskCompletionSource();
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer();
+        var service = CreateService(
+            consumer,
+            producer,
+            CreateAnonymizer(resource =>
+            {
+                if (resource.Id != "p0-o0")
+                {
+                    return Task.CompletedTask;
+                }
+
+                processingStarted.TrySetResult();
+                return release.Task;
+            }),
+            new KafkaConfig { WorkerCount = 1 }
+        );
+
+        consumer.Assign(InputPartition(0));
+        consumer.Deliver([.. Enumerable.Range(0, 5).Select(offset => Message(0, offset))]);
+        var allQueued = consumer.RunOnPollThread(() => true);
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await processingStarted.Task.WaitAsync(cancellationToken);
+            await allQueued.WaitAsync(cancellationToken);
+
+            // cancels the service's stopping token right away, then waits for the worker
+            var stopping = service.StopAsync(cancellationToken);
+            release.TrySetResult();
+            await stopping;
+        }
+        finally
+        {
+            release.TrySetResult();
+            await service.StopAsync(cancellationToken);
+        }
+
+        // the rest are reprocessed after a restart, from the stored offset on
+        producer.Produced.Select(p => p.Key).Should().Equal("p0-o0");
+        consumer.StoredOffsets.Should().Equal(new TopicPartitionOffset(InputPartition(0), 1));
+    }
+
+    [Fact]
     public async Task RevokingAPartition_LetsItsMessageInProgressFinishAndStoresItsOffsetBeforeHandingItOver()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

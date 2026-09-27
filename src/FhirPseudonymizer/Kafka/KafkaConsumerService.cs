@@ -620,6 +620,12 @@ public class KafkaConsumerService : BackgroundService
         {
             await foreach (var item in worker.ReadAllAsync(cancellationToken))
             {
+                // ReadAllAsync only observes cancellation while waiting for new messages, not
+                // while handing out those already queued - without this, stopping would first
+                // work off the whole queue, long past the host's shutdown timeout, after which
+                // the services processing depends on (like the pseudonym cache) are disposed
+                cancellationToken.ThrowIfCancellationRequested();
+
                 // skipped because its partition was revoked in the meantime
                 if (!item.TryStart())
                 {
