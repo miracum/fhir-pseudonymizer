@@ -10,7 +10,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
     public class EncryptProcessor : IAnonymizerProcessor
     {
         private readonly byte[] _key;
-        private readonly ILogger _logger = AnonymizerLogging.CreateLogger<EncryptProcessor>();
 
         public EncryptProcessor(string encryptKey)
         {
@@ -36,9 +35,6 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
             var input = node.GetValue().ToString();
             node.SetPrimitiveValue(EncryptUtility.EncryptTextToHexWithAes(input, _key));
-            _logger.LogDebug(
-                $"Fhir value '{input}' at '{node.GetLocation()}' is encrypted to '{node.GetValue()}'."
-            );
 
             processResult.AddProcessRecord(AnonymizationOperations.Encrypt, node);
             return Task.FromResult(processResult);

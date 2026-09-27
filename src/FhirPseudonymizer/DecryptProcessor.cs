@@ -12,7 +12,7 @@ namespace FhirPseudonymizer
     public class DecryptProcessor : IAnonymizerProcessor
     {
         private readonly byte[] _key;
-        private readonly ILogger _logger = AnonymizerLogging.CreateLogger<EncryptProcessor>();
+        private readonly ILogger _logger = AnonymizerLogging.CreateLogger<DecryptProcessor>();
 
         public DecryptProcessor(string decryptKey)
         {
@@ -45,10 +45,6 @@ namespace FhirPseudonymizer
             {
                 _logger.LogWarning(exc, "Decryption failed. Returning original value.");
             }
-
-            _logger.LogDebug(
-                $"Fhir value '{input}' at '{node.GetLocation()}' is decrypted to '{node.GetValue()}'."
-            );
 
             return Task.FromResult(processResult);
         }
