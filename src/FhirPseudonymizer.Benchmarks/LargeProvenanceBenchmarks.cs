@@ -33,7 +33,7 @@ namespace FhirPseudonymizer.Benchmarks;
 [SimpleJob(RunStrategy.Monitoring, launchCount: 1, warmupCount: 1, iterationCount: 3)]
 public class LargeProvenanceBenchmarks
 {
-    private static readonly FhirJsonParser Parser = new();
+    private static readonly FhirJsonDeserializer Parser = new();
 
     private AnonymizerEngine engine = null!;
     private string provenanceJson = string.Empty;
@@ -90,7 +90,7 @@ public class LargeProvenanceBenchmarks
     [Benchmark(Baseline = true)]
     public string ParseAndSerializeOnly()
     {
-        return Parser.Parse<Hl7.Fhir.Model.Resource>(provenanceJson).ToJson();
+        return Parser.Deserialize<Hl7.Fhir.Model.Resource>(provenanceJson).ToJson();
     }
 
     [Benchmark]

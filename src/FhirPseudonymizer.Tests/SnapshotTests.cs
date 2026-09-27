@@ -7,7 +7,7 @@ namespace FhirPseudonymizer.Tests;
 
 public class SnapshotTests
 {
-    private static readonly FhirJsonParser FhirJsonParser = new();
+    private static readonly FhirJsonDeserializer FhirJsonParser = new();
 
     [ModuleInitializer]
     internal static void Init() => VerifierSettings.UseUtf8NoBom();
@@ -54,11 +54,11 @@ public class SnapshotTests
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        var input = await FhirJsonParser.ParseAsync<Resource>(File.ReadAllText(resourcePath));
+        var input = FhirJsonParser.Deserialize<Resource>(File.ReadAllText(resourcePath));
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        var json = response.ToJson(new() { Pretty = true });
+        var json = response.ToJson(pretty: true);
 
         var settings = new VerifySettings();
         settings.UseDirectory("Snapshots");

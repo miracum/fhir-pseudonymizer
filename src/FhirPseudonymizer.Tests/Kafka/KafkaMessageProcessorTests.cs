@@ -258,23 +258,24 @@ public class KafkaMessageProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_WithAResourceOnlyTheLegacyParserAccepts_StillProcessesIt()
+    public async Task ProcessAsync_WithAResourceThatIsNotValidFhir_SendsItToTheDeadLetterTopic()
     {
-        // ids may only contain [A-Za-z0-9\-\.] as per the FHIR spec, which the System.Text.Json
-        // based deserializer validates, but the legacy parser did not
+        // ids may only contain [A-Za-z0-9\-\.] as per the FHIR spec, which is validated while
+        // parsing
+        var json = """{"resourceType":"Patient","id":"pid_1"}""";
         var producer = CreateProducer(out var produced);
         var processor = CreateProcessor(CreatePassThroughAnonymizer(), producer);
 
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
-            CreateConsumeResult("""{"resourceType":"Patient","id":"pid_1"}"""),
+            CreateConsumeResult(json),
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
 
-        produced.Single().Topic.Should().Be(OutputTopic);
-        produced.Single().Message.Value.Should().Contain("\"id\":\"pid_1\"");
-        outcomes.Should().Equal(KafkaMessageOutcome.Produced);
+        produced.Single().Topic.Should().Be(DeadLetterTopic);
+        produced.Single().Message.Value.Should().Be(json);
+        outcomes.Should().Equal(KafkaMessageOutcome.DeadLettered);
     }
 
     [Fact]
@@ -441,6 +442,9 @@ public class KafkaMessageProcessorTests
             )
             .Returns(Task.FromResult<Resource>(anonymized));
         var provenancePublisher = A.Fake<IProvenancePublisher>();
+        // Mirror KafkaProvenancePublisher: snapshot the resource before the anonymizer gets it.
+        A.CallTo(() => provenancePublisher.CapturePreImage(A<Resource>._))
+            .ReturnsLazily((Resource r) => (Resource)r.DeepCopy());
         var processor = CreateProcessor(
             anonymizer,
             A.Fake<IProducer<byte[], string>>(),
@@ -529,6 +533,48 @@ public class KafkaMessageProcessorTests
 
         attempt.Should().Be(3);
         produced.Select(p => p.Topic).Should().Equal(OutputTopic);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenRetryingATransientFailure_AnonymizesAFreshlyParsedResourceEachTime()
+    {
+        // like the real anonymizer, this one modifies the resource it is given in place - and
+        // then fails the first attempt, as if a pseudonymization backend call went wrong midway
+        var attempt = 0;
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(
+                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
+                {
+                    resource.Id += "-anonymized";
+                    if (Interlocked.Increment(ref attempt) < 2)
+                    {
+                        throw new TransientPseudonymizationException(
+                            "backend unavailable",
+                            new InvalidOperationException()
+                        );
+                    }
+
+                    return Task.FromResult(resource);
+                }
+            );
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(anonymizer, producer);
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson),
+            _ => { },
+            TestContext.Current.CancellationToken
+        );
+
+        attempt.Should().Be(2);
+        produced.Single().Message.Value.Should().Contain("\"id\":\"123-anonymized\"");
     }
 
     [Fact]

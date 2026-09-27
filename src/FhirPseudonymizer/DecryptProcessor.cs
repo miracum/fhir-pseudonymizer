@@ -1,9 +1,11 @@
 using System.Text;
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core;
+using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
+using Task = System.Threading.Tasks.Task;
 
 namespace FhirPseudonymizer
 {
@@ -23,21 +25,21 @@ namespace FhirPseudonymizer
         }
 
         public Task<ProcessResult> ProcessAsync(
-            ElementNode node,
+            PocoNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
         )
         {
             var processResult = new ProcessResult();
-            if (string.IsNullOrEmpty(node?.Value?.ToString()))
+            if (string.IsNullOrEmpty(node?.GetValue()?.ToString()))
             {
                 return Task.FromResult(processResult);
             }
 
-            var input = node.Value.ToString();
+            var input = node.GetValue().ToString();
             try
             {
-                node.Value = EncryptUtility.DecryptTextFromHexStringWithAes(input, _key);
+                node.SetPrimitiveValue(EncryptUtility.DecryptTextFromHexStringWithAes(input, _key));
             }
             catch (Exception exc)
             {
@@ -45,7 +47,7 @@ namespace FhirPseudonymizer
             }
 
             _logger.LogDebug(
-                $"Fhir value '{input}' at '{node.Location}' is decrypted to '{node.Value}'."
+                $"Fhir value '{input}' at '{node.GetLocation()}' is decrypted to '{node.GetValue()}'."
             );
 
             return Task.FromResult(processResult);

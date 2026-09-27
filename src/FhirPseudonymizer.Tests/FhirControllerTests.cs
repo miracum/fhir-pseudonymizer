@@ -195,7 +195,14 @@ public class FhirControllerTests
 
         response.StatusCode.Should().Be(StatusCodes.Status499ClientClosedRequest);
         response.Value.Should().BeOfType<OperationOutcome>();
-        A.CallTo(provenancePublisher).MustNotHaveHappened();
+        A.CallTo(() =>
+                provenancePublisher.Publish(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Confluent.Kafka.Headers>._
+                )
+            )
+            .MustNotHaveHappened();
     }
 
     [Fact]
@@ -248,6 +255,9 @@ public class FhirControllerTests
             .Returns(anonymized);
 
         var provenancePublisher = A.Fake<IProvenancePublisher>();
+        // Mirror KafkaProvenancePublisher: snapshot the resource before the anonymizer gets it.
+        var preImage = new Patient { Id = "123" };
+        A.CallTo(() => provenancePublisher.CapturePreImage(original)).Returns(preImage);
 
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
@@ -263,7 +273,7 @@ public class FhirControllerTests
 
         await controller.DeIdentify(original, TestContext.Current.CancellationToken);
 
-        A.CallTo(() => provenancePublisher.Publish(original, anonymized, null))
+        A.CallTo(() => provenancePublisher.Publish(preImage, anonymized, null))
             .MustHaveHappenedOnceExactly();
     }
 

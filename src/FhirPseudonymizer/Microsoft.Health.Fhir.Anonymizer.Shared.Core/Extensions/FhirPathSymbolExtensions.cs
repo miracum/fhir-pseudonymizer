@@ -1,4 +1,4 @@
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Hl7.FhirPath.Expressions;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
@@ -15,9 +15,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
                 // Check whether extension method already exists
                 if (t.Filter("nodesByType", 2).Count() == 0)
                 {
+                    // The registered delegate's focus/return type must be exactly
+                    // IEnumerable<PocoNode> (FHIRPath's internal FocusCollection type in v6) -
+                    // IEnumerable<ITypedElement> compiles fine here too, but at invocation time
+                    // the engine's Typecasts.CastTo<FocusCollection> no longer recognizes it as
+                    // "already a node sequence" and instead tries to re-infer a primitive type
+                    // from each item, throwing.
                     t.Add(
                         "nodesByType",
-                        (IEnumerable<ITypedElement> f, string typeName) => NodesByType(f, typeName),
+                        (IEnumerable<PocoNode> f, string typeName) => NodesByType(f, typeName),
                         true
                     );
                 }
@@ -26,7 +32,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
                 {
                     t.Add(
                         "nodesByName",
-                        (IEnumerable<ITypedElement> f, string name) => NodesByName(f, name),
+                        (IEnumerable<PocoNode> f, string name) => NodesByName(f, name),
                         true
                     );
                 }
@@ -35,26 +41,19 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             return t;
         }
 
-        public static IEnumerable<ITypedElement> NodesByType(
-            IEnumerable<ITypedElement> nodes,
+        public static IEnumerable<PocoNode> NodesByType(
+            IEnumerable<PocoNode> nodes,
             string typeName
         )
         {
             return nodes
-                .CastElementNodes()
                 .SelfAndDescendantsWithoutSubResource()
-                .Where(n => typeName.Equals(n.InstanceType));
+                .Where(n => typeName.Equals(n.GetInstanceType()));
         }
 
-        public static IEnumerable<ITypedElement> NodesByName(
-            IEnumerable<ITypedElement> nodes,
-            string name
-        )
+        public static IEnumerable<PocoNode> NodesByName(IEnumerable<PocoNode> nodes, string name)
         {
-            return nodes
-                .CastElementNodes()
-                .SelfAndDescendantsWithoutSubResource()
-                .Where(n => name.Equals(n.Name));
+            return nodes.SelfAndDescendantsWithoutSubResource().Where(n => name.Equals(n.Name));
         }
     }
 }
