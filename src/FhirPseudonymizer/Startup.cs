@@ -148,18 +148,8 @@ public class Startup
 
         services.AddControllers(options =>
         {
-            var useSystemTextJsonFhirSerializer = Configuration.GetValue(
-                "UseSystemTextJsonFhirSerializer",
-                false
-            );
-            options.InputFormatters.Insert(
-                0,
-                new FhirInputFormatter(useSystemTextJsonFhirSerializer)
-            );
-            options.OutputFormatters.Insert(
-                0,
-                new FhirOutputFormatter(useSystemTextJsonFhirSerializer)
-            );
+            options.InputFormatters.Insert(0, new FhirInputFormatter());
+            options.OutputFormatters.Insert(0, new FhirOutputFormatter());
         });
 
         services.AddSwaggerGen(c =>
