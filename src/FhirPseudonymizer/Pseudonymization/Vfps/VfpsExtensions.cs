@@ -92,7 +92,7 @@ public static class VfpsExtensions
 
         var retryPolicy = new RetryPolicy
         {
-            MaxAttempts = Math.Max(2, vfpsConfig.RequestRetryCount + 1),
+            MaxAttempts = Math.Max(2, vfpsConfig.Retry.Count + 1),
             InitialBackoff = TimeSpan.FromSeconds(1),
             MaxBackoff = TimeSpan.FromSeconds(5),
             BackoffMultiplier = 1.5,
