@@ -8,6 +8,7 @@ using FhirPseudonymizer.Pseudonymization.GPas;
 using FhirPseudonymizer.Pseudonymization.Mii;
 using FhirPseudonymizer.Pseudonymization.Vfps;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Caching.Memory;
@@ -149,6 +150,9 @@ public class Startup
         {
             options.InputFormatters.Insert(0, new FhirInputFormatter());
             options.OutputFormatters.Insert(0, new FhirOutputFormatter());
+            options.ModelMetadataDetailsProviders.Add(
+                new SuppressChildValidationMetadataProvider(typeof(Hl7.Fhir.Model.Base))
+            );
         });
 
         services.AddSwaggerGen(c =>
