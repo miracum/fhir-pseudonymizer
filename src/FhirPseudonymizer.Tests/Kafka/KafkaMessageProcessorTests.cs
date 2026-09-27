@@ -125,6 +125,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -143,6 +144,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson, key),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -159,6 +161,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson, headers: headers),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -196,6 +199,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -223,6 +227,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult("not valid fhir json", key, headers),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -250,6 +255,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult("not valid fhir json"),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -269,6 +275,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(json),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -296,6 +303,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -315,6 +323,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -335,6 +344,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -361,6 +371,7 @@ public class KafkaMessageProcessorTests
             .Invoking(p =>
                 p.ProcessAsync(
                     CreateConsumeResult("not valid fhir json"),
+                    1,
                     outcomes.Add,
                     TestContext.Current.CancellationToken
                 )
@@ -412,6 +423,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -467,6 +479,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson, headers: headers),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -488,6 +501,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult("not valid fhir json"),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -497,9 +511,8 @@ public class KafkaMessageProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenPseudonymizationBackendIsTransientlyUnavailable_RetriesUntilItSucceeds()
+    public async Task ProcessAsync_WhenPseudonymizationBackendIsTransientlyUnavailable_ThrowsForTheCallerToRetryInsteadOfDeadLettering()
     {
-        var attempt = 0;
         var anonymizer = A.Fake<IAnonymizerEngine>();
         A.CallTo(() =>
                 anonymizer.AnonymizeResourceAsync(
@@ -508,35 +521,34 @@ public class KafkaMessageProcessorTests
                     A<CancellationToken>._
                 )
             )
-            .ReturnsLazily(
-                (Resource resource, AnonymizerSettings _, CancellationToken _) =>
-                {
-                    if (Interlocked.Increment(ref attempt) < 3)
-                    {
-                        throw new TransientPseudonymizationException(
-                            "backend unavailable",
-                            new InvalidOperationException()
-                        );
-                    }
-
-                    return Task.FromResult(resource);
-                }
+            .Throws(
+                new TransientPseudonymizationException(
+                    "backend unavailable",
+                    new InvalidOperationException()
+                )
             );
         var producer = CreateProducer(out var produced);
         var processor = CreateProcessor(anonymizer, producer);
 
-        await processor.ProcessAsync(
-            CreateConsumeResult(PatientJson),
-            _ => { },
-            TestContext.Current.CancellationToken
-        );
+        var outcomes = new List<KafkaMessageOutcome>();
+        await processor
+            .Invoking(p =>
+                p.ProcessAsync(
+                    CreateConsumeResult(PatientJson),
+                    1,
+                    outcomes.Add,
+                    TestContext.Current.CancellationToken
+                )
+            )
+            .Should()
+            .ThrowAsync<TransientPseudonymizationException>();
 
-        attempt.Should().Be(3);
-        produced.Select(p => p.Topic).Should().Equal(OutputTopic);
+        produced.Should().BeEmpty();
+        outcomes.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenRetryingATransientFailure_AnonymizesAFreshlyParsedResourceEachTime()
+    public async Task ProcessAsync_WhenRetryingATransientFailure_AnonymizesAFreshlyParsedResource()
     {
         // like the real anonymizer, this one modifies the resource it is given in place - and
         // then fails the first attempt, as if a pseudonymization backend call went wrong midway
@@ -566,19 +578,22 @@ public class KafkaMessageProcessorTests
             );
         var producer = CreateProducer(out var produced);
         var processor = CreateProcessor(anonymizer, producer);
+        var result = CreateConsumeResult(PatientJson);
 
-        await processor.ProcessAsync(
-            CreateConsumeResult(PatientJson),
-            _ => { },
-            TestContext.Current.CancellationToken
-        );
+        await processor
+            .Invoking(p =>
+                p.ProcessAsync(result, 1, _ => { }, TestContext.Current.CancellationToken)
+            )
+            .Should()
+            .ThrowAsync<TransientPseudonymizationException>();
+        await processor.ProcessAsync(result, 2, _ => { }, TestContext.Current.CancellationToken);
 
         attempt.Should().Be(2);
         produced.Single().Message.Value.Should().Contain("\"id\":\"123-anonymized\"");
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenCancelledWhileRetryingATransientFailure_ReportsAbandonedWithoutProducing()
+    public async Task ProcessAsync_WhenThePseudonymizationBackendIsUnavailableOnceCancelled_ReportsAbandonedWithoutProducing()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
         A.CallTo(() =>
@@ -603,7 +618,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor
             .Invoking(p =>
-                p.ProcessAsync(CreateConsumeResult(PatientJson), outcomes.Add, cts.Token)
+                p.ProcessAsync(CreateConsumeResult(PatientJson), 1, outcomes.Add, cts.Token)
             )
             .Should()
             .NotThrowAsync();
@@ -645,7 +660,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor
             .Invoking(p =>
-                p.ProcessAsync(CreateConsumeResult(PatientJson), outcomes.Add, cts.Token)
+                p.ProcessAsync(CreateConsumeResult(PatientJson), 1, outcomes.Add, cts.Token)
             )
             .Should()
             .NotThrowAsync();

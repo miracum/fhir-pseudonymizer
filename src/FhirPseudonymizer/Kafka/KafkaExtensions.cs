@@ -52,13 +52,13 @@ public static class KafkaExtensions
         services.AddSingleton<KafkaMessageProcessor>();
 
         services.AddSingleton<KafkaConsumerFactory>(serviceProvider =>
-            (onPartitionsAssigned, onPartitionsRevoked, onPartitionsLost) =>
+            (index, onPartitionsAssigned, onPartitionsRevoked, onPartitionsLost) =>
             {
                 var logger = serviceProvider
                     .GetRequiredService<ILoggerFactory>()
                     .CreateLogger("FhirPseudonymizer.Kafka.Consumer");
 
-                return new ConsumerBuilder<byte[], string>(CreateConsumerConfig(kafkaConfig))
+                return new ConsumerBuilder<byte[], string>(CreateConsumerConfig(kafkaConfig, index))
                     .SetPartitionsAssignedHandler(
                         (_, partitions) => onPartitionsAssigned(partitions)
                     )
@@ -140,9 +140,10 @@ public static class KafkaExtensions
     /// <summary>
     ///     Merges the shared <see cref="KafkaConfig.Client" /> settings with the consumer-only
     ///     <see cref="KafkaConfig.Consumer" /> overrides, applying the sane defaults and the
-    ///     non-negotiable offset-storing settings that <see cref="KafkaConsumerService" /> relies on.
+    ///     non-negotiable offset-storing settings that <see cref="KafkaConsumerService" /> relies on,
+    ///     for the <paramref name="index" />th of its consumers.
     /// </summary>
-    public static ConsumerConfig CreateConsumerConfig(KafkaConfig kafkaConfig)
+    public static ConsumerConfig CreateConsumerConfig(KafkaConfig kafkaConfig, int index = 0)
     {
         // start from a copy of the settings shared with the producer (BootstrapServers,
         // SecurityProtocol, Sasl*, ...). ConsumerConfig(ClientConfig) does not clone the
@@ -157,6 +158,9 @@ public static class KafkaExtensions
         // partitions (topics * partitions-per-topic) are assigned to a consumer instance.
         consumerConfig.PartitionAssignmentStrategy ??=
             PartitionAssignmentStrategy.CooperativeSticky;
+        // librdkafka's default of 64 MiB (of decompressed messages, which it may overshoot by a
+        // fetch's worth) is meant for a single consumer per process, not one per worker.
+        consumerConfig.QueuedMaxMessagesKbytes ??= 16 * 1024;
 
         // layer the explicitly configured Kafka__Consumer__* settings on top of the above
         foreach (var (key, value) in kafkaConfig.Consumer)
@@ -170,6 +174,14 @@ public static class KafkaExtensions
         // correctness depends on this, so it is not overridable via Kafka__Consumer__*.
         consumerConfig.EnableAutoCommit = true;
         consumerConfig.EnableAutoOffsetStore = false;
+
+        // Every consumer is a member of the group in its own right, so it needs an id of its own
+        // for static group membership, and gets one to tell it apart in the broker's logs.
+        consumerConfig.ClientId = $"{consumerConfig.ClientId ?? DefaultGroupId}-{index}";
+        if (!string.IsNullOrEmpty(consumerConfig.GroupInstanceId))
+        {
+            consumerConfig.GroupInstanceId = $"{consumerConfig.GroupInstanceId}-{index}";
+        }
 
         return consumerConfig;
     }

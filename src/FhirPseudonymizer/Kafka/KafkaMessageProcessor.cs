@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -112,23 +111,22 @@ public class KafkaMessageProcessor
     ///     consumed. It may be called from the producer's delivery report thread, so must be fast
     ///     and thread-safe.
     ///
-    ///     A transient pseudonymization backend failure (<see cref="TransientPseudonymizationException" />)
-    ///     is retried indefinitely with backoff rather than dead-lettered, since the message itself
-    ///     isn't bad, just badly timed. If <paramref name="cancellationToken" /> is cancelled while
-    ///     retrying, or while waiting for room in the producer's queue, the message is reported as
-    ///     <see cref="KafkaMessageOutcome.Abandoned" /> instead.
+    ///     If the pseudonymization backend is unavailable, the
+    ///     <see cref="TransientPseudonymizationException" /> is thrown instead - without calling
+    ///     <paramref name="onCompleted" /> - for the caller to retry the message later: it isn't
+    ///     bad, just badly timed. <paramref name="attempt" /> is which attempt this is, for the
+    ///     metrics. If <paramref name="cancellationToken" /> is cancelled while waiting for room in
+    ///     the producer's queue, or before a failure, the message is reported as
+    ///     <see cref="KafkaMessageOutcome.Abandoned" />.
     /// </summary>
     public async System.Threading.Tasks.Task ProcessAsync(
         ConsumeResult<byte[], string> result,
+        int attempt,
         Action<KafkaMessageOutcome> onCompleted,
         CancellationToken cancellationToken = default
     )
     {
         var startTimestamp = Stopwatch.GetTimestamp();
-
-        // the anonymization attempt currently being made, updated by AnonymizeWithRetryAsync
-        // for the processing duration metric
-        var attempt = new StrongBox<int>(1);
 
         Resource preImage;
         Resource anonymized;
@@ -136,12 +134,7 @@ public class KafkaMessageProcessor
 
         try
         {
-            (preImage, anonymized) = await AnonymizeWithRetryAsync(
-                result.Message.Value,
-                result.Topic,
-                attempt,
-                cancellationToken
-            );
+            (preImage, anonymized) = await AnonymizeAsync(result.Message.Value, result.Topic);
             output = JsonSerializer.Serialize(anonymized, FhirJsonOptions);
         }
         catch (Exception exc) when (cancellationToken.IsCancellationRequested)
@@ -162,6 +155,10 @@ public class KafkaMessageProcessor
             onCompleted(KafkaMessageOutcome.Abandoned);
             return;
         }
+        catch (TransientPseudonymizationException)
+        {
+            throw;
+        }
         catch (Exception exc)
         {
             logger.LogError(
@@ -175,7 +172,7 @@ public class KafkaMessageProcessor
                 exc,
                 onCompleted,
                 startTimestamp,
-                attempt.Value,
+                attempt,
                 cancellationToken
             );
             return;
@@ -202,7 +199,7 @@ public class KafkaMessageProcessor
                     {
                         { "topic", result.Topic },
                         { "outcome", "success" },
-                        { "attempts", attempt.Value },
+                        { "attempts", attempt },
                     }
                 );
                 onCompleted(KafkaMessageOutcome.Produced);
@@ -224,7 +221,7 @@ public class KafkaMessageProcessor
                 exc,
                 onCompleted,
                 startTimestamp,
-                attempt.Value,
+                attempt,
                 CancellationToken.None
             );
         }
@@ -257,7 +254,7 @@ public class KafkaMessageProcessor
                 exc,
                 onCompleted,
                 startTimestamp,
-                attempt.Value,
+                attempt,
                 cancellationToken
             );
             return;
@@ -280,53 +277,27 @@ public class KafkaMessageProcessor
     private async System.Threading.Tasks.Task<(
         Resource PreImage,
         Resource Anonymized
-    )> AnonymizeWithRetryAsync(
-        string json,
-        string sourceTopic,
-        StrongBox<int> attempt,
-        CancellationToken cancellationToken
-    )
+    )> AnonymizeAsync(string json, string sourceTopic)
     {
-        for (; ; attempt.Value++)
+        // Parsed afresh for every attempt: the anonymizer modifies the resource it is given in
+        // place, so an attempt failing midway (e.g. after some of its pseudonymization calls
+        // already went through) would otherwise leave the next one a partially pseudonymized
+        // resource to pseudonymize again.
+        var resource = ParseResource(json);
+
+        // Snapshot before anonymizing: the anonymizer mutates `resource` in place and returns
+        // that same instance, so `resource` is no longer the pre-image afterwards.
+        var preImage = provenancePublisher.CapturePreImage(resource);
+
+        using var activity = Program.ActivitySource.StartActivity("AnonymizeMessageAsync");
+        activity?.AddTag("kafka.topic", sourceTopic);
+
+        var settings = new AnonymizerSettings
         {
-            // Parsed afresh for every attempt: the anonymizer modifies the resource it is given in
-            // place, so an attempt failing midway (e.g. after some of its pseudonymization calls
-            // already went through) would otherwise leave the next one a partially pseudonymized
-            // resource to pseudonymize again.
-            var resource = ParseResource(json);
+            ShouldAddSecurityTag = anonymizationConfig.ShouldAddSecurityTag,
+        };
 
-            // Snapshot before anonymizing: the anonymizer mutates `resource` in place and returns
-            // that same instance, so `resource` is no longer the pre-image afterwards.
-            var preImage = provenancePublisher.CapturePreImage(resource);
-
-            try
-            {
-                using var activity = Program.ActivitySource.StartActivity("AnonymizeMessageAsync");
-                activity?.AddTag("kafka.topic", sourceTopic);
-
-                var settings = new AnonymizerSettings
-                {
-                    ShouldAddSecurityTag = anonymizationConfig.ShouldAddSecurityTag,
-                };
-
-                return (preImage, await anonymizer.AnonymizeResourceAsync(resource, settings));
-            }
-            catch (TransientPseudonymizationException exc)
-            {
-                logger.LogWarning(
-                    exc,
-                    "Pseudonymization backend unavailable while processing message from topic {Topic} (attempt {Attempt}); retrying",
-                    sourceTopic,
-                    attempt.Value
-                );
-
-                var delaySeconds = Math.Min(60, Math.Pow(2, attempt.Value - 1));
-                await System.Threading.Tasks.Task.Delay(
-                    TimeSpan.FromSeconds(delaySeconds),
-                    cancellationToken
-                );
-            }
-        }
+        return (preImage, await anonymizer.AnonymizeResourceAsync(resource, settings));
     }
 
     /// <summary>
