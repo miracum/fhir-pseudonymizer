@@ -16,12 +16,17 @@ public record AppConfig
     public VfpsConfig Vfps { get; init; } = new();
     public EnticiConfig Entici { get; init; } = new();
     public MiiConfig Mii { get; init; } = new();
-    public ushort MetricsPort { get; set; } = 8081;
-    public bool EnableMetrics { get; set; } = true;
+    public MetricsConfig Metrics { get; init; } = new();
     public FeatureManagement Features { get; set; } = new();
     public AnonymizationConfig Anonymization { get; set; } = new();
     public KafkaConfig Kafka { get; init; } = new();
     public KestrelConfig Kestrel { get; init; } = new();
+}
+
+public record MetricsConfig
+{
+    public bool Enabled { get; init; } = true;
+    public ushort Port { get; init; } = 8081;
 }
 
 public record KestrelConfig

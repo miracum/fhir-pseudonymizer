@@ -39,9 +39,9 @@ public class Startup
             },
         };
 
-        if (appConfig.EnableMetrics)
+        if (appConfig.Metrics.Enabled)
         {
-            services.AddMetrics(appConfig.MetricsPort);
+            services.AddMetrics(appConfig.Metrics.Port);
         }
 
         services.Configure<KestrelServerOptions>(options =>
