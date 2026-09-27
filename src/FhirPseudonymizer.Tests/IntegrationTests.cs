@@ -127,6 +127,52 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Theory]
+    [InlineData("/fhir/$de-identify")]
+    [InlineData("/fhir/$de-pseudonymize")]
+    public async Task PostToFhirOperation_WithDeeplyNestedResource_ShouldSucceed(string url)
+    {
+        // Counting each level's list and element, this is deeper than MVC's default
+        // MaxValidationDepth (32), which made MVC's own model validation throw - an empty 500 -
+        // before the request ever reached the controller.
+        const int nestingDepth = 20;
+        var item = new QuestionnaireResponse.ItemComponent
+        {
+            LinkId = "leaf",
+            Answer = [new() { Value = new FhirString("answer") }],
+        };
+        for (var i = 0; i < nestingDepth; i++)
+        {
+            item = new QuestionnaireResponse.ItemComponent { LinkId = $"level-{i}", Item = [item] };
+        }
+
+        var questionnaireResponse = new QuestionnaireResponse
+        {
+            Id = "nested",
+            Status = QuestionnaireResponse.QuestionnaireResponseStatus.Completed,
+            Item = [item],
+        };
+
+        using var content = new StringContent(questionnaireResponse.ToJson());
+        content.Headers.Add("x-api-key", "dev");
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(url, content, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = fhirJsonDeserializer.Deserialize<QuestionnaireResponse>(
+            await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)
+        );
+        var leaf = result.Item.Single();
+        for (var i = 0; i < nestingDepth; i++)
+        {
+            leaf = leaf.Item.Single();
+        }
+
+        leaf.LinkId.Should().Be("leaf");
+    }
+
     [Fact]
     public async Task PostDeIdentify_WithInlineConfigButNoResource_ShouldReturnBadRequest()
     {
