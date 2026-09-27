@@ -35,6 +35,29 @@ public class PseudonymizationServiceConfigTests
     }
 
     [Fact]
+    public void AppConfig_WithRetryCountSetPerService_ShouldBindItToEachServicesRetryConfig()
+    {
+        var appConfig = new AppConfig();
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string>
+                {
+                    ["gPAS:Retry:Count"] = "1",
+                    ["Vfps:Retry:Count"] = "2",
+                    ["entici:Retry:Count"] = "3",
+                    ["Mii:Retry:Count"] = "4",
+                }
+            )
+            .Build()
+            .Bind(appConfig);
+
+        appConfig.GPas.Retry.Count.Should().Be(1);
+        appConfig.Vfps.Retry.Count.Should().Be(2);
+        appConfig.Entici.Retry.Count.Should().Be(3);
+        appConfig.Mii.Retry.Count.Should().Be(4);
+    }
+
+    [Fact]
     public void LogErrorIfPseudonymizationServiceIsMissing_WithPseudonymizeRuleAndNoService_ShouldLogError()
     {
         var logger = A.Fake<ILogger>();

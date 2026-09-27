@@ -119,7 +119,7 @@ public record CacheConfig
 public record GPasConfig
 {
     public Uri Url { get; init; }
-    public int RequestRetryCount { get; init; }
+    public PseudonymServiceRetryConfig Retry { get; init; } = new();
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
 }
 
@@ -127,7 +127,7 @@ public record EnticiConfig
 {
     public Uri Url { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
-    public int RequestRetryCount { get; init; }
+    public PseudonymServiceRetryConfig Retry { get; init; } = new();
 }
 
 public record VfpsConfig
@@ -136,7 +136,7 @@ public record VfpsConfig
     public VfpsAuthConfig Auth { get; init; } = new();
     public bool UnsafeUseInsecureChannelCallCredentials { get; init; }
     public bool UseTls { get; init; }
-    public int RequestRetryCount { get; init; }
+    public PseudonymServiceRetryConfig Retry { get; init; } = new();
 }
 
 /// <summary>
@@ -165,7 +165,7 @@ public record MiiConfig
 {
     public Uri Url { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
-    public int RequestRetryCount { get; init; }
+    public PseudonymServiceRetryConfig Retry { get; init; } = new();
 }
 
 public record PseudonymServiceAuthConfig
@@ -191,6 +191,11 @@ public record PseudonymServiceBasicAuthConfig
 {
     public string Username { get; init; }
     public string Password { get; init; }
+}
+
+public record PseudonymServiceRetryConfig
+{
+    public int Count { get; init; }
 }
 
 public record FeatureManagement

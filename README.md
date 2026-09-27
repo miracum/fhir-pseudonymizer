@@ -152,7 +152,7 @@ Service-specific configuration settings are listed below.
 | Environment Variable | Description                                                                                                                                                               | Default    |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `gPAS__Url`          | The gPAS TTP FHIR Gateway URL. E.g. `http://localhost:8080/ttp-fhir/fhir/gpas/` for gPAS `2023.1.0`. Used if `PseudonymizationService` is set to `gPAS`.                  | `""`       |
-| `gPAS__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                                                                                           | `3`        |
+| `gPAS__Retry__Count`      | The number of times a failed request is retried, with exponential backoff.                                                                                           | `3`        |
 
 #### gPAS Basic Auth
 
@@ -178,7 +178,7 @@ Service-specific configuration settings are listed below.
 | `Vfps__Address`                                 | The Vfps service address. Use `dns:///` scheme for client-side load-balancing.                                                                                                                                                     | `""`    |
 | `Vfps__UnsafeUseInsecureChannelCallCredentials` | If set to `true`, `CallCredentials` are applied to gRPC calls made by an insecure channel. Sending authentication headers over an insecure connection has security implications and shouldn't be done in production environments.  | `true`  |
 | `Vfps__UseTls`                                  | If set to `true`, creates client-side SSL credentials loaded from disk file pointed to by the `GRPC_DEFAULT_SSL_ROOTS_FILE_PATH` environment variable. If that fails, gets the roots certificates from a well known place on disk. | `false` |
-| `Vfps__RequestRetryCount`                       | The number of times a failed request is retried, with exponential backoff.                                                                                                                                                        | `3`     |
+| `Vfps__Retry__Count`                            | The number of times a failed request is retried, with exponential backoff.                                                                                                                                                        | `3`     |
 
 #### Vfps Basic Auth
 
@@ -233,7 +233,7 @@ de-pseudonymization is used.
 | Environment Variable | Description                                                                                            | Default |
 | -------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
 | `entici__Url`        | The entici service base URL for FHIR operations. Used if `PseudonymizationService` is set to `entici`. | `""`    |
-| `entici__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                      | `3`     |
+| `entici__Retry__Count`      | The number of times a failed request is retried, with exponential backoff.                      | `3`     |
 
 When using entici as a pseudonymization backend, you need to set additional settings for each rule that uses the `pseudonymize` method. These can be set under a `entici` section inside the anonymization config:
 
@@ -269,7 +269,7 @@ The `domain` of a rule becomes the value of the `context` identifier.
 | Environment Variable | Description                                                                                                                    | Default |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `Mii__Url`           | The base URL of the MII pseudonymization service. Used if `PseudonymizationService` is set to `Mii`.                            | `""`    |
-| `Mii__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                                                | `3`     |
+| `Mii__Retry__Count`      | The number of times a failed request is retried, with exponential backoff.                                                | `3`     |
 
 When using the Mii service as a pseudonymization backend, you can optionally set the identifier systems used in the requests for each rule that uses the `pseudonymize` method. These can be set under a `mii` section inside the anonymization config. If a system is not set, the corresponding identifier is sent with only a `value`:
 
