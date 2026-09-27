@@ -48,7 +48,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             {
                 ["PseudonymizationService"] = "Mii",
                 ["Mii:Url"] = "http://mii-backend/",
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
             },
             ReplacePseudonymServiceClientWithFake = false,
         };
@@ -269,7 +269,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["Anonymization:CryptoHashKey"] = staticCryptoHashKey,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
             },
         };
 
@@ -485,7 +485,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
                 ["Anonymization:CryptoHashKey"] = "test",
             },
         };
@@ -522,7 +522,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             var settings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
                 ["Anonymization:CryptoHashKey"] = "test",
             };
 
@@ -585,7 +585,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
                 ["Anonymization:CryptoHashKey"] = "test-crypto-hash-master",
                 ["Anonymization:EncryptKey"] = "test-encrypt-master",
                 ["Anonymization:KeyDerivationContext"] = "project-a",
@@ -659,7 +659,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
                 ["Anonymization:CryptoHashKey"] = "shared-crypto-hash-master",
                 ["Anonymization:EncryptKey"] = "encrypt-master-one",
                 ["Anonymization:KeyDerivationContext"] = "project-a",
@@ -671,7 +671,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
                 ["Anonymization:CryptoHashKey"] = "shared-crypto-hash-master",
                 ["Anonymization:EncryptKey"] = "encrypt-master-two",
                 ["Anonymization:KeyDerivationContext"] = "project-a",
@@ -736,7 +736,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
                 ["Anonymization:CryptoHashKey"] = "test",
                 ["Anonymization:ShouldAddSecurityTag"] = "false",
             },
@@ -805,7 +805,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
             },
         };
 
@@ -897,7 +897,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
                 ["Anonymization:CryptoHashKey"] = cryptoHashKey,
             },
         };
@@ -969,7 +969,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
             },
         };
 
