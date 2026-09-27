@@ -218,7 +218,7 @@ public class KafkaConsumerServiceTests
     }
 
     [Fact]
-    public async Task AWorkerThatIsBusyButKeepsUp_DoesNotGetItsPartitionPaused()
+    public async Task AWorkerThatIsBusyButKeepsUp_DoesNotHoldUpMessagesOfOtherPartitionsConsumedAfterItsOwn()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var consumer = new ScriptedConsumer();
@@ -226,33 +226,45 @@ public class KafkaConsumerServiceTests
         var service = CreateService(
             consumer,
             producer,
-            CreateAnonymizer(_ => Task.Delay(20, cancellationToken)),
-            new KafkaConfig
-            {
-                WorkerCount = 1,
-                WorkerChannelCapacity = 1,
-                WorkerBusyTimeoutMs = 10_000,
-            }
+            CreateAnonymizer(resource =>
+                resource.Id.StartsWith("p0-", StringComparison.Ordinal)
+                    ? Task.Delay(20, cancellationToken)
+                    : Task.CompletedTask
+            ),
+            new KafkaConfig { WorkerCount = 2, WorkerChannelCapacity = 1 }
         );
 
-        consumer.Assign(InputPartition(0));
-        consumer.Deliver([.. Enumerable.Range(0, 5).Select(offset => Message(0, offset))]);
+        // librdkafka hands out what it prefetched in long runs per partition, so a message of
+        // one partition can come after thousands of another's
+        consumer.Assign(InputPartition(0), InputPartition(1));
+        consumer.Deliver([.. Enumerable.Range(0, 20).Select(offset => Message(0, offset))]);
+        consumer.Deliver(Message(1, 0));
 
         await service.StartAsync(cancellationToken);
         try
         {
-            await WaitUntilAsync(() => producer.Produced.Count == 5, cancellationToken);
+            await WaitUntilAsync(() => producer.Produced.Count == 21, cancellationToken);
+            await WaitUntilAsync(
+                () => consumer.CurrentlyPausedPartitions.Count == 0,
+                cancellationToken
+            );
         }
         finally
         {
             await service.StopAsync(cancellationToken);
         }
 
-        consumer.PausedPartitions.Should().BeEmpty();
-        producer
-            .Produced.Select(p => p.Key)
+        // instead of waiting for room in the busy worker's queue, its partition was paused
+        var produced = producer.Produced.Select(p => p.Key).ToList();
+        produced.IndexOf("p1-o0").Should().BeLessThan(produced.IndexOf("p0-o2"));
+        produced
+            .Where(key => key.StartsWith("p0-", StringComparison.Ordinal))
             .Should()
-            .Equal("p0-o0", "p0-o1", "p0-o2", "p0-o3", "p0-o4");
+            .Equal(Enumerable.Range(0, 20).Select(offset => $"p0-o{offset}"));
+        consumer
+            .PausedPartitions.Should()
+            .NotBeEmpty()
+            .And.OnlyContain(p => p == InputPartition(0));
     }
 
     [Fact]
@@ -268,12 +280,7 @@ public class KafkaConsumerServiceTests
             CreateAnonymizer(resource =>
                 resource.Id == "p0-o0" ? release.Task : Task.CompletedTask
             ),
-            new KafkaConfig
-            {
-                WorkerCount = 1,
-                WorkerChannelCapacity = 1,
-                WorkerBusyTimeoutMs = 50,
-            }
+            new KafkaConfig { WorkerCount = 1, WorkerChannelCapacity = 1 }
         );
 
         // the first message blocks the only worker, the second fills its queue, and the third
@@ -325,12 +332,7 @@ public class KafkaConsumerServiceTests
                     ? release.Task
                     : Task.CompletedTask
             ),
-            new KafkaConfig
-            {
-                WorkerCount = 2,
-                WorkerChannelCapacity = 1,
-                WorkerBusyTimeoutMs = 50,
-            }
+            new KafkaConfig { WorkerCount = 2, WorkerChannelCapacity = 1 }
         );
 
         consumer.Assign(InputPartition(0), InputPartition(1));
@@ -347,10 +349,15 @@ public class KafkaConsumerServiceTests
                 cancellationToken
             );
 
+            // with a queue of just one message, even the other worker's partition may have been
+            // paused briefly in between - but only the stuck one's stays paused
+            await WaitUntilAsync(
+                () => consumer.CurrentlyPausedPartitions.SequenceEqual([InputPartition(0)]),
+                cancellationToken
+            );
             producer
                 .Produced.Should()
                 .NotContain(p => p.Key.StartsWith("p0-", StringComparison.Ordinal));
-            consumer.PausedPartitions.Should().Equal(InputPartition(0));
 
             release.TrySetResult();
 
@@ -648,6 +655,24 @@ public class KafkaConsumerServiceTests
 
         public List<TopicPartition> ResumedPartitions =>
             CallsTo(nameof(IConsumer<byte[], string>.Resume));
+
+        /// <summary>Partitions paused more often than resumed, in the order first paused.</summary>
+        public List<TopicPartition> CurrentlyPausedPartitions
+        {
+            get
+            {
+                var resumed = ResumedPartitions;
+                return
+                [
+                    .. PausedPartitions
+                        .Distinct()
+                        .Where(partition =>
+                            PausedPartitions.Count(p => p == partition)
+                            > resumed.Count(p => p == partition)
+                        ),
+                ];
+            }
+        }
 
         public void Assign(params TopicPartition[] partitions) =>
             script.Enqueue(() =>
