@@ -7,6 +7,7 @@ using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 namespace FhirPseudonymizer.Tests;
@@ -69,6 +70,23 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
+    public void Startup_WithTooShortCryptoHashKey_ShouldFailToStart()
+    {
+        using var weakKeyFactory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["Anonymization:CryptoHashKey"] = "fhir-pseudonymizer",
+                ["Metrics:Enabled"] = "false",
+            },
+        };
+
+        var act = () => weakKeyFactory.CreateClient();
+
+        act.Should().Throw<AnonymizerConfigurationErrorsException>();
+    }
+
+    [Fact]
     public async Task GetMetadata_ReturnsSuccessAndFhirJsonContentType()
     {
         var response = await client.GetAsync(
@@ -120,6 +138,34 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                 Data = Encoding.UTF8.GetBytes("fhirVersion: R4\nfhirPathRules: []\n"),
             }
         );
+
+        using var content = new StringContent(parameters.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostDeIdentify_WithTooShortCryptoHashKeyInInlineConfig_ShouldReturnBadRequest()
+    {
+        var parameters = new Parameters()
+            .Add(
+                "config",
+                new Attachment
+                {
+                    ContentType = "application/yaml",
+                    Data = Encoding.UTF8.GetBytes(
+                        "fhirVersion: R4\nfhirPathRules:\n  - path: Resource.id\n    method: cryptoHash\nparameters:\n  cryptoHashKey: fhir-pseudonymizer\n"
+                    ),
+                }
+            )
+            .Add("resource", new Patient { Id = "example" });
 
         using var content = new StringContent(parameters.ToJson());
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
@@ -260,7 +306,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     [Fact]
     public async Task PostDeIdentify_WithKeyDerivationContextInInlineConfig_ShouldUseDerivedCryptoHashKeyInsteadOfStaticKey()
     {
-        const string staticCryptoHashKey = "static-master-key";
+        const string staticCryptoHashKey = TestKeys.CryptoHashKey;
         const string keyDerivationContext = "project-a";
         const string patientId = "example";
 
@@ -423,7 +469,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostDePseudonymize_WithDefaultConfig_ShouldDecryptPatientIdentifier()
+    public async Task PostDeIdentifyThenDePseudonymize_WithDefaultConfig_ShouldRoundTripPatientIdentifier()
     {
         var patient =
             @"{
@@ -441,26 +487,42 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                         ]
                         },
                         ""system"": ""http://www.goodhealth.org/identifiers/mrn"",
-                        ""value"": ""F36B23C5E72E3503D6C9659DDDEB7B5D61F6B90D5E5BE65FE08726315EF67CF3""
+                        ""value"": ""123456""
                     }
                 ]
             }";
 
-        var content = new StringContent(patient);
-        content.Headers.Add("x-api-key", "dev");
-        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await client.PostAsync(
+        // The default config leaves encryptKey empty, so it's a random one generated on start -
+        // encrypting and decrypting has to happen within the same instance.
+        var encryptContent = new StringContent(patient);
+        encryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        var encryptResponse = await client.PostAsync(
+            "/fhir/$de-identify",
+            encryptContent,
+            TestContext.Current.CancellationToken
+        );
+        encryptResponse.EnsureSuccessStatusCode();
+
+        var encryptedPatientJson = await encryptResponse.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+
+        var decryptContent = new StringContent(encryptedPatientJson);
+        decryptContent.Headers.Add("x-api-key", "dev");
+        decryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        var decryptResponse = await client.PostAsync(
             "/fhir/$de-pseudonymize",
-            content,
+            decryptContent,
             TestContext.Current.CancellationToken
         );
+        decryptResponse.EnsureSuccessStatusCode();
 
-        response.EnsureSuccessStatusCode();
-
-        var responseContent = await response.Content.ReadAsStringAsync(
+        var decryptedPatientJson = await decryptResponse.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var decryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(responseContent);
+        var decryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(
+            decryptedPatientJson
+        );
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");
     }
@@ -486,7 +548,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
                 ["Metrics:Enabled"] = "false",
-                ["Anonymization:CryptoHashKey"] = "test",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
             },
         };
 
@@ -523,7 +585,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
                 ["Metrics:Enabled"] = "false",
-                ["Anonymization:CryptoHashKey"] = "test",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
             };
 
             if (keyDerivationContext is not null)
@@ -586,8 +648,8 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
                 ["Metrics:Enabled"] = "false",
-                ["Anonymization:CryptoHashKey"] = "test-crypto-hash-master",
-                ["Anonymization:EncryptKey"] = "test-encrypt-master",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
+                ["Anonymization:EncryptKey"] = TestKeys.EncryptKey,
                 ["Anonymization:KeyDerivationContext"] = "project-a",
             },
         };
@@ -660,8 +722,8 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
                 ["Metrics:Enabled"] = "false",
-                ["Anonymization:CryptoHashKey"] = "shared-crypto-hash-master",
-                ["Anonymization:EncryptKey"] = "encrypt-master-one",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
+                ["Anonymization:EncryptKey"] = TestKeys.EncryptKey,
                 ["Anonymization:KeyDerivationContext"] = "project-a",
             },
         };
@@ -672,8 +734,8 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
                 ["Metrics:Enabled"] = "false",
-                ["Anonymization:CryptoHashKey"] = "shared-crypto-hash-master",
-                ["Anonymization:EncryptKey"] = "encrypt-master-two",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
+                ["Anonymization:EncryptKey"] = TestKeys.OtherEncryptKey,
                 ["Anonymization:KeyDerivationContext"] = "project-a",
             },
         };
@@ -737,7 +799,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
                 ["Metrics:Enabled"] = "false",
-                ["Anonymization:CryptoHashKey"] = "test",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
                 ["Anonymization:ShouldAddSecurityTag"] = "false",
             },
         };
@@ -839,7 +901,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         bool removeRuleFirst
     )
     {
-        const string cryptoHashKey = "test";
+        const string cryptoHashKey = TestKeys.CryptoHashKey;
 
         // Patient.name (redact) and Resource.id (cryptoHash, a general rule that also matches
         // the Patient) both target fields on the very same Patient the other rule removes

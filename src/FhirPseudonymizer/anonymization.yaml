@@ -12,9 +12,11 @@ fhirPathRules:
 parameters:
   dateShiftKey: ""
   dateShiftScope: resource
-  cryptoHashKey: fhir-pseudonymizer
-  # must be of a valid AES key length; here the key is padded to 192 bits
-  encryptKey: fhir-pseudonymizer000000
+  # left empty to be set via Anonymization__CryptoHashKey/Anonymization__EncryptKey instead - if
+  # neither is set, a random key is generated on every start, so hashes differ and encrypted
+  # values can't be decrypted across restarts and replicas
+  cryptoHashKey: ""
+  encryptKey: ""
   enablePartialAgesForRedact: true
   enablePartialDatesForRedact: true
   enablePartialZipCodesForRedact: true

@@ -74,7 +74,7 @@ public class LargeProvenanceBenchmarks
               - path: nodesByType('Reference').reference
                 method: {method}
             parameters:
-              cryptoHashKey: "fhir-pseudonymizer"
+              cryptoHashKey: ""
               cryptoHashAlgorithm: {algorithm}
             """;
 

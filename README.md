@@ -331,7 +331,6 @@ fhirPathRules:
   - path: Resource.id
     method: cryptoHash
 parameters:
-  cryptoHashKey: a-shared-secret-key
   cryptoHashAlgorithm: blake3
 ```
 
@@ -371,7 +370,7 @@ fhirPathRules:
   - path: Resource.id
     method: cryptoHash
 parameters:
-  cryptoHashKey: a-shared-master-key
+  # derives the key actually used from the Anonymization__CryptoHashKey master key
   keyDerivationContext: project-a
 ```
 
@@ -388,10 +387,14 @@ parameters:
 > ```
 >
 > Note that unlike `cryptoHashKey`, a statically-set `encryptKey` must be
-> _exactly_ 16, 24, or 32 bytes (AES-128/192/256) - AES rejects any other
-> length. A derived `encryptKey` (via a key derivation context) doesn't have
-> this restriction on the master key, since the derived output is always 32
-> bytes.
+> _exactly_ 32 bytes (AES-256): it's used as the AES key as-is, AES rejects
+> anything longer, and anything shorter is rejected as too short (see below).
+> Generate it with `openssl rand -base64 24` instead, which is exactly 32
+> characters long. A derived `encryptKey` (via a key derivation context)
+> doesn't have this restriction on the master key, since the derived output is
+> always 32 bytes.
+
+A configured `cryptoHashKey` or `encryptKey` - wherever it's set, and whether it's used directly or as a master key - must be at least 32 bytes long (as UTF-8). Otherwise, the service fails to start, or, for a config sent along with a request, rejects that request. Only the length is checked, not how the key was generated, so still generate it as shown above. If no key is set at all, a random one is generated on every start instead, so hashes won't be the same, and encrypted values can't be decrypted, across restarts or replicas.
 
 ## Dynamic rule settings
 
