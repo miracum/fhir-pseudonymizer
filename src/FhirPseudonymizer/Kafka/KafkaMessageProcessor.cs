@@ -23,12 +23,15 @@ namespace FhirPseudonymizer.Kafka;
 /// </summary>
 public enum KafkaMessageOutcome
 {
-    /// <summary>The pseudonymized message was delivered to its output topic.</summary>
+    /// <summary>
+    ///     The pseudonymized message was delivered to its output topic, and its provenance (if
+    ///     recorded at all) to the provenance topic.
+    /// </summary>
     Produced,
 
     /// <summary>
-    ///     Processing failed and the original message was delivered to its dead letter topic
-    ///     instead.
+    ///     Processing failed, or delivering the pseudonymized message or its provenance did, and
+    ///     the original message was delivered to its dead letter topic instead.
     /// </summary>
     DeadLettered,
 
@@ -40,7 +43,7 @@ public enum KafkaMessageOutcome
 
     /// <summary>
     ///     Processing was cancelled (because the service is stopping, or the message's partition
-    ///     was revoked) before anything was produced for it: the message was not handled, so it
+    ///     was revoked) before everything was produced for it: the message was not handled, so it
     ///     must not be marked as consumed, but that's no reason to stop.
     /// </summary>
     Abandoned,
@@ -70,8 +73,6 @@ public class KafkaMessageProcessor
     // Shared, like the REST API's System.Text.Json formatters, see FhirFormatter.
     private static readonly JsonSerializerOptions FhirJsonOptions =
         new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
-
-    private static readonly TimeSpan QueueFullRetryDelay = TimeSpan.FromMilliseconds(100);
 
     private const int MinimumMessageKeyCryptoHashKeyLength = 32;
 
@@ -161,15 +162,16 @@ public class KafkaMessageProcessor
     }
 
     /// <summary>
-    ///     Parses, pseudonymizes and produces a consumed message to its output topic, falling back
-    ///     to producing the original message to its dead letter topic if any of that fails.
+    ///     Parses, pseudonymizes and produces a consumed message to its output topic, along with
+    ///     its provenance, falling back to producing the original message to its dead letter topic
+    ///     if any of that fails.
     ///
-    ///     The returned task completes as soon as the resulting message has been handed to the
+    ///     The returned task completes as soon as the resulting messages have been handed to the
     ///     producer, so the caller can move on to the next message (and messages produced in that
     ///     order keep it). <paramref name="onCompleted" /> is called exactly once, once the broker
-    ///     acknowledged or rejected it - only then is the message actually safe to mark as
-    ///     consumed. It may be called from the producer's delivery report thread, so must be fast
-    ///     and thread-safe.
+    ///     acknowledged or rejected both the pseudonymized message and its provenance - only then
+    ///     is the message actually safe to mark as consumed. It may be called from the producer's
+    ///     delivery report thread, so must be fast and thread-safe.
     ///
     ///     If the pseudonymization backend is unavailable, the
     ///     <see cref="TransientPseudonymizationException" /> is thrown instead - without calling
@@ -245,53 +247,21 @@ public class KafkaMessageProcessor
             Headers = CopyHeaders(result.Message.Headers),
         };
 
-        void OnDelivered(DeliveryReport<byte[], string> report)
-        {
-            if (!report.Error.IsError)
-            {
-                ProcessedMessagesCounter.Add(
-                    1,
-                    new TagList { { "topic", result.Topic }, { "outcome", "success" } }
-                );
-                MessageProcessingDuration.Record(
-                    Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
-                    new TagList
-                    {
-                        { "topic", result.Topic },
-                        { "outcome", "success" },
-                        { "attempts", attempt },
-                    }
-                );
-                onCompleted(KafkaMessageOutcome.Produced);
-                return;
-            }
-
-            var exc = new ProduceException<byte[], string>(report.Error, report);
-            logger.LogError(
-                exc,
-                "Failed to deliver the pseudonymized message from {TopicPartitionOffset} to {Topic}, sending the original to the dead letter topic",
-                result.TopicPartitionOffset,
-                report.Topic
-            );
-
-            // Runs on the producer's delivery report thread, which must not be blocked; the
-            // dead letter send handles (and reports) all of its own failures.
-            _ = SendToDeadLetterTopicAsync(
-                result,
-                exc,
-                onCompleted,
-                startTimestamp,
-                attempt,
-                CancellationToken.None
-            );
-        }
+        var deliveries = new PendingDeliveries(delivered =>
+            OnDelivered(result, delivered, onCompleted, startTimestamp, attempt)
+        );
 
         try
         {
-            await ProduceAsync(
+            await producer.ProduceWaitingForRoomAsync(
                 GetOutputTopic(result.Topic),
                 message,
-                OnDelivered,
+                report =>
+                    deliveries.ReportOutput(
+                        report.Error.IsError
+                            ? new ProduceException<byte[], string>(report.Error, report)
+                            : null
+                    ),
                 cancellationToken
             );
         }
@@ -320,7 +290,90 @@ public class KafkaMessageProcessor
             return;
         }
 
-        provenancePublisher.Publish(preImage, anonymized, CopyHeaders(result.Message.Headers));
+        try
+        {
+            await provenancePublisher.PublishAsync(
+                preImage,
+                anonymized,
+                CopyHeaders(result.Message.Headers),
+                deliveries.ReportProvenance,
+                cancellationToken
+            );
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            deliveries.AbandonProvenance();
+        }
+    }
+
+    /// <summary>
+    ///     Reports how a message was handled, once both its pseudonymized version and its
+    ///     provenance were acknowledged or rejected - sending the original to the dead letter topic
+    ///     if either was rejected: the pseudonymized message is then either missing, or its
+    ///     provenance is.
+    /// </summary>
+    private void OnDelivered(
+        ConsumeResult<byte[], string> result,
+        PendingDeliveries deliveries,
+        Action<KafkaMessageOutcome> onCompleted,
+        long startTimestamp,
+        int attempt
+    )
+    {
+        if (deliveries.IsProvenanceAbandoned)
+        {
+            // only happens when stopping, and the message isn't done without its provenance
+            onCompleted(KafkaMessageOutcome.Abandoned);
+            return;
+        }
+
+        if (deliveries.OutputFailure is null && deliveries.ProvenanceFailure is null)
+        {
+            ProcessedMessagesCounter.Add(
+                1,
+                new TagList { { "topic", result.Topic }, { "outcome", "success" } }
+            );
+            MessageProcessingDuration.Record(
+                Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
+                new TagList
+                {
+                    { "topic", result.Topic },
+                    { "outcome", "success" },
+                    { "attempts", attempt },
+                }
+            );
+            onCompleted(KafkaMessageOutcome.Produced);
+            return;
+        }
+
+        if (deliveries.OutputFailure is not null)
+        {
+            logger.LogError(
+                deliveries.OutputFailure,
+                "Failed to deliver the pseudonymized message from {TopicPartitionOffset} to {Topic}, sending the original to the dead letter topic",
+                result.TopicPartitionOffset,
+                GetOutputTopic(result.Topic)
+            );
+        }
+        else
+        {
+            logger.LogError(
+                deliveries.ProvenanceFailure,
+                "Failed to publish the provenance of the pseudonymized message from {TopicPartitionOffset}, sending the original to the dead letter topic",
+                result.TopicPartitionOffset
+            );
+        }
+
+        // Usually runs on the producer's delivery report thread, which must not be blocked; the
+        // dead letter send handles (and reports) all of its own failures.
+        _ = SendToDeadLetterTopicAsync(
+            result,
+            deliveries.OutputFailure ?? deliveries.ProvenanceFailure,
+            onCompleted,
+            startTimestamp,
+            attempt,
+            CancellationToken.None
+        );
     }
 
     /// <summary>
@@ -422,7 +475,7 @@ public class KafkaMessageProcessor
 
         try
         {
-            await ProduceAsync(
+            await producer.ProduceWaitingForRoomAsync(
                 GetDeadLetterTopic(result.Topic),
                 message,
                 report =>
@@ -459,32 +512,6 @@ public class KafkaMessageProcessor
         catch (Exception deadLetterExc)
         {
             Fail(deadLetterExc);
-        }
-    }
-
-    /// <summary>
-    ///     <see cref="IProducer{TKey,TValue}.Produce(string,Message{TKey,TValue},Action{DeliveryReport{TKey,TValue}})" />,
-    ///     except that a full local producer queue - which just means the broker currently can't
-    ///     keep up - is waited out instead of being treated as a failure of this message.
-    /// </summary>
-    private async System.Threading.Tasks.Task ProduceAsync(
-        string topic,
-        Message<byte[], string> message,
-        Action<DeliveryReport<byte[], string>> deliveryHandler,
-        CancellationToken cancellationToken
-    )
-    {
-        while (true)
-        {
-            try
-            {
-                producer.Produce(topic, message, deliveryHandler);
-                return;
-            }
-            catch (KafkaException exc) when (exc.Error.Code == ErrorCode.Local_QueueFull)
-            {
-                await System.Threading.Tasks.Task.Delay(QueueFullRetryDelay, cancellationToken);
-            }
         }
     }
 
@@ -543,5 +570,49 @@ public class KafkaMessageProcessor
     public string GetDeadLetterTopic(string sourceTopic)
     {
         return $"error.{sourceTopic}.{groupId}";
+    }
+
+    /// <summary>
+    ///     Collects how producing a pseudonymized message and its provenance went. The two are
+    ///     reported independently - in either order, and possibly on different threads - and
+    ///     whichever comes last hands both on.
+    /// </summary>
+    private sealed class PendingDeliveries(Action<PendingDeliveries> onAllReported)
+    {
+        private int pending = 2;
+
+        public Exception OutputFailure { get; private set; }
+
+        public ProvenancePublishingException ProvenanceFailure { get; private set; }
+
+        public bool IsProvenanceAbandoned { get; private set; }
+
+        public void ReportOutput(Exception failure)
+        {
+            OutputFailure = failure;
+            ReportOne();
+        }
+
+        public void ReportProvenance(ProvenancePublishingException failure)
+        {
+            ProvenanceFailure = failure;
+            ReportOne();
+        }
+
+        public void AbandonProvenance()
+        {
+            IsProvenanceAbandoned = true;
+            ReportOne();
+        }
+
+        // Interlocked.Decrement is a full fence, so whichever report comes last also sees what
+        // the other one recorded.
+        private void ReportOne()
+        {
+            if (Interlocked.Decrement(ref pending) == 0)
+            {
+                onAllReported(this);
+            }
+        }
     }
 }

@@ -83,7 +83,7 @@ public class KafkaConsumerServiceTests
             {
                 CryptoHashMessageKeys = new() { Enabled = false },
             },
-            A.Fake<IProvenancePublisher>(),
+            new NoopProvenancePublisher(),
             A.Fake<ILogger<KafkaMessageProcessor>>()
         );
 

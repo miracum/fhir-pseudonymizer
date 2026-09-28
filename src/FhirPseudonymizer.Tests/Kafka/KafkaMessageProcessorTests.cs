@@ -66,7 +66,7 @@ public class KafkaMessageProcessorTests
                     },
                 }
                 : kafkaConfig,
-            provenancePublisher ?? A.Fake<IProvenancePublisher>(),
+            provenancePublisher ?? new NoopProvenancePublisher(),
             A.Fake<ILogger<KafkaMessageProcessor>>()
         );
     }
@@ -564,9 +564,23 @@ public class KafkaMessageProcessorTests
         Resource publishedOriginal = null;
         Resource publishedPseudonymized = null;
         Headers publishedHeaders = null;
-        A.CallTo(() => provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<Headers>._))
+        A.CallTo(() =>
+                provenancePublisher.PublishAsync(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Headers>._,
+                    A<Action<ProvenancePublishingException>>._,
+                    A<CancellationToken>._
+                )
+            )
             .Invokes(
-                (Resource o, Resource p, Headers h) =>
+                (
+                    Resource o,
+                    Resource p,
+                    Headers h,
+                    Action<ProvenancePublishingException> _,
+                    CancellationToken _
+                ) =>
                 {
                     publishedOriginal = o;
                     publishedPseudonymized = p;
@@ -603,8 +617,155 @@ public class KafkaMessageProcessorTests
             TestContext.Current.CancellationToken
         );
 
-        A.CallTo(() => provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<Headers>._))
+        A.CallTo(() =>
+                provenancePublisher.PublishAsync(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Headers>._,
+                    A<Action<ProvenancePublishingException>>._,
+                    A<CancellationToken>._
+                )
+            )
             .MustNotHaveHappened();
+    }
+
+    /// <summary>
+    ///     A provenance publisher that leaves reporting how publishing went to the test, by
+    ///     collecting the callbacks it is given.
+    /// </summary>
+    private static IProvenancePublisher CreateProvenancePublisher(
+        out List<Action<ProvenancePublishingException>> onCompletedCallbacks
+    )
+    {
+        var callbacks = new List<Action<ProvenancePublishingException>>();
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+        A.CallTo(() =>
+                provenancePublisher.PublishAsync(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Headers>._,
+                    A<Action<ProvenancePublishingException>>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Invokes(
+                (
+                    Resource _,
+                    Resource _,
+                    Headers _,
+                    Action<ProvenancePublishingException> onCompleted,
+                    CancellationToken _
+                ) => callbacks.Add(onCompleted)
+            );
+
+        onCompletedCallbacks = callbacks;
+        return provenancePublisher;
+    }
+
+    [Fact]
+    public async Task ProcessAsync_ReportsProducedOnlyOnceTheProvenanceWasAcknowledgedToo()
+    {
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(
+            CreatePassThroughAnonymizer(),
+            producer,
+            provenancePublisher: CreateProvenancePublisher(out var provenanceCallbacks)
+        );
+        var outcomes = new List<KafkaMessageOutcome>();
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson),
+            1,
+            outcomes.Add,
+            TestContext.Current.CancellationToken
+        );
+
+        // the pseudonymized message was acknowledged right away, but its provenance wasn't yet
+        produced.Should().ContainSingle();
+        outcomes.Should().BeEmpty();
+
+        provenanceCallbacks.Single()(null);
+
+        outcomes.Should().Equal(KafkaMessageOutcome.Produced);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenTheProvenanceCannotBePublished_SendsOriginalMessageToDeadLetterTopic()
+    {
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(
+            CreatePassThroughAnonymizer(),
+            producer,
+            provenancePublisher: CreateProvenancePublisher(out var provenanceCallbacks)
+        );
+        var outcomes = new List<KafkaMessageOutcome>();
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson),
+            1,
+            outcomes.Add,
+            TestContext.Current.CancellationToken
+        );
+
+        provenanceCallbacks.Single()(
+            new ProvenancePublishingException(
+                "Failed to deliver provenance bundle",
+                new InvalidOperationException()
+            )
+        );
+
+        produced.Select(p => p.Topic).Should().Equal(OutputTopic, DeadLetterTopic);
+        var deadLetterMessage = produced[1].Message;
+        deadLetterMessage.Value.Should().Be(PatientJson);
+        deadLetterMessage
+            .Headers.Should()
+            .Contain(h =>
+                h.Key == "x-error-type"
+                && Encoding.UTF8.GetString(h.GetValueBytes())
+                    == typeof(ProvenancePublishingException).FullName
+            );
+        outcomes.Should().Equal(KafkaMessageOutcome.DeadLettered);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenCancelledWhileWaitingToPublishTheProvenance_ReportsAbandoned()
+    {
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken
+        );
+        var producer = CreateProducer(out var produced);
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+        A.CallTo(() =>
+                provenancePublisher.PublishAsync(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Headers>._,
+                    A<Action<ProvenancePublishingException>>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(() =>
+            {
+                cancellation.Cancel();
+                return Task.FromCanceled(cancellation.Token);
+            });
+        var processor = CreateProcessor(
+            CreatePassThroughAnonymizer(),
+            producer,
+            provenancePublisher: provenancePublisher
+        );
+        var outcomes = new List<KafkaMessageOutcome>();
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson),
+            1,
+            outcomes.Add,
+            cancellation.Token
+        );
+
+        // the pseudonymized message went out, but it isn't done without its provenance
+        produced.Select(p => p.Topic).Should().Equal(OutputTopic);
+        outcomes.Should().Equal(KafkaMessageOutcome.Abandoned);
     }
 
     [Fact]
