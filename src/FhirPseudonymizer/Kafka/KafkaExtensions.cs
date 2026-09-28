@@ -7,6 +7,35 @@ public static class KafkaExtensions
 {
     public const string DefaultGroupId = "fhir-pseudonymizer";
 
+    private static readonly TimeSpan QueueFullRetryDelay = TimeSpan.FromMilliseconds(100);
+
+    /// <summary>
+    ///     <see cref="IProducer{TKey,TValue}.Produce(string,Message{TKey,TValue},Action{DeliveryReport{TKey,TValue}})" />,
+    ///     except that a full local producer queue - which just means the broker currently can't
+    ///     keep up - is waited out instead of being treated as a failure of this message.
+    /// </summary>
+    public static async Task ProduceWaitingForRoomAsync(
+        this IProducer<byte[], string> producer,
+        string topic,
+        Message<byte[], string> message,
+        Action<DeliveryReport<byte[], string>> deliveryHandler,
+        CancellationToken cancellationToken
+    )
+    {
+        while (true)
+        {
+            try
+            {
+                producer.Produce(topic, message, deliveryHandler);
+                return;
+            }
+            catch (KafkaException exc) when (exc.Error.Code == ErrorCode.Local_QueueFull)
+            {
+                await Task.Delay(QueueFullRetryDelay, cancellationToken);
+            }
+        }
+    }
+
     /// <summary>
     ///     Topics are normally bound from an array (e.g. "Kafka:Topics:0", "Kafka:Topics:1" /
     ///     a JSON array), which is awkward to set via a single environment variable. As a

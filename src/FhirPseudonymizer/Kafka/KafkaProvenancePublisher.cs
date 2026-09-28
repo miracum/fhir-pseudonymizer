@@ -40,12 +40,7 @@ public class KafkaProvenancePublisher : IProvenancePublisher
         {
             producer.Produce(
                 kafkaConfig.ProvenanceTopic,
-                new Message<byte[], string>
-                {
-                    Key = Encoding.UTF8.GetBytes(bundle.Id),
-                    Value = JsonSerializer.Serialize(bundle, FhirJsonOptions),
-                    Headers = headers,
-                },
+                CreateMessage(bundle, headers),
                 report =>
                 {
                     if (report.Error.IsError)
@@ -69,4 +64,74 @@ public class KafkaProvenancePublisher : IProvenancePublisher
             );
         }
     }
+
+    public async System.Threading.Tasks.Task PublishAsync(
+        Resource original,
+        Resource pseudonymized,
+        Headers headers,
+        Action<ProvenancePublishingException> onCompleted,
+        CancellationToken cancellationToken
+    )
+    {
+        Bundle bundle;
+        Message<byte[], string> message;
+        try
+        {
+            bundle = ProvenanceFactory.CreateBundle(original, pseudonymized, DateTimeOffset.UtcNow);
+            message = bundle is null ? null : CreateMessage(bundle, headers);
+        }
+        catch (Exception exc)
+        {
+            onCompleted(
+                new ProvenancePublishingException(
+                    $"Failed to create the provenance bundle: {exc.Message}",
+                    exc
+                )
+            );
+            return;
+        }
+
+        if (message is null)
+        {
+            // there is nothing to document, see ProvenanceFactory.CreateBundle
+            onCompleted(null);
+            return;
+        }
+
+        try
+        {
+            await producer.ProduceWaitingForRoomAsync(
+                kafkaConfig.ProvenanceTopic,
+                message,
+                report =>
+                    onCompleted(
+                        report.Error.IsError
+                            ? new ProvenancePublishingException(
+                                $"Failed to deliver provenance bundle {bundle.Id} to topic {kafkaConfig.ProvenanceTopic}: {report.Error.Reason}",
+                                new ProduceException<byte[], string>(report.Error, report)
+                            )
+                            : null
+                    ),
+                cancellationToken
+            );
+        }
+        catch (Exception exc) when (exc is not OperationCanceledException)
+        {
+            // e.g. the bundle exceeds message.max.bytes
+            onCompleted(
+                new ProvenancePublishingException(
+                    $"Failed to produce provenance bundle {bundle.Id} to topic {kafkaConfig.ProvenanceTopic}: {exc.Message}",
+                    exc
+                )
+            );
+        }
+    }
+
+    private static Message<byte[], string> CreateMessage(Bundle bundle, Headers headers) =>
+        new()
+        {
+            Key = Encoding.UTF8.GetBytes(bundle.Id),
+            Value = JsonSerializer.Serialize(bundle, FhirJsonOptions),
+            Headers = headers,
+        };
 }

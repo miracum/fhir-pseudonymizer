@@ -34,12 +34,12 @@ public delegate IConsumer<byte[], string> KafkaConsumerFactory(
 ///     <list type="bullet">
 ///         <item>
 ///             Produced messages aren't waited for one by one. A message's offset is stored (and
-///             later auto-committed) once the message it was turned into has been acknowledged
-///             by the broker, and only once all earlier messages of the same partition have been,
-///             too - they may go to different output partitions, which are acknowledged
-///             independently. If a message can neither be processed nor sent to its dead letter
-///             topic, its partition can't move past it, so the service stops: after a restart, it
-///             is reprocessed from the last committed offset.
+///             later auto-committed) once the message it was turned into, and its provenance, have
+///             been acknowledged by the broker, and only once all earlier messages of the same
+///             partition have been, too - they may go to different output partitions, which are
+///             acknowledged independently. If a message can neither be processed nor sent to its
+///             dead letter topic, its partition can't move past it, so the service stops: after a
+///             restart, it is reprocessed from the last committed offset.
 ///         </item>
 ///         <item>
 ///             A message that fails because the pseudonymization backend is unavailable
@@ -122,9 +122,9 @@ public class KafkaConsumerService : BackgroundService
         }
         finally
         {
-            // The consumers only wait for their own messages to be acknowledged, not for the
-            // Provenance messages produced along with them, which would be lost if still queued
-            // when the producer is disposed.
+            // The consumers only wait for the messages produced for the ones they consumed, not
+            // for the provenance published for REST API requests by the same producer, which
+            // would be lost if still queued when the producer is disposed.
             processor.Flush(ShutdownFlushTimeout);
         }
     }
