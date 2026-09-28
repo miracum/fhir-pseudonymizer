@@ -54,6 +54,8 @@ public record KafkaConfig
     public string OutputTopicPattern { get; init; } = "^";
     public string OutputTopicReplacement { get; init; } = "pseudonymized.";
 
+    public CryptoHashMessageKeysConfig CryptoHashMessageKeys { get; init; } = new();
+
     /// <summary>
     ///     The number of consumers, each processing the messages of the partitions assigned to it
     ///     one after another. More than the number of partitions assigned to this instance just
@@ -90,6 +92,12 @@ public record KafkaConfig
     ///     names, e.g. "Kafka__Producer__LingerMs".
     /// </summary>
     public ProducerConfig Producer { get; init; } = new();
+}
+
+public record CryptoHashMessageKeysConfig
+{
+    public bool Enabled { get; init; } = true;
+    public string Key { get; init; }
 }
 
 public record CacheConfig

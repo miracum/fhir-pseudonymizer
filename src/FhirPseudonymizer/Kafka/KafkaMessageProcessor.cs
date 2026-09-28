@@ -1,6 +1,8 @@
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -71,6 +73,8 @@ public class KafkaMessageProcessor
 
     private static readonly TimeSpan QueueFullRetryDelay = TimeSpan.FromMilliseconds(100);
 
+    private const int MinimumMessageKeyCryptoHashKeyLength = 32;
+
     private readonly IProducer<byte[], string> producer;
     private readonly IAnonymizerEngine anonymizer;
     private readonly AnonymizationConfig anonymizationConfig;
@@ -79,6 +83,9 @@ public class KafkaMessageProcessor
     private readonly ILogger<KafkaMessageProcessor> logger;
     private readonly Regex outputTopicPattern;
     private readonly string groupId;
+
+    // null if message keys are kept as they are
+    private readonly byte[] messageKeyCryptoHashKey;
 
     public KafkaMessageProcessor(
         IProducer<byte[], string> producer,
@@ -98,6 +105,59 @@ public class KafkaMessageProcessor
 
         outputTopicPattern = new Regex(kafkaConfig.OutputTopicPattern, RegexOptions.Compiled);
         groupId = kafkaConfig.Consumer.GroupId ?? KafkaExtensions.DefaultGroupId;
+
+        if (kafkaConfig.CryptoHashMessageKeys.Enabled)
+        {
+            messageKeyCryptoHashKey = GetMessageKeyCryptoHashKey(
+                kafkaConfig.CryptoHashMessageKeys
+            );
+        }
+    }
+
+    private static byte[] GetMessageKeyCryptoHashKey(CryptoHashMessageKeysConfig config)
+    {
+        if (string.IsNullOrEmpty(config.Key))
+        {
+            throw new ValidationException(
+                "Kafka message keys are crypto-hashed by default, which requires "
+                    + "Kafka__CryptoHashMessageKeys__Key to be set to a randomly generated key, "
+                    + "e.g. from `openssl rand -hex 32`. Set "
+                    + "Kafka__CryptoHashMessageKeys__Enabled=false to keep the input messages' "
+                    + "keys instead."
+            );
+        }
+
+        // Same minimum as for the anonymization config's keys. Never includes the key itself,
+        // since this ends up in the logs.
+        var keyBytes = Encoding.UTF8.GetBytes(config.Key);
+        if (keyBytes.Length < MinimumMessageKeyCryptoHashKeyLength)
+        {
+            throw new ValidationException(
+                $"Kafka__CryptoHashMessageKeys__Key is only {keyBytes.Length} bytes long, but "
+                    + $"must be at least {MinimumMessageKeyCryptoHashKeyLength} bytes. Use a "
+                    + "randomly generated key instead, e.g. from `openssl rand -hex 32`."
+            );
+        }
+
+        return keyBytes;
+    }
+
+    /// <summary>
+    ///     The key to produce the pseudonymized version of a message with, see
+    ///     <see cref="KafkaConfig.CryptoHashMessageKeys" />.
+    /// </summary>
+    private byte[] GetOutputKey(byte[] key)
+    {
+        // an empty key identifies nothing, so is left empty - as is an empty value by cryptoHash
+        if (messageKeyCryptoHashKey is null || key is null || key.Length == 0)
+        {
+            return key;
+        }
+
+        Span<byte> hash = stackalloc byte[HMACSHA256.HashSizeInBytes];
+        HMACSHA256.HashData(messageKeyCryptoHashKey, key, hash);
+
+        return Encoding.UTF8.GetBytes(Convert.ToHexStringLower(hash));
     }
 
     /// <summary>
@@ -180,7 +240,7 @@ public class KafkaMessageProcessor
 
         var message = new Message<byte[], string>
         {
-            Key = result.Message.Key,
+            Key = GetOutputKey(result.Message.Key),
             Value = output,
             Headers = CopyHeaders(result.Message.Headers),
         };

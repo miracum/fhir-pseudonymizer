@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
@@ -7,6 +9,7 @@ using Hl7.Fhir.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
+using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 namespace FhirPseudonymizer.Tests.Kafka;
 
@@ -47,15 +50,37 @@ public class KafkaMessageProcessorTests
         IProvenancePublisher provenancePublisher = null
     )
     {
+        kafkaConfig ??= new KafkaConfig();
+
         return new KafkaMessageProcessor(
             producer,
             anonymizer,
             A.Fake<AnonymizationConfig>(),
-            kafkaConfig ?? new KafkaConfig(),
+            // message keys are crypto-hashed by default, which requires a key
+            kafkaConfig.CryptoHashMessageKeys.Key is null
+                ? kafkaConfig with
+                {
+                    CryptoHashMessageKeys = kafkaConfig.CryptoHashMessageKeys with
+                    {
+                        Key = TestKeys.CryptoHashKey,
+                    },
+                }
+                : kafkaConfig,
             provenancePublisher ?? A.Fake<IProvenancePublisher>(),
             A.Fake<ILogger<KafkaMessageProcessor>>()
         );
     }
+
+    private static Func<KafkaMessageProcessor> Constructing(KafkaConfig kafkaConfig) =>
+        () =>
+            new KafkaMessageProcessor(
+                A.Fake<IProducer<byte[], string>>(),
+                A.Fake<IAnonymizerEngine>(),
+                A.Fake<AnonymizationConfig>(),
+                kafkaConfig,
+                A.Fake<IProvenancePublisher>(),
+                A.Fake<ILogger<KafkaMessageProcessor>>()
+            );
 
     private static IAnonymizerEngine CreatePassThroughAnonymizer()
     {
@@ -136,10 +161,35 @@ public class KafkaMessageProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_PreservesOriginalMessageKey()
+    public async Task ProcessAsync_CryptoHashesTheMessageKeyByDefault()
     {
         var producer = CreateProducer(out var produced);
         var processor = CreateProcessor(CreatePassThroughAnonymizer(), producer);
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson, "patient-123"u8.ToArray()),
+            1,
+            _ => { },
+            TestContext.Current.CancellationToken
+        );
+
+        // the lowercase hex HMAC-SHA256, just like the anonymization config's cryptoHash method
+        // (by default) turns "patient-123" into, given the same key
+        Encoding
+            .UTF8.GetString(produced.Single().Message.Key)
+            .Should()
+            .Be(CryptoHashUtility.ComputeHmacSHA256Hash("patient-123", TestKeys.CryptoHashKey));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WithCryptoHashingMessageKeysDisabled_PreservesOriginalMessageKey()
+    {
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(
+            CreatePassThroughAnonymizer(),
+            producer,
+            new KafkaConfig { CryptoHashMessageKeys = new() { Enabled = false } }
+        );
         var key = "patient-123"u8.ToArray();
 
         await processor.ProcessAsync(
@@ -150,6 +200,52 @@ public class KafkaMessageProcessorTests
         );
 
         produced.Single().Message.Key.Should().BeEquivalentTo(key);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(new byte[0])]
+    public async Task ProcessAsync_WithoutAMessageKey_LeavesTheKeyAsItIs(byte[] key)
+    {
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(CreatePassThroughAnonymizer(), producer);
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson, key),
+            1,
+            _ => { },
+            TestContext.Current.CancellationToken
+        );
+
+        produced.Single().Message.Key.Should().BeEquivalentTo(key);
+    }
+
+    [Fact]
+    public void Constructor_WithoutACryptoHashMessageKeysKey_Throws()
+    {
+        Constructing(new KafkaConfig())
+            .Should()
+            .Throw<ValidationException>()
+            .WithMessage("*Kafka__CryptoHashMessageKeys__Key*");
+    }
+
+    [Fact]
+    public void Constructor_WithACryptoHashMessageKeysKeyShorterThan32Bytes_ThrowsWithoutRevealingIt()
+    {
+        const string key = "0123456789012345678901234567890";
+
+        Constructing(new KafkaConfig { CryptoHashMessageKeys = new() { Key = key } })
+            .Should()
+            .Throw<ValidationException>()
+            .Where(exc => exc.Message.Contains("31 bytes") && !exc.Message.Contains(key));
+    }
+
+    [Fact]
+    public void Constructor_WithCryptoHashingMessageKeysDisabled_DoesNotRequireAKey()
+    {
+        Constructing(new KafkaConfig { CryptoHashMessageKeys = new() { Enabled = false } })
+            .Should()
+            .NotThrow();
     }
 
     [Fact]
@@ -235,6 +331,7 @@ public class KafkaMessageProcessorTests
         produced.Should().ContainSingle();
         var (topic, deadLetterMessage) = produced[0];
         topic.Should().Be(DeadLetterTopic);
+        // not crypto-hashed: the dead letter topic gets the original message as it is
         deadLetterMessage.Key.Should().BeEquivalentTo(key);
         deadLetterMessage.Value.Should().Be("not valid fhir json");
         deadLetterMessage.Headers.Should().Contain(h => h.Key == "traceparent");
