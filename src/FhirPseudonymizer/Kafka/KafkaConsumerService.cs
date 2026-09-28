@@ -116,7 +116,17 @@ public class KafkaConsumerService : BackgroundService
             .Select(index => RunConsumer(index, stopping))
             .ToArray();
 
-        await System.Threading.Tasks.Task.WhenAll(consumers);
+        try
+        {
+            await System.Threading.Tasks.Task.WhenAll(consumers);
+        }
+        finally
+        {
+            // The consumers only wait for their own messages to be acknowledged, not for the
+            // Provenance messages produced along with them, which would be lost if still queued
+            // when the producer is disposed.
+            processor.Flush(ShutdownFlushTimeout);
+        }
     }
 
     private System.Threading.Tasks.Task RunConsumer(int index, CancellationTokenSource stopping)

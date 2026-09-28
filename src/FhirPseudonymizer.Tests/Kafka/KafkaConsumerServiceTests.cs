@@ -326,6 +326,8 @@ public class KafkaConsumerServiceTests
         producer.Produced.Select(p => p.Key).Should().Equal("p0-o0");
         consumer.StoredOffsets.Should().Equal(new TopicPartitionOffset(InputPartition(0), 1));
         A.CallTo(() => consumer.Consumer.Close()).MustHaveHappenedOnceExactly();
+        // e.g. for the Provenance messages produced along with the pseudonymized ones
+        A.CallTo(() => producer.Producer.Flush(A<TimeSpan>._)).MustHaveHappened();
     }
 
     [Fact]
