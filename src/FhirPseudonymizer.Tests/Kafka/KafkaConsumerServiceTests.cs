@@ -78,7 +78,11 @@ public class KafkaConsumerServiceTests
             producer.Producer,
             anonymizer,
             A.Fake<AnonymizationConfig>(),
-            kafkaConfig,
+            // these tests tell the produced messages apart by their keys
+            kafkaConfig with
+            {
+                CryptoHashMessageKeys = new() { Enabled = false },
+            },
             A.Fake<IProvenancePublisher>(),
             A.Fake<ILogger<KafkaMessageProcessor>>()
         );

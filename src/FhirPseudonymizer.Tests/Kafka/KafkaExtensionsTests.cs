@@ -192,6 +192,30 @@ public class KafkaExtensionsTests
         consumerConfig.GroupId.Should().Be("my-group");
     }
 
+    [Fact]
+    public void KafkaConfig_CryptoHashesMessageKeysByDefault()
+    {
+        new KafkaConfig().CryptoHashMessageKeys.Enabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void KafkaConfig_BindsCryptoHashMessageKeysSettingsFromConfiguration()
+    {
+        var settings = new Dictionary<string, string>
+        {
+            ["Kafka:CryptoHashMessageKeys:Enabled"] = "false",
+            ["Kafka:CryptoHashMessageKeys:Key"] = TestKeys.CryptoHashKey,
+        };
+
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+
+        var appConfig = new AppConfig();
+        configuration.Bind(appConfig);
+
+        appConfig.Kafka.CryptoHashMessageKeys.Enabled.Should().BeFalse();
+        appConfig.Kafka.CryptoHashMessageKeys.Key.Should().Be(TestKeys.CryptoHashKey);
+    }
+
     [Theory]
     [InlineData("topic-a,topic-b", new[] { "topic-a", "topic-b" })]
     [InlineData("topic-a, topic-b ,topic-c", new[] { "topic-a", "topic-b", "topic-c" })]
@@ -254,6 +278,7 @@ public class KafkaExtensionsTests
         var kafkaConfig = new KafkaConfig
         {
             Topics = ["input-topic"],
+            CryptoHashMessageKeys = new() { Key = TestKeys.CryptoHashKey },
             Client = new ClientConfig { BootstrapServers = "localhost:9092" },
         };
         var services = new ServiceCollection()
