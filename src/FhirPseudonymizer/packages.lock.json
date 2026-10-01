@@ -16,11 +16,11 @@
       },
       "Confluent.Kafka": {
         "type": "Direct",
-        "requested": "[2.15.0, )",
-        "resolved": "2.15.0",
-        "contentHash": "/BOEnIKAq1AHq6vPl+0RBDiKwI6L6tJaYBo1qH+OAUP5MFy0i0MhSfgtqKW9/M8J9dQPfb/izWU+R0Uc6DyW2w==",
+        "requested": "[2.15.1, )",
+        "resolved": "2.15.1",
+        "contentHash": "II/gcWsptqKp3UJ4f7zFug7S4xfND1IdYsrNlIJSRRG8WHmP/NfSXiiLWhKGzTUlZwfkL1mcdU71eo1eKf04pA==",
         "dependencies": {
-          "librdkafka.redist": "2.15.0"
+          "librdkafka.redist": "2.15.1"
         }
       },
       "Duende.AccessTokenManagement": {
@@ -50,9 +50,9 @@
       },
       "Google.Protobuf": {
         "type": "Direct",
-        "requested": "[3.36.0, )",
-        "resolved": "3.36.0",
-        "contentHash": "wDPg8sKlmA8we1bqnC9DYKwLog4PNJ4GYTWV9FkzlGvfs3kNCSt2x0Qe31SBOeBPS2JGEZ/lNfil/Bkwx18Ufg=="
+        "requested": "[3.36.2, )",
+        "resolved": "3.36.2",
+        "contentHash": "Ci1q1iJg74qAE5riTA2FbMS0wPbpruPQI/JQ9DrAsRo2VsSxgt1e/pmxGxgrci+pXJEgrSYg2vPl8rrStZkclQ=="
       },
       "Grpc.Net.Client": {
         "type": "Direct",
@@ -74,9 +74,9 @@
       },
       "Grpc.Tools": {
         "type": "Direct",
-        "requested": "[2.83.0, )",
-        "resolved": "2.83.0",
-        "contentHash": "vK2Go/83W0v2Nn7tTP9fGrX4IjmOa93s3M0SZeFimU1vIIr2wL9yNJlIyK21y85SGm3++JncB8IF751cjoLHuQ=="
+        "requested": "[2.84.0, )",
+        "resolved": "2.84.0",
+        "contentHash": "SarjdfpQYU/mmdu/fWgSW8kEHQ54jiyG2+I4THu9eubtAud+QJf+1iJdGtoKTJ/ZRaI0qAG+7ttsK2WUTao2OQ=="
       },
       "Hl7.Fhir.Base": {
         "type": "Direct",
@@ -106,9 +106,9 @@
       },
       "Microsoft.Extensions.Http.Polly": {
         "type": "Direct",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "DIxaTXWdbjRJihAIutpDIgPbpD9PwW8lW0EIawlNH4zs7coCgwPnd9rYlzXYkuKKphnjcKYlo6gXFeg6z15GLg==",
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "guggIopNFSFyQSr+9xc66cjr9ohls5/312T/vRsAryh+NYsqo2f9BxMElEYkOxw8QPqK7/Lo8emi2NDnqo6w4Q==",
         "dependencies": {
           "Polly": "7.2.4",
           "Polly.Extensions.Http": "3.0.0"
@@ -249,8 +249,8 @@
       },
       "librdkafka.redist": {
         "type": "Transitive",
-        "resolved": "2.15.0",
-        "contentHash": "DzG2YcqWPT3Ly91aeDYsgsVcJXlOMiK9oqyRdPvQz9ZMbcV8Ob0rQA6fNUQ4sarmzFk4phqwPlVQxtZDGLP69w=="
+        "resolved": "2.15.1",
+        "contentHash": "fhRs/2fY80isR9zqrCkDdEhrp5Vi4Lxetg6yjhBl2uNiQs9Z2StA/Q8WqkJmj5OqmG8BQaP6OXvzbGngqXid+w=="
       },
       "Microsoft.Extensions.AmbientMetadata.Application": {
         "type": "Transitive",

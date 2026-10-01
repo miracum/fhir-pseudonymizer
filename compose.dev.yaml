@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.13.2@sha256:3f7453a44569d0d8d9d29bd56b75e9dfd79043b6494e1c2acd3c5bf408e7c0b2
+    image: ghcr.io/miracum/vfps:v1.21.0@sha256:79513201feada14ec1ff922794e3087cba6ebad579e497fa9c59b363366fdb87
     restart: unless-stopped
     deploy:
       resources:
@@ -144,7 +144,7 @@ services:
       - kafka
 
   mock-data-loader:
-    image: docker.io/confluentinc/cp-kcat:8.2.3@sha256:b700209db34cc98a5a0287cdd49466e18c5736a5c51da02e237064868a3fec57
+    image: docker.io/confluentinc/cp-kcat:8.2.4@sha256:1c350ab3a06825d94bd9715e161b0fbc06d884e0e166ecf0a8c80cf9e99c305e
     entrypoint: ["/bin/bash", "-c"]
     restart: on-failure
     command:
@@ -157,7 +157,7 @@ services:
       - kafka
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.7.3@sha256:ff4257d0d64efbe99ed1ddfaf07765cc3c36dc7518bf8324d41961327f441c54
+    image: quay.io/keycloak/keycloak:26.8.0@sha256:b0f60d489d51c5d113390bdf5461d4c06e6051be026c05549f2e1e10ec352bcc
     restart: unless-stopped
     profiles:
       - keycloak
