@@ -36,7 +36,7 @@ jobs:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: unit test
     needs:
       - build
@@ -118,7 +118,7 @@ jobs:
 
   k6-benchmark:
     name: k6 benchmark
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # the container image is only uploaded as an artifact for pull_request events, see
     # standard-build.yaml's "Upload container image" step.
     if: ${{ github.event_name == 'pull_request' }}
@@ -218,7 +218,7 @@ jobs:
 
   iter8-test:
     name: run iter8 tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: ${{ github.event_name == 'pull_request' }}
     needs:
       - build
@@ -357,7 +357,7 @@ jobs:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 
   playground:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: playground
     steps:
       - name: Checkout code
@@ -383,7 +383,7 @@ jobs:
           path: publish-output/wwwroot
 
   microbenchmarks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: microbenchmarks
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
     permissions:
@@ -471,7 +471,7 @@ jobs:
     needs:
       - playground
       - microbenchmarks
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       pages: write
       id-token: write
