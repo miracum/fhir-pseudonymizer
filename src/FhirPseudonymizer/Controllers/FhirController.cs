@@ -251,9 +251,16 @@ namespace FhirPseudonymizer.Controllers
                 // Snapshot before anonymizing: the engine mutates `resource` in place and
                 // returns that same instance, so `resource` is no longer the pre-image afterwards.
                 var preImage = provenancePublisher.CapturePreImage(resource);
-                var anonymized = await engine.AnonymizeResourceAsync(
+                var anonymized = await AnonymizationMetrics.MeasureAsync(
+                    AnonymizationMetrics.OperationDeIdentify,
+                    AnonymizationMetrics.SourceRest,
                     resource,
-                    anonymizerSettings,
+                    () =>
+                        engine.AnonymizeResourceAsync(
+                            resource,
+                            anonymizerSettings,
+                            cancellationToken
+                        ),
                     cancellationToken
                 );
                 provenancePublisher.Publish(preImage, anonymized);
@@ -351,9 +358,16 @@ namespace FhirPseudonymizer.Controllers
             try
             {
                 return Ok(
-                    await dePseudonymizer.DePseudonymizeResourceAsync(
+                    await AnonymizationMetrics.MeasureAsync(
+                        AnonymizationMetrics.OperationDePseudonymize,
+                        AnonymizationMetrics.SourceRest,
                         resource,
-                        cancellationToken: cancellationToken
+                        () =>
+                            dePseudonymizer.DePseudonymizeResourceAsync(
+                                resource,
+                                cancellationToken: cancellationToken
+                            ),
+                        cancellationToken
                     )
                 );
             }

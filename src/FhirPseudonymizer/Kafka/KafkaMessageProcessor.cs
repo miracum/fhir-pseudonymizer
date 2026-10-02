@@ -194,7 +194,11 @@ public class KafkaMessageProcessor
 
         try
         {
-            (preImage, anonymized) = await AnonymizeAsync(result.Message.Value, result.Topic);
+            (preImage, anonymized) = await AnonymizeAsync(
+                result.Message.Value,
+                result.Topic,
+                cancellationToken
+            );
             output = JsonSerializer.Serialize(anonymized, FhirJsonOptions);
         }
         catch (Exception exc) when (cancellationToken.IsCancellationRequested)
@@ -388,7 +392,7 @@ public class KafkaMessageProcessor
     private async System.Threading.Tasks.Task<(
         Resource PreImage,
         Resource Anonymized
-    )> AnonymizeAsync(string json, string sourceTopic)
+    )> AnonymizeAsync(string json, string sourceTopic, CancellationToken cancellationToken)
     {
         // Parsed afresh for every attempt: the anonymizer modifies the resource it is given in
         // place, so an attempt failing midway (e.g. after some of its pseudonymization calls
@@ -408,7 +412,17 @@ public class KafkaMessageProcessor
             ShouldAddSecurityTag = anonymizationConfig.ShouldAddSecurityTag,
         };
 
-        return (preImage, await anonymizer.AnonymizeResourceAsync(resource, settings));
+        // The token only tells the metrics whether a failure came from stopping - the anonymizer
+        // itself still runs to completion, see ProcessAsync.
+        var anonymized = await AnonymizationMetrics.MeasureAsync(
+            AnonymizationMetrics.OperationDeIdentify,
+            AnonymizationMetrics.SourceKafka,
+            resource,
+            () => anonymizer.AnonymizeResourceAsync(resource, settings),
+            cancellationToken
+        );
+
+        return (preImage, anonymized);
     }
 
     /// <summary>

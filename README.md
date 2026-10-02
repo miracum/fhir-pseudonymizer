@@ -101,6 +101,8 @@ Accessing this endpoint requires authentication. So make sure to set the `APIKEY
 
 While not part of the "user" API, the application exposes metrics (via OpenTelemetry's Prometheus exporter) in the Prometheus format at the `/metrics` endpoint on its own dedicated port, `8081` by default. That endpoint only answers on this port - it isn't reachable on the main app port, and the metrics port doesn't serve anything else.
 A ready-to-import Grafana dashboard covering these metrics is available at [`grafana/fhir-pseudonymizer-dashboard.json`](./grafana/fhir-pseudonymizer-dashboard.json).
+Besides throughput and failures, it shows how long anonymizing takes per resource - comparable across bundle sizes - how much of that is spent waiting for the pseudonymization service, and the .NET runtime's CPU, memory and garbage collection.
+Its Kafka consumer lag panels require a [Kafka exporter](https://github.com/danielqsj/kafka_exporter) scraped by the same Prometheus.
 
 ### Reading directly from Kafka
 
