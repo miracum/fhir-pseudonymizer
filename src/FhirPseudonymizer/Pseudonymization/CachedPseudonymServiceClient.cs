@@ -28,6 +28,15 @@ public class CachedPseudonymServiceClient(
             description: "Total number of requests against the pseudonymization service that could not be resolved via the internal cache."
         );
 
+    // Bucket boundaries are configured as an OpenTelemetry View - see
+    // MetricsConfigurationExtensions.
+    private static readonly Histogram<double> PseudonymizationRequestDuration =
+        Program.Meter.CreateHistogram<double>(
+            "fhirpseudonymizer.pseudonymization.request.duration",
+            unit: "s",
+            description: "Time the pseudonymization service took to answer a request that could not be resolved via the internal cache, including the client's own retries."
+        );
+
     public Task<string> GetOrCreatePseudonymFor(
         string value,
         string domain,
@@ -49,11 +58,15 @@ public class CachedPseudonymServiceClient(
                     new TagList { { "operation", nameof(GetOrCreatePseudonymFor) } }
                 );
                 ApplyCacheConfig(entry);
-                return await innerClient.GetOrCreatePseudonymFor(
-                    value,
-                    domain,
-                    settings,
-                    cancellationToken
+                return await MeasureAsync(
+                    nameof(GetOrCreatePseudonymFor),
+                    () =>
+                        innerClient.GetOrCreatePseudonymFor(
+                            value,
+                            domain,
+                            settings,
+                            cancellationToken
+                        )
                 );
             }
         );
@@ -80,14 +93,49 @@ public class CachedPseudonymServiceClient(
                     new TagList { { "operation", nameof(GetOriginalValueFor) } }
                 );
                 ApplyCacheConfig(entry);
-                return await innerClient.GetOriginalValueFor(
-                    pseudonym,
-                    domain,
-                    settings,
-                    cancellationToken
+                return await MeasureAsync(
+                    nameof(GetOriginalValueFor),
+                    () =>
+                        innerClient.GetOriginalValueFor(
+                            pseudonym,
+                            domain,
+                            settings,
+                            cancellationToken
+                        )
                 );
             }
         );
+    }
+
+    private static async Task<string> MeasureAsync(string operation, Func<Task<string>> request)
+    {
+        var startTimestamp = Stopwatch.GetTimestamp();
+        var outcome = "success";
+
+        try
+        {
+            return await request();
+        }
+        catch (Exception exc)
+        {
+            // Told apart like the REST API and the Kafka consumer do: a transient failure is
+            // retried later, a rejected value never is.
+            outcome = exc switch
+            {
+                TransientPseudonymizationException => "transient",
+                PseudonymizationRejectedException => "rejected",
+                OperationCanceledException => "cancelled",
+                _ => "error",
+            };
+            throw;
+        }
+        finally
+        {
+            PseudonymizationRequestDuration.Record(
+                Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds,
+                new TagList { { "operation", operation }, { "outcome", outcome } }
+            );
+        }
     }
 
     private static string BuildSettingsCacheKey(IReadOnlyDictionary<string, object> settings)

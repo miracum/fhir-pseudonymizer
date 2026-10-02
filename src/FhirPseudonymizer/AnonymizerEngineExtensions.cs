@@ -1,6 +1,7 @@
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using Microsoft.Health.Fhir.Anonymizer.Core;
+using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 
 namespace FhirPseudonymizer;
 
@@ -70,5 +71,42 @@ public static class AnonymizerEngineExtensions
         });
 
         return services;
+    }
+
+    public static void LogErrorIfPseudonymizationServiceIsMissing(
+        AnonymizerConfigurationManager anonConfig,
+        PseudonymizationServiceType pseudonymizationService,
+        ILogger logger
+    )
+    {
+        if (pseudonymizationService != PseudonymizationServiceType.None)
+        {
+            return;
+        }
+
+        // Matched case-insensitively, like the config validator and the engine do.
+        var pseudonymizeRulePaths = anonConfig
+            .FhirPathRules.Where(rule =>
+                string.Equals(
+                    rule.Method,
+                    nameof(AnonymizerMethod.Pseudonymize),
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
+            .Select(rule => rule.Path)
+            .ToList();
+
+        if (pseudonymizeRulePaths.Count == 0)
+        {
+            return;
+        }
+
+        logger.LogError(
+            "The anonymization config uses the pseudonymize method for {PseudonymizeRulePaths}, "
+                + "but PseudonymizationService is set to None, so resources matching these rules "
+                + "will fail to be processed. Set PseudonymizationService to one of gPAS, Vfps, "
+                + "entici or Mii.",
+            pseudonymizeRulePaths
+        );
     }
 }

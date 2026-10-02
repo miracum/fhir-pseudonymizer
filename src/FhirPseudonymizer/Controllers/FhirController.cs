@@ -109,12 +109,16 @@ namespace FhirPseudonymizer.Controllers
         /// </param>
         /// <returns>The de-identified resource.</returns>
         /// <response code="200">Returns the de-identified resource</response>
+        /// <response code="422">The request is well-formed, but its content can't be processed, e.g. it contains a value the pseudonymization service rejects - caused by the request itself, so retrying it won't help</response>
         /// <response code="499">The caller aborted the request before it was processed</response>
+        /// <response code="503">A service the request depends on, e.g. the pseudonymization service, is temporarily unavailable - not caused by the request, so it may be retried later</response>
         [HttpPost("$de-identify")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status422UnprocessableEntity)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status503ServiceUnavailable)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
         public async Task<ObjectResult> DeIdentify(
             [FromBody] Resource resource,
@@ -244,12 +248,22 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                var anonymized = await engine.AnonymizeResourceAsync(
+                // Snapshot before anonymizing: the engine mutates `resource` in place and
+                // returns that same instance, so `resource` is no longer the pre-image afterwards.
+                var preImage = provenancePublisher.CapturePreImage(resource);
+                var anonymized = await AnonymizationMetrics.MeasureAsync(
+                    AnonymizationMetrics.OperationDeIdentify,
+                    AnonymizationMetrics.SourceRest,
                     resource,
-                    anonymizerSettings,
+                    () =>
+                        engine.AnonymizeResourceAsync(
+                            resource,
+                            anonymizerSettings,
+                            cancellationToken
+                        ),
                     cancellationToken
                 );
-                provenancePublisher.Publish(resource, anonymized);
+                provenancePublisher.Publish(preImage, anonymized);
                 return Ok(anonymized);
             }
             // Caught ahead of the catch-all below so an aborted request is not logged and
@@ -262,6 +276,31 @@ namespace FhirPseudonymizer.Controllers
                 return StatusCode(
                     StatusCodes.Status499ClientClosedRequest,
                     CreateCancelledOutcome()
+                );
+            }
+            // Told apart from the catch-all below so a caller can decide whether to retry: a 503
+            // is worth retrying once the backend is back, a 422 never is - e.g. a Kafka consumer
+            // in front of this would retry the former, but dead-letter the latter.
+            catch (TransientPseudonymizationException exc)
+            {
+                logger.LogWarning(
+                    exc,
+                    "Anonymize failed since the pseudonymization service is unavailable"
+                );
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    CreateOutcome(OperationOutcome.IssueType.Transient, exc.Message)
+                );
+            }
+            catch (PseudonymizationRejectedException exc)
+            {
+                logger.LogWarning(
+                    exc,
+                    "Anonymize failed since the pseudonymization service rejected a value"
+                );
+                return StatusCode(
+                    StatusCodes.Status422UnprocessableEntity,
+                    CreateOutcome(OperationOutcome.IssueType.Processing, exc.Message)
                 );
             }
             catch (Exception exc)
@@ -319,9 +358,16 @@ namespace FhirPseudonymizer.Controllers
             try
             {
                 return Ok(
-                    await dePseudonymizer.DePseudonymizeResourceAsync(
+                    await AnonymizationMetrics.MeasureAsync(
+                        AnonymizationMetrics.OperationDePseudonymize,
+                        AnonymizationMetrics.SourceRest,
                         resource,
-                        cancellationToken: cancellationToken
+                        () =>
+                            dePseudonymizer.DePseudonymizeResourceAsync(
+                                resource,
+                                cancellationToken: cancellationToken
+                            ),
+                        cancellationToken
                     )
                 );
             }
@@ -366,14 +412,20 @@ namespace FhirPseudonymizer.Controllers
             };
         }
 
-        private static OperationOutcome CreateBadRequestOutcome(string diagnostics)
+        private static OperationOutcome CreateBadRequestOutcome(string diagnostics) =>
+            CreateOutcome(OperationOutcome.IssueType.Processing, diagnostics);
+
+        private static OperationOutcome CreateOutcome(
+            OperationOutcome.IssueType code,
+            string diagnostics
+        )
         {
             var outcome = new OperationOutcome();
             outcome.Issue.Add(
                 new OperationOutcome.IssueComponent
                 {
                     Severity = OperationOutcome.IssueSeverity.Error,
-                    Code = OperationOutcome.IssueType.Processing,
+                    Code = code,
                     Diagnostics = diagnostics,
                 }
             );

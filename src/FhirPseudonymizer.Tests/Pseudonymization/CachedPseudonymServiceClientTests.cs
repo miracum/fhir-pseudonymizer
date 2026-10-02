@@ -340,6 +340,92 @@ public class CachedPseudonymServiceClientTests
         result.Should().Be("pseudonym");
     }
 
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WithSameInput_ShouldOnlyMeasureTheCacheMiss()
+    {
+        using var durations = new MetricRecorder<double>(
+            "fhirpseudonymizer.pseudonymization.request.duration"
+        );
+        var innerClient = A.Fake<IPseudonymServiceClient>();
+        A.CallTo(() =>
+                innerClient.GetOrCreatePseudonymFor("value", "domain", null, A<CancellationToken>._)
+            )
+            .Returns("pseudonym");
+
+        var sut = new CachedPseudonymServiceClient(innerClient, CreateCache(), CreateCacheConfig());
+
+        await sut.GetOrCreatePseudonymFor(
+            "value",
+            "domain",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        await sut.GetOrCreatePseudonymFor(
+            "value",
+            "domain",
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+
+        durations
+            .Measurements.Should()
+            .ContainSingle()
+            .Which.Tags.Should()
+            .BeEquivalentTo(
+                new Dictionary<string, object>
+                {
+                    ["operation"] = "GetOrCreatePseudonymFor",
+                    ["outcome"] = "success",
+                }
+            );
+    }
+
+    public static TheoryData<Exception, string> InnerClientFailures =>
+        new()
+        {
+            { new TransientPseudonymizationException("unavailable", null), "transient" },
+            { new PseudonymizationRejectedException("rejected", null), "rejected" },
+            { new OperationCanceledException(), "cancelled" },
+            { new InvalidOperationException("boom"), "error" },
+        };
+
+    [Theory]
+    [MemberData(nameof(InnerClientFailures))]
+    public async Task GetOriginalValueFor_WhenTheInnerClientFails_ShouldMeasureTheFailure(
+        Exception failure,
+        string expectedOutcome
+    )
+    {
+        using var durations = new MetricRecorder<double>(
+            "fhirpseudonymizer.pseudonymization.request.duration"
+        );
+        var innerClient = A.Fake<IPseudonymServiceClient>();
+        A.CallTo(() =>
+                innerClient.GetOriginalValueFor("pseudonym", "domain", null, A<CancellationToken>._)
+            )
+            .Throws(failure);
+
+        var sut = new CachedPseudonymServiceClient(innerClient, CreateCache(), CreateCacheConfig());
+
+        var act = () =>
+            sut.GetOriginalValueFor(
+                "pseudonym",
+                "domain",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        (await act.Should().ThrowAsync<Exception>()).Which.Should().BeSameAs(failure);
+        durations
+            .Measurements.Should()
+            .ContainSingle()
+            .Which.Tags.Should()
+            .BeEquivalentTo(
+                new Dictionary<string, object>
+                {
+                    ["operation"] = "GetOriginalValueFor",
+                    ["outcome"] = expectedOutcome,
+                }
+            );
+    }
+
     private static IMemoryCache CreateCache()
     {
         return new MemoryCache(new MemoryCacheOptions { SizeLimit = 1024 });

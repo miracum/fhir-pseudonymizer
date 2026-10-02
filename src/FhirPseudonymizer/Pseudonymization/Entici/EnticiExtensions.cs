@@ -99,7 +99,7 @@ public static class EnticiExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(enticiConfig.RequestRetryCount));
+            .AddPolicyHandler(GetRetryPolicy(enticiConfig.Retry.Count));
 
         services.AddTransient<EnticiFhirClient>();
         services.AddTransient<IPseudonymServiceClient>(

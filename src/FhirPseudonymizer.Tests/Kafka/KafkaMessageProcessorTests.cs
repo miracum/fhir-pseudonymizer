@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Kafka;
@@ -7,6 +9,7 @@ using Hl7.Fhir.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
+using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 namespace FhirPseudonymizer.Tests.Kafka;
 
@@ -47,15 +50,38 @@ public class KafkaMessageProcessorTests
         IProvenancePublisher provenancePublisher = null
     )
     {
+        kafkaConfig ??= new KafkaConfig();
+
         return new KafkaMessageProcessor(
             producer,
             anonymizer,
             A.Fake<AnonymizationConfig>(),
-            kafkaConfig ?? new KafkaConfig(),
-            provenancePublisher ?? A.Fake<IProvenancePublisher>(),
+            // message keys are crypto-hashed by default, which requires a key
+            kafkaConfig.CryptoHashMessageKeys.Key
+                is null
+                ? kafkaConfig with
+                {
+                    CryptoHashMessageKeys = kafkaConfig.CryptoHashMessageKeys with
+                    {
+                        Key = TestKeys.CryptoHashKey,
+                    },
+                }
+                : kafkaConfig,
+            provenancePublisher ?? new NoopProvenancePublisher(),
             A.Fake<ILogger<KafkaMessageProcessor>>()
         );
     }
+
+    private static Func<KafkaMessageProcessor> Constructing(KafkaConfig kafkaConfig) =>
+        () =>
+            new KafkaMessageProcessor(
+                A.Fake<IProducer<byte[], string>>(),
+                A.Fake<IAnonymizerEngine>(),
+                A.Fake<AnonymizationConfig>(),
+                kafkaConfig,
+                A.Fake<IProvenancePublisher>(),
+                A.Fake<ILogger<KafkaMessageProcessor>>()
+            );
 
     private static IAnonymizerEngine CreatePassThroughAnonymizer()
     {
@@ -125,6 +151,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -135,19 +162,91 @@ public class KafkaMessageProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_PreservesOriginalMessageKey()
+    public async Task ProcessAsync_CryptoHashesTheMessageKeyByDefault()
     {
         var producer = CreateProducer(out var produced);
         var processor = CreateProcessor(CreatePassThroughAnonymizer(), producer);
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson, "patient-123"u8.ToArray()),
+            1,
+            _ => { },
+            TestContext.Current.CancellationToken
+        );
+
+        // the lowercase hex HMAC-SHA256, just like the anonymization config's cryptoHash method
+        // (by default) turns "patient-123" into, given the same key
+        Encoding
+            .UTF8.GetString(produced.Single().Message.Key)
+            .Should()
+            .Be(CryptoHashUtility.ComputeHmacSHA256Hash("patient-123", TestKeys.CryptoHashKey));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WithCryptoHashingMessageKeysDisabled_PreservesOriginalMessageKey()
+    {
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(
+            CreatePassThroughAnonymizer(),
+            producer,
+            new KafkaConfig { CryptoHashMessageKeys = new() { Enabled = false } }
+        );
         var key = "patient-123"u8.ToArray();
 
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson, key),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
 
         produced.Single().Message.Key.Should().BeEquivalentTo(key);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(new byte[0])]
+    public async Task ProcessAsync_WithoutAMessageKey_LeavesTheKeyAsItIs(byte[] key)
+    {
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(CreatePassThroughAnonymizer(), producer);
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson, key),
+            1,
+            _ => { },
+            TestContext.Current.CancellationToken
+        );
+
+        produced.Single().Message.Key.Should().BeEquivalentTo(key);
+    }
+
+    [Fact]
+    public void Constructor_WithoutACryptoHashMessageKeysKey_Throws()
+    {
+        Constructing(new KafkaConfig())
+            .Should()
+            .Throw<ValidationException>()
+            .WithMessage("*Kafka__CryptoHashMessageKeys__Key*");
+    }
+
+    [Fact]
+    public void Constructor_WithACryptoHashMessageKeysKeyShorterThan32Bytes_ThrowsWithoutRevealingIt()
+    {
+        const string key = "0123456789012345678901234567890";
+
+        Constructing(new KafkaConfig { CryptoHashMessageKeys = new() { Key = key } })
+            .Should()
+            .Throw<ValidationException>()
+            .Where(exc => exc.Message.Contains("31 bytes") && !exc.Message.Contains(key));
+    }
+
+    [Fact]
+    public void Constructor_WithCryptoHashingMessageKeysDisabled_DoesNotRequireAKey()
+    {
+        Constructing(new KafkaConfig { CryptoHashMessageKeys = new() { Enabled = false } })
+            .Should()
+            .NotThrow();
     }
 
     [Fact]
@@ -159,6 +258,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson, headers: headers),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -196,6 +296,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -223,6 +324,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult("not valid fhir json", key, headers),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -230,6 +332,7 @@ public class KafkaMessageProcessorTests
         produced.Should().ContainSingle();
         var (topic, deadLetterMessage) = produced[0];
         topic.Should().Be(DeadLetterTopic);
+        // not crypto-hashed: the dead letter topic gets the original message as it is
         deadLetterMessage.Key.Should().BeEquivalentTo(key);
         deadLetterMessage.Value.Should().Be("not valid fhir json");
         deadLetterMessage.Headers.Should().Contain(h => h.Key == "traceparent");
@@ -250,6 +353,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult("not valid fhir json"),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -258,23 +362,25 @@ public class KafkaMessageProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_WithAResourceOnlyTheLegacyParserAccepts_StillProcessesIt()
+    public async Task ProcessAsync_WithAResourceThatIsNotValidFhir_SendsItToTheDeadLetterTopic()
     {
-        // ids may only contain [A-Za-z0-9\-\.] as per the FHIR spec, which the System.Text.Json
-        // based deserializer validates, but the legacy parser did not
+        // ids may only contain [A-Za-z0-9\-\.] as per the FHIR spec, which is validated while
+        // parsing
+        var json = """{"resourceType":"Patient","id":"pid_1"}""";
         var producer = CreateProducer(out var produced);
         var processor = CreateProcessor(CreatePassThroughAnonymizer(), producer);
 
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
-            CreateConsumeResult("""{"resourceType":"Patient","id":"pid_1"}"""),
+            CreateConsumeResult(json),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
 
-        produced.Single().Topic.Should().Be(OutputTopic);
-        produced.Single().Message.Value.Should().Contain("\"id\":\"pid_1\"");
-        outcomes.Should().Equal(KafkaMessageOutcome.Produced);
+        produced.Single().Topic.Should().Be(DeadLetterTopic);
+        produced.Single().Message.Value.Should().Be(json);
+        outcomes.Should().Equal(KafkaMessageOutcome.DeadLettered);
     }
 
     [Fact]
@@ -295,6 +401,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -314,6 +421,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -334,6 +442,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -360,6 +469,7 @@ public class KafkaMessageProcessorTests
             .Invoking(p =>
                 p.ProcessAsync(
                     CreateConsumeResult("not valid fhir json"),
+                    1,
                     outcomes.Add,
                     TestContext.Current.CancellationToken
                 )
@@ -411,6 +521,7 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson),
+            1,
             outcomes.Add,
             TestContext.Current.CancellationToken
         );
@@ -441,6 +552,9 @@ public class KafkaMessageProcessorTests
             )
             .Returns(Task.FromResult<Resource>(anonymized));
         var provenancePublisher = A.Fake<IProvenancePublisher>();
+        // Mirror KafkaProvenancePublisher: snapshot the resource before the anonymizer gets it.
+        A.CallTo(() => provenancePublisher.CapturePreImage(A<Resource>._))
+            .ReturnsLazily((Resource r) => (Resource)r.DeepCopy());
         var processor = CreateProcessor(
             anonymizer,
             A.Fake<IProducer<byte[], string>>(),
@@ -451,9 +565,23 @@ public class KafkaMessageProcessorTests
         Resource publishedOriginal = null;
         Resource publishedPseudonymized = null;
         Headers publishedHeaders = null;
-        A.CallTo(() => provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<Headers>._))
+        A.CallTo(() =>
+                provenancePublisher.PublishAsync(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Headers>._,
+                    A<Action<ProvenancePublishingException>>._,
+                    A<CancellationToken>._
+                )
+            )
             .Invokes(
-                (Resource o, Resource p, Headers h) =>
+                (
+                    Resource o,
+                    Resource p,
+                    Headers h,
+                    Action<ProvenancePublishingException> _,
+                    CancellationToken _
+                ) =>
                 {
                     publishedOriginal = o;
                     publishedPseudonymized = p;
@@ -463,6 +591,7 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult(PatientJson, headers: headers),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
@@ -484,17 +613,204 @@ public class KafkaMessageProcessorTests
 
         await processor.ProcessAsync(
             CreateConsumeResult("not valid fhir json"),
+            1,
             _ => { },
             TestContext.Current.CancellationToken
         );
 
-        A.CallTo(() => provenancePublisher.Publish(A<Resource>._, A<Resource>._, A<Headers>._))
+        A.CallTo(() =>
+                provenancePublisher.PublishAsync(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Headers>._,
+                    A<Action<ProvenancePublishingException>>._,
+                    A<CancellationToken>._
+                )
+            )
             .MustNotHaveHappened();
     }
 
-    [Fact]
-    public async Task ProcessAsync_WhenPseudonymizationBackendIsTransientlyUnavailable_RetriesUntilItSucceeds()
+    /// <summary>
+    ///     A provenance publisher that leaves reporting how publishing went to the test, by
+    ///     collecting the callbacks it is given.
+    /// </summary>
+    private static IProvenancePublisher CreateProvenancePublisher(
+        out List<Action<ProvenancePublishingException>> onCompletedCallbacks
+    )
     {
+        var callbacks = new List<Action<ProvenancePublishingException>>();
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+        A.CallTo(() =>
+                provenancePublisher.PublishAsync(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Headers>._,
+                    A<Action<ProvenancePublishingException>>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Invokes(
+                (
+                    Resource _,
+                    Resource _,
+                    Headers _,
+                    Action<ProvenancePublishingException> onCompleted,
+                    CancellationToken _
+                ) => callbacks.Add(onCompleted)
+            );
+
+        onCompletedCallbacks = callbacks;
+        return provenancePublisher;
+    }
+
+    [Fact]
+    public async Task ProcessAsync_ReportsProducedOnlyOnceTheProvenanceWasAcknowledgedToo()
+    {
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(
+            CreatePassThroughAnonymizer(),
+            producer,
+            provenancePublisher: CreateProvenancePublisher(out var provenanceCallbacks)
+        );
+        var outcomes = new List<KafkaMessageOutcome>();
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson),
+            1,
+            outcomes.Add,
+            TestContext.Current.CancellationToken
+        );
+
+        // the pseudonymized message was acknowledged right away, but its provenance wasn't yet
+        produced.Should().ContainSingle();
+        outcomes.Should().BeEmpty();
+
+        provenanceCallbacks.Single()(null);
+
+        outcomes.Should().Equal(KafkaMessageOutcome.Produced);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenTheProvenanceCannotBePublished_SendsOriginalMessageToDeadLetterTopic()
+    {
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(
+            CreatePassThroughAnonymizer(),
+            producer,
+            provenancePublisher: CreateProvenancePublisher(out var provenanceCallbacks)
+        );
+        var outcomes = new List<KafkaMessageOutcome>();
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson),
+            1,
+            outcomes.Add,
+            TestContext.Current.CancellationToken
+        );
+
+        provenanceCallbacks.Single()(
+            new ProvenancePublishingException(
+                "Failed to deliver provenance bundle",
+                new InvalidOperationException()
+            )
+        );
+
+        produced.Select(p => p.Topic).Should().Equal(OutputTopic, DeadLetterTopic);
+        var deadLetterMessage = produced[1].Message;
+        deadLetterMessage.Value.Should().Be(PatientJson);
+        deadLetterMessage
+            .Headers.Should()
+            .Contain(h =>
+                h.Key == "x-error-type"
+                && Encoding.UTF8.GetString(h.GetValueBytes())
+                    == typeof(ProvenancePublishingException).FullName
+            );
+        outcomes.Should().Equal(KafkaMessageOutcome.DeadLettered);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenCancelledWhileWaitingToPublishTheProvenance_ReportsAbandoned()
+    {
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            TestContext.Current.CancellationToken
+        );
+        var producer = CreateProducer(out var produced);
+        var provenancePublisher = A.Fake<IProvenancePublisher>();
+        A.CallTo(() =>
+                provenancePublisher.PublishAsync(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Headers>._,
+                    A<Action<ProvenancePublishingException>>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(() =>
+            {
+                cancellation.Cancel();
+                return Task.FromCanceled(cancellation.Token);
+            });
+        var processor = CreateProcessor(
+            CreatePassThroughAnonymizer(),
+            producer,
+            provenancePublisher: provenancePublisher
+        );
+        var outcomes = new List<KafkaMessageOutcome>();
+
+        await processor.ProcessAsync(
+            CreateConsumeResult(PatientJson),
+            1,
+            outcomes.Add,
+            cancellation.Token
+        );
+
+        // the pseudonymized message went out, but it isn't done without its provenance
+        produced.Select(p => p.Topic).Should().Equal(OutputTopic);
+        outcomes.Should().Equal(KafkaMessageOutcome.Abandoned);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenPseudonymizationBackendIsTransientlyUnavailable_ThrowsForTheCallerToRetryInsteadOfDeadLettering()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(
+                new TransientPseudonymizationException(
+                    "backend unavailable",
+                    new InvalidOperationException()
+                )
+            );
+        var producer = CreateProducer(out var produced);
+        var processor = CreateProcessor(anonymizer, producer);
+
+        var outcomes = new List<KafkaMessageOutcome>();
+        await processor
+            .Invoking(p =>
+                p.ProcessAsync(
+                    CreateConsumeResult(PatientJson),
+                    1,
+                    outcomes.Add,
+                    TestContext.Current.CancellationToken
+                )
+            )
+            .Should()
+            .ThrowAsync<TransientPseudonymizationException>();
+
+        produced.Should().BeEmpty();
+        outcomes.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenRetryingATransientFailure_AnonymizesAFreshlyParsedResource()
+    {
+        // like the real anonymizer, this one modifies the resource it is given in place - and
+        // then fails the first attempt, as if a pseudonymization backend call went wrong midway
         var attempt = 0;
         var anonymizer = A.Fake<IAnonymizerEngine>();
         A.CallTo(() =>
@@ -507,7 +823,8 @@ public class KafkaMessageProcessorTests
             .ReturnsLazily(
                 (Resource resource, AnonymizerSettings _, CancellationToken _) =>
                 {
-                    if (Interlocked.Increment(ref attempt) < 3)
+                    resource.Id += "-anonymized";
+                    if (Interlocked.Increment(ref attempt) < 2)
                     {
                         throw new TransientPseudonymizationException(
                             "backend unavailable",
@@ -520,19 +837,22 @@ public class KafkaMessageProcessorTests
             );
         var producer = CreateProducer(out var produced);
         var processor = CreateProcessor(anonymizer, producer);
+        var result = CreateConsumeResult(PatientJson);
 
-        await processor.ProcessAsync(
-            CreateConsumeResult(PatientJson),
-            _ => { },
-            TestContext.Current.CancellationToken
-        );
+        await processor
+            .Invoking(p =>
+                p.ProcessAsync(result, 1, _ => { }, TestContext.Current.CancellationToken)
+            )
+            .Should()
+            .ThrowAsync<TransientPseudonymizationException>();
+        await processor.ProcessAsync(result, 2, _ => { }, TestContext.Current.CancellationToken);
 
-        attempt.Should().Be(3);
-        produced.Select(p => p.Topic).Should().Equal(OutputTopic);
+        attempt.Should().Be(2);
+        produced.Single().Message.Value.Should().Contain("\"id\":\"123-anonymized\"");
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenCancelledWhileRetryingATransientFailure_ReportsAbandonedWithoutProducing()
+    public async Task ProcessAsync_WhenThePseudonymizationBackendIsUnavailableOnceCancelled_ReportsAbandonedWithoutProducing()
     {
         var anonymizer = A.Fake<IAnonymizerEngine>();
         A.CallTo(() =>
@@ -557,7 +877,49 @@ public class KafkaMessageProcessorTests
         var outcomes = new List<KafkaMessageOutcome>();
         await processor
             .Invoking(p =>
-                p.ProcessAsync(CreateConsumeResult(PatientJson), outcomes.Add, cts.Token)
+                p.ProcessAsync(CreateConsumeResult(PatientJson), 1, outcomes.Add, cts.Token)
+            )
+            .Should()
+            .NotThrowAsync();
+
+        outcomes.Should().Equal(KafkaMessageOutcome.Abandoned);
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task ProcessAsync_WhenProcessingFailsAfterItWasCancelled_ReportsAbandonedInsteadOfDeadLettering()
+    {
+        using var cts = new CancellationTokenSource();
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .ReturnsLazily(
+                async Task<Resource> (Resource _, AnonymizerSettings _, CancellationToken _) =>
+                {
+                    // e.g. the host shutting down disposes the pseudonym cache under the message
+                    await cts.CancelAsync();
+                    throw new ObjectDisposedException("MemoryCache");
+                }
+            );
+        var producer = A.Fake<IProducer<byte[], string>>();
+        var processor = CreateProcessor(anonymizer, producer);
+
+        var outcomes = new List<KafkaMessageOutcome>();
+        await processor
+            .Invoking(p =>
+                p.ProcessAsync(CreateConsumeResult(PatientJson), 1, outcomes.Add, cts.Token)
             )
             .Should()
             .NotThrowAsync();
