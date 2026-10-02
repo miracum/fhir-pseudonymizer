@@ -57,7 +57,8 @@ public class KafkaMessageProcessorTests
             anonymizer,
             A.Fake<AnonymizationConfig>(),
             // message keys are crypto-hashed by default, which requires a key
-            kafkaConfig.CryptoHashMessageKeys.Key is null
+            kafkaConfig.CryptoHashMessageKeys.Key
+                is null
                 ? kafkaConfig with
                 {
                     CryptoHashMessageKeys = kafkaConfig.CryptoHashMessageKeys with

@@ -109,9 +109,7 @@ public class KafkaMessageProcessor
 
         if (kafkaConfig.CryptoHashMessageKeys.Enabled)
         {
-            messageKeyCryptoHashKey = GetMessageKeyCryptoHashKey(
-                kafkaConfig.CryptoHashMessageKeys
-            );
+            messageKeyCryptoHashKey = GetMessageKeyCryptoHashKey(kafkaConfig.CryptoHashMessageKeys);
         }
     }
 

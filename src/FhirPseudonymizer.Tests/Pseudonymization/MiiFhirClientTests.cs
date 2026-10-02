@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Mii;
 using Hl7.Fhir.Model;
+using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
 using Microsoft.Extensions.Logging;
 
@@ -249,10 +250,15 @@ public class MiiFhirClientTests
         await act.Should().ThrowAsync<TransientPseudonymizationException>();
     }
 
-    [Fact]
-    public async Task GetOrCreatePseudonymFor_WhenMiiRejectsTheInput_ThrowsTheOriginalException()
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.UnprocessableEntity)]
+    public async Task GetOrCreatePseudonymFor_WhenMiiRejectsTheInput_ThrowsPseudonymizationRejectedException(
+        HttpStatusCode statusCode
+    )
     {
-        var handler = CreateFailingHttpMessageHandler(HttpStatusCode.BadRequest);
+        var handler = CreateFailingHttpMessageHandler(statusCode);
         var factory = CreateHttpClientFactory(handler);
         var client = new MiiFhirClient(A.Fake<ILogger<MiiFhirClient>>(), factory);
 
@@ -264,9 +270,9 @@ public class MiiFhirClientTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        await act.Should()
-            .ThrowAsync<Exception>()
-            .Where(exc => exc.GetType() != typeof(TransientPseudonymizationException));
+        (
+            await act.Should().ThrowAsync<PseudonymizationRejectedException>()
+        ).WithInnerException<FhirOperationException>();
     }
 
     private static HttpMessageHandler CreateFailingHttpMessageHandler(HttpStatusCode statusCode)

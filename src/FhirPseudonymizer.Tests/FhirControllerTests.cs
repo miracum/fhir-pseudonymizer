@@ -17,6 +17,19 @@ public class FhirControllerTests
     private static IMemoryCache CreateAnonymizerConfigCache() =>
         new MemoryCache(new MemoryCacheOptions());
 
+    private static FhirController CreateController(IAnonymizerEngine anonymizer) =>
+        new(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            anonymizer,
+            A.Fake<IDePseudonymizerEngine>(),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
+        );
+
     [Fact]
     public async Task DeIdentify_ParsesDynamicSettings()
     {
@@ -134,6 +147,71 @@ public class FhirControllerTests
         response.StatusCode.Should().Be(500);
 
         response.Value.Should().BeOfType<OperationOutcome>();
+    }
+
+    [Fact]
+    public async Task DeIdentify_WhenThePseudonymizationServiceRejectsAValue_ShouldReturnUnprocessableEntity()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(
+                new PseudonymizationRejectedException(
+                    "Vfps rejected the pseudonymization request with status InvalidArgument: doesn't match the required pattern",
+                    new InvalidOperationException()
+                )
+            );
+
+        var controller = CreateController(anonymizer);
+
+        var response = await controller.DeIdentify(
+            new Bundle(),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        var issue = response.Value.Should().BeOfType<OperationOutcome>().Which.Issue.Single();
+        issue.Code.Should().Be(OperationOutcome.IssueType.Processing);
+        issue.Diagnostics.Should().Contain("doesn't match the required pattern");
+    }
+
+    [Fact]
+    public async Task DeIdentify_WhenThePseudonymizationServiceIsUnavailable_ShouldReturnServiceUnavailable()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(
+                new TransientPseudonymizationException(
+                    "Vfps pseudonymization call failed with status Unavailable.",
+                    new InvalidOperationException()
+                )
+            );
+
+        var controller = CreateController(anonymizer);
+
+        var response = await controller.DeIdentify(
+            new Bundle(),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        response
+            .Value.Should()
+            .BeOfType<OperationOutcome>()
+            .Which.Issue.Single()
+            .Code.Should()
+            .Be(OperationOutcome.IssueType.Transient);
     }
 
     [Fact]

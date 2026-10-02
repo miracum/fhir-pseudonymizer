@@ -184,7 +184,9 @@ public class KafkaProvenancePublisherTests
 
         reported.Should().BeEmpty();
 
-        deliveryHandler(new DeliveryReport<byte[], string> { Error = new Error(ErrorCode.NoError) });
+        deliveryHandler(
+            new DeliveryReport<byte[], string> { Error = new Error(ErrorCode.NoError) }
+        );
 
         reported.Should().ContainSingle().Which.Should().BeNull();
     }
@@ -254,11 +256,7 @@ public class KafkaProvenancePublisherTests
                 TestContext.Current.CancellationToken
             );
 
-        reported
-            .Should()
-            .ContainSingle()
-            .Which.InnerException.Should()
-            .BeOfType<KafkaException>();
+        reported.Should().ContainSingle().Which.InnerException.Should().BeOfType<KafkaException>();
     }
 
     [Fact]

@@ -155,12 +155,15 @@ public class GPasFhirClientTests
         await act.Should().ThrowAsync<TransientPseudonymizationException>();
     }
 
-    [Fact]
-    public async Task GetOrCreatePseudonymFor_WhenGPasRejectsTheInput_ThrowsTheOriginalException()
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.UnprocessableEntity)]
+    public async Task GetOrCreatePseudonymFor_WhenGPasRejectsTheInput_ThrowsPseudonymizationRejectedException(
+        HttpStatusCode statusCode
+    )
     {
-        var gpasClient = CreateGPasClient(
-            CreateFailingHttpMessageHandler(HttpStatusCode.BadRequest)
-        );
+        var gpasClient = CreateGPasClient(CreateFailingHttpMessageHandler(statusCode));
 
         var act = async () =>
             await gpasClient.GetOrCreatePseudonymFor(
@@ -169,9 +172,9 @@ public class GPasFhirClientTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        await act.Should()
-            .ThrowAsync<Exception>()
-            .Where(exc => exc.GetType() != typeof(TransientPseudonymizationException));
+        (
+            await act.Should().ThrowAsync<PseudonymizationRejectedException>()
+        ).WithInnerException<FhirOperationException>();
     }
 
     private static HttpMessageHandler CreateFailingHttpMessageHandler(HttpStatusCode statusCode)
