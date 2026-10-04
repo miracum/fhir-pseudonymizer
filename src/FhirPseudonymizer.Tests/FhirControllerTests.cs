@@ -17,6 +17,19 @@ public class FhirControllerTests
     private static IMemoryCache CreateAnonymizerConfigCache() =>
         new MemoryCache(new MemoryCacheOptions());
 
+    private static FhirController CreateController(IAnonymizerEngine anonymizer) =>
+        new(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            anonymizer,
+            A.Fake<IDePseudonymizerEngine>(),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
+        );
+
     [Fact]
     public async Task DeIdentify_ParsesDynamicSettings()
     {
@@ -137,6 +150,71 @@ public class FhirControllerTests
     }
 
     [Fact]
+    public async Task DeIdentify_WhenThePseudonymizationServiceRejectsAValue_ShouldReturnUnprocessableEntity()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(
+                new PseudonymizationRejectedException(
+                    "Vfps rejected the pseudonymization request with status InvalidArgument: doesn't match the required pattern",
+                    new InvalidOperationException()
+                )
+            );
+
+        var controller = CreateController(anonymizer);
+
+        var response = await controller.DeIdentify(
+            new Bundle(),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        var issue = response.Value.Should().BeOfType<OperationOutcome>().Which.Issue.Single();
+        issue.Code.Should().Be(OperationOutcome.IssueType.Processing);
+        issue.Diagnostics.Should().Contain("doesn't match the required pattern");
+    }
+
+    [Fact]
+    public async Task DeIdentify_WhenThePseudonymizationServiceIsUnavailable_ShouldReturnServiceUnavailable()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(
+                new TransientPseudonymizationException(
+                    "Vfps pseudonymization call failed with status Unavailable.",
+                    new InvalidOperationException()
+                )
+            );
+
+        var controller = CreateController(anonymizer);
+
+        var response = await controller.DeIdentify(
+            new Bundle(),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        response
+            .Value.Should()
+            .BeOfType<OperationOutcome>()
+            .Which.Issue.Single()
+            .Code.Should()
+            .Be(OperationOutcome.IssueType.Transient);
+    }
+
+    [Fact]
     public async Task DeIdentify_WithParametersCarryingNoResource_ShouldReturnBadRequest()
     {
         var controller = new FhirController(
@@ -195,7 +273,14 @@ public class FhirControllerTests
 
         response.StatusCode.Should().Be(StatusCodes.Status499ClientClosedRequest);
         response.Value.Should().BeOfType<OperationOutcome>();
-        A.CallTo(provenancePublisher).MustNotHaveHappened();
+        A.CallTo(() =>
+                provenancePublisher.Publish(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Confluent.Kafka.Headers>._
+                )
+            )
+            .MustNotHaveHappened();
     }
 
     [Fact]
@@ -248,6 +333,9 @@ public class FhirControllerTests
             .Returns(anonymized);
 
         var provenancePublisher = A.Fake<IProvenancePublisher>();
+        // Mirror KafkaProvenancePublisher: snapshot the resource before the anonymizer gets it.
+        var preImage = new Patient { Id = "123" };
+        A.CallTo(() => provenancePublisher.CapturePreImage(original)).Returns(preImage);
 
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
@@ -263,7 +351,7 @@ public class FhirControllerTests
 
         await controller.DeIdentify(original, TestContext.Current.CancellationToken);
 
-        A.CallTo(() => provenancePublisher.Publish(original, anonymized, null))
+        A.CallTo(() => provenancePublisher.Publish(preImage, anonymized, null))
             .MustHaveHappenedOnceExactly();
     }
 

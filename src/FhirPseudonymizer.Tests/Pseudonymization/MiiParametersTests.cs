@@ -48,7 +48,9 @@ public class MiiParametersTests
     [Fact]
     public void FromFhirParameters_WithIgDePseudonymizeResponse_ShouldReadTheOriginalValue()
     {
-        var parameters = new FhirJsonParser().Parse<Parameters>(DePseudonymizeResponseExample);
+        var parameters = new FhirJsonDeserializer().Deserialize<Parameters>(
+            DePseudonymizeResponseExample
+        );
 
         var response = MiiDePseudonymizeResponse.FromFhirParameters(parameters);
 

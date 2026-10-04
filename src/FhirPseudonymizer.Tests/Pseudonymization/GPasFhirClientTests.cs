@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Headers;
-using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.GPas;
 using Hl7.Fhir.Rest;
@@ -11,30 +10,6 @@ namespace FhirPseudonymizer.Tests.Pseudonymization;
 
 public class GPasFhirClientTests
 {
-    public static IEnumerable<object[]> GetOrCreatePseudonymFor_Data()
-    {
-        yield return new object[]
-        {
-            "1.10.1",
-            HttpMethod.Get,
-            "$pseudonymize-allow-create?domain=domain&original=42",
-        };
-        yield return new object[] { "1.10.2", HttpMethod.Post, "$pseudonymize-allow-create" };
-        yield return new object[] { "1.10.3", HttpMethod.Post, "$pseudonymizeAllowCreate" };
-    }
-
-    public static IEnumerable<object[]> GetOriginalValueFor_Data()
-    {
-        yield return new object[]
-        {
-            "1.10.1",
-            HttpMethod.Get,
-            "$de-pseudonymize?domain=domain&pseudonym=42",
-        };
-        yield return new object[] { "1.10.2", HttpMethod.Post, "$de-pseudonymize" };
-        yield return new object[] { "1.10.3", HttpMethod.Post, "$dePseudonymize" };
-    }
-
     private static readonly Uri testBaseAddress = new("http://gpas");
 
     private const string ResponseContent = $$"""
@@ -52,10 +27,6 @@ public class GPasFhirClientTests
                             }
                         }
                     ]
-                },
-                {
-                    "name": "42",
-                    "valueString": "24"
                 }
             ]
         }
@@ -70,16 +41,11 @@ public class GPasFhirClientTests
         clientFactory = CreateHttpClientFactory(messageHandler);
     }
 
-    [Theory]
-    [MemberData(nameof(GetOrCreatePseudonymFor_Data))]
-    public async Task GetOrCreatePseudonymFor_ResolvesToApiVersionOperation(
-        string gpasVersion,
-        HttpMethod requestMethod,
-        string requestUri
-    )
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_PostsToPseudonymizeAllowCreateOperation()
     {
         // create gpas client
-        var gpasClient = CreateGPasClient(gpasVersion);
+        var gpasClient = CreateGPasClient();
 
         // act
         await gpasClient.GetOrCreatePseudonymFor(
@@ -89,7 +55,7 @@ public class GPasFhirClientTests
         );
 
         // verify
-        VerifyRequest(requestMethod, requestUri);
+        VerifyRequest(HttpMethod.Post, "$pseudonymizeAllowCreate");
     }
 
     private void VerifyRequest(HttpMethod requestMethod, string requestUri)
@@ -113,16 +79,11 @@ public class GPasFhirClientTests
         return factory;
     }
 
-    [Theory]
-    [MemberData(nameof(GetOriginalValueFor_Data))]
-    public async Task GetOriginalValueFor_ResolvesToApiVersionOperation(
-        string gpasVersion,
-        HttpMethod requestMethod,
-        string requestUri
-    )
+    [Fact]
+    public async Task GetOriginalValueFor_PostsToDePseudonymizeOperation()
     {
         // create gpas client
-        var gpasClient = CreateGPasClient(gpasVersion);
+        var gpasClient = CreateGPasClient();
 
         // act
         await gpasClient.GetOriginalValueFor(
@@ -132,33 +93,25 @@ public class GPasFhirClientTests
         );
 
         // verify request uri and method
-        VerifyRequest(requestMethod, requestUri);
+        VerifyRequest(HttpMethod.Post, "$dePseudonymize");
     }
 
-    private IPseudonymServiceClient CreateGPasClient(
-        string gPasVersion,
-        HttpMessageHandler handler = null
-    )
+    private IPseudonymServiceClient CreateGPasClient(HttpMessageHandler handler = null)
     {
-        var config = new GPasConfig { Version = gPasVersion };
         var factory = handler is null ? clientFactory : CreateHttpClientFactory(handler);
 
-        return new GPasFhirClient(A.Fake<ILogger<GPasFhirClient>>(), factory, config);
+        return new GPasFhirClient(A.Fake<ILogger<GPasFhirClient>>(), factory);
     }
 
-    // The gPAS V2/V2x de-pseudonymize paths deliberately swallow backend failures and return the
+    // The gPAS de-pseudonymize path deliberately swallows backend failures and returns the
     // pseudonym unchanged. A caller-requested cancellation must not take that path, or a cancelled
     // $de-pseudonymize would quietly emit still-pseudonymized data for the rest of the resource.
-    [Theory]
-    [InlineData("1.10.2")]
-    [InlineData("1.10.3")]
-    public async Task GetOriginalValueFor_WhenTheCallerCancels_ThrowsInsteadOfReturningThePseudonym(
-        string gpasVersion
-    )
+    [Fact]
+    public async Task GetOriginalValueFor_WhenTheCallerCancels_ThrowsInsteadOfReturningThePseudonym()
     {
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
-        var gpasClient = CreateGPasClient(gpasVersion, CreateThrowingHttpMessageHandler());
+        var gpasClient = CreateGPasClient(CreateThrowingHttpMessageHandler());
 
         var act = async () =>
             await gpasClient.GetOriginalValueFor("42", "domain", cancellationToken: cts.Token);
@@ -168,14 +121,10 @@ public class GPasFhirClientTests
 
     // The flip side: an HttpClient timeout also surfaces as an OperationCanceledException, but
     // with the caller's token unsignalled. That case keeps the pre-existing fallback.
-    [Theory]
-    [InlineData("1.10.2")]
-    [InlineData("1.10.3")]
-    public async Task GetOriginalValueFor_WhenTheBackendFailsWithoutCancellation_FallsBackToThePseudonym(
-        string gpasVersion
-    )
+    [Fact]
+    public async Task GetOriginalValueFor_WhenTheBackendFailsWithoutCancellation_FallsBackToThePseudonym()
     {
-        var gpasClient = CreateGPasClient(gpasVersion, CreateThrowingHttpMessageHandler());
+        var gpasClient = CreateGPasClient(CreateThrowingHttpMessageHandler());
 
         var result = await gpasClient.GetOriginalValueFor(
             "42",
@@ -187,18 +136,14 @@ public class GPasFhirClientTests
     }
 
     [Theory]
-    [InlineData("1.10.2", HttpStatusCode.ServiceUnavailable)]
-    [InlineData("1.10.3", HttpStatusCode.ServiceUnavailable)]
-    [InlineData("1.10.2", HttpStatusCode.Unauthorized)]
-    [InlineData("1.10.3", HttpStatusCode.Unauthorized)]
-    [InlineData("1.10.2", HttpStatusCode.Forbidden)]
-    [InlineData("1.10.3", HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
     public async Task GetOrCreatePseudonymFor_WhenGPasIsTransientlyUnavailable_ThrowsTransientPseudonymizationException(
-        string gpasVersion,
         HttpStatusCode statusCode
     )
     {
-        var gpasClient = CreateGPasClient(gpasVersion, CreateFailingHttpMessageHandler(statusCode));
+        var gpasClient = CreateGPasClient(CreateFailingHttpMessageHandler(statusCode));
 
         var act = async () =>
             await gpasClient.GetOrCreatePseudonymFor(
@@ -211,16 +156,14 @@ public class GPasFhirClientTests
     }
 
     [Theory]
-    [InlineData("1.10.2")]
-    [InlineData("1.10.3")]
-    public async Task GetOrCreatePseudonymFor_WhenGPasRejectsTheInput_ThrowsTheOriginalException(
-        string gpasVersion
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.UnprocessableEntity)]
+    public async Task GetOrCreatePseudonymFor_WhenGPasRejectsTheInput_ThrowsPseudonymizationRejectedException(
+        HttpStatusCode statusCode
     )
     {
-        var gpasClient = CreateGPasClient(
-            gpasVersion,
-            CreateFailingHttpMessageHandler(HttpStatusCode.BadRequest)
-        );
+        var gpasClient = CreateGPasClient(CreateFailingHttpMessageHandler(statusCode));
 
         var act = async () =>
             await gpasClient.GetOrCreatePseudonymFor(
@@ -229,9 +172,9 @@ public class GPasFhirClientTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        await act.Should()
-            .ThrowAsync<Exception>()
-            .Where(exc => exc.GetType() != typeof(TransientPseudonymizationException));
+        (
+            await act.Should().ThrowAsync<PseudonymizationRejectedException>()
+        ).WithInnerException<FhirOperationException>();
     }
 
     private static HttpMessageHandler CreateFailingHttpMessageHandler(HttpStatusCode statusCode)

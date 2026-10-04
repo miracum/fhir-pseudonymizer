@@ -251,10 +251,10 @@ public class VfpsExtensionsTests
     }
 
     [Theory]
-    [InlineData(0, 2)] // RequestRetryCount=0 still clamps to gRPC's minimum of 2 total attempts
+    [InlineData(0, 2)] // Retry.Count=0 still clamps to gRPC's minimum of 2 total attempts
     [InlineData(2, 3)]
-    public async Task AddVfpsClient_WithConfiguredRequestRetryCount_MakesThatManyAttemptsOnTransientErrors(
-        int requestRetryCount,
+    public async Task AddVfpsClient_WithConfiguredRetryCount_MakesThatManyAttemptsOnTransientErrors(
+        int retryCount,
         int expectedAttempts
     )
     {
@@ -264,7 +264,7 @@ public class VfpsExtensionsTests
         {
             Address = VfpsAddress,
             UnsafeUseInsecureChannelCallCredentials = true,
-            RequestRetryCount = requestRetryCount,
+            Retry = new() { Count = retryCount },
         };
 
         var services = new ServiceCollection();

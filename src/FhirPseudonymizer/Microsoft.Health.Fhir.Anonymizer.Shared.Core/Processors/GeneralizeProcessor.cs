@@ -1,17 +1,18 @@
 using EnsureThat;
-using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.Model;
 using Hl7.FhirPath;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
+using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
     public class GeneralizeProcessor : IAnonymizerProcessor
     {
         public Task<ProcessResult> ProcessAsync(
-            ElementNode node,
+            PocoNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
         )
@@ -21,7 +22,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             EnsureArg.IsNotNull(settings);
 
             var result = new ProcessResult();
-            if (!ModelInfo.IsPrimitive(node.InstanceType) || node.Value == null)
+            if (!ModelInfo.IsPrimitive(node.GetInstanceType()) || node.GetValue() == null)
             {
                 return System.Threading.Tasks.Task.FromResult(result);
             }
@@ -33,7 +34,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 {
                     if (node.Predicate(eachCase.Key))
                     {
-                        node.Value = node.Scalar(eachCase.Value);
+                        node.SetPrimitiveValue(node.Scalar(eachCase.Value));
                         result.AddProcessRecord(AnonymizationOperations.Generalize, node);
                         return System.Threading.Tasks.Task.FromResult(result);
                     }
@@ -49,7 +50,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
             if (generalizeSetting.OtherValues == GeneralizationOtherValuesOperation.Redact)
             {
-                node.Value = null;
+                node.SetPrimitiveValue(null);
             }
 
             result.AddProcessRecord(AnonymizationOperations.Generalize, node);

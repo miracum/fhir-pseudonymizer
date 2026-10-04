@@ -3,58 +3,58 @@ using System.Diagnostics.Metrics;
 using System.Threading.Channels;
 using Confluent.Kafka;
 using FhirPseudonymizer.Config;
+using FhirPseudonymizer.Pseudonymization;
 
 namespace FhirPseudonymizer.Kafka;
 
 /// <summary>
-///     Creates the consumer used by <see cref="KafkaConsumerService" />, wired to call back into it
-///     whenever a consumer group rebalance assigns, revokes, or loses partitions. The callbacks
-///     run on whichever thread is calling <see cref="IConsumer{TKey,TValue}.Consume(TimeSpan)" />.
+///     Creates the <paramref name="index" />th of the consumers used by
+///     <see cref="KafkaConsumerService" />, wired to call back into it whenever a consumer group
+///     rebalance assigns, revokes, or loses partitions. The callbacks run on whichever thread is
+///     calling <see cref="IConsumer{TKey,TValue}.Consume(TimeSpan)" />.
 /// </summary>
 public delegate IConsumer<byte[], string> KafkaConsumerFactory(
+    int index,
     Action<IReadOnlyList<TopicPartition>> onPartitionsAssigned,
     Action<IReadOnlyList<TopicPartition>> onPartitionsRevoked,
     Action<IReadOnlyList<TopicPartition>> onPartitionsLost
 );
 
 /// <summary>
-///     Consumes FHIR resources/bundles from one or more Kafka topics and hands them to a fixed
-///     pool of workers that pseudonymize them via <see cref="KafkaMessageProcessor" />.
+///     Consumes FHIR resources/bundles from one or more Kafka topics and pseudonymizes them via
+///     <see cref="KafkaMessageProcessor" />, using <see cref="KafkaConfig.WorkerCount" />
+///     independent consumers in the same consumer group - like Spring Kafka's listener
+///     concurrency. Each one runs on its own thread and processes the messages of the
+///     partitions Kafka assigned to it one after another, so they are processed in order, while
+///     different consumers' partitions are processed in parallel. A consumer that is busy simply
+///     doesn't ask for more messages, and librdkafka stops prefetching for it once its queue
+///     (queued.max.messages.kbytes) is full: there is no buffering, and no backpressure to
+///     manage, in between.
 ///
-///     A single poll thread owns the <see cref="IConsumer{TKey,TValue}" /> (Consume/StoreOffset/
-///     Pause/Resume are not guaranteed to be thread-safe) and all partition bookkeeping:
 ///     <list type="bullet">
 ///         <item>
-///             Every assigned partition is pinned to one worker, so its messages are processed
-///             in order, while different partitions are processed in parallel. Newly assigned
-///             partitions go to whichever worker currently has the fewest, keeping the load even
-///             across rebalances.
+///             Produced messages aren't waited for one by one. A message's offset is stored (and
+///             later auto-committed) once the message it was turned into, and its provenance, have
+///             been acknowledged by the broker, and only once all earlier messages of the same
+///             partition have been, too - they may go to different output partitions, which are
+///             acknowledged independently. If a message can neither be processed nor sent to its
+///             dead letter topic, its partition can't move past it, so the service stops: after a
+///             restart, it is reprocessed from the last committed offset.
 ///         </item>
 ///         <item>
-///             Each worker has a bounded queue (by message count and approximate size). When a
-///             worker's queue is full, the poll thread waits for it to make room - that is the
-///             normal backpressure while working through a backlog. Only if the worker doesn't
-///             accept another message within <see cref="KafkaConfig.WorkerBusyTimeoutMs" /> (e.g.
-///             because it is retrying a pseudonymization backend that is down) are its partitions
-///             paused, so that the others keep being consumed and this consumer isn't kicked from
-///             its group for exceeding max.poll.interval.ms. They are resumed once the worker
-///             has worked off half of its queue. Pausing is deliberately kept out of the normal
-///             path: librdkafka discards everything it has already prefetched for a partition
-///             when pausing it, so pausing on every full queue means refetching most messages.
+///             A message that fails because the pseudonymization backend is unavailable
+///             (<see cref="TransientPseudonymizationException" />) is retried indefinitely, with
+///             exponential backoff of up to a minute. Meanwhile, its partition is paused while
+///             the consumer keeps polling, so it keeps its other partitions going and isn't kicked
+///             from its group for exceeding max.poll.interval.ms.
 ///         </item>
 ///         <item>
-///             A message's offset is only stored (and later auto-committed) once the message it
-///             was turned into has been acknowledged by the broker, and only once all earlier
-///             messages of the same partition have been, too. If a message can neither be
-///             processed nor sent to its dead letter topic, its partition can't move past it, so
-///             the service stops: after a restart, it is reprocessed from the last committed offset.
-///         </item>
-///         <item>
-///             When a rebalance revokes a partition (e.g. because another replica joined the
-///             group), its queued messages are dropped, but the one already being processed is
-///             given up to <see cref="RevocationTimeout" /> to be acknowledged, and its offset
-///             stored before the partition is handed over. That way, its new owner doesn't process
-///             and produce it a second time - out of order with the newer messages it produces.
+///             Rebalances only take effect between messages, from within Consume. When one revokes
+///             a partition (e.g. because another replica joined the group), the messages of it
+///             that were produced but not yet acknowledged are given up to
+///             <see cref="RevocationTimeout" /> to be, and their offsets stored before the
+///             partition is handed over. That way, its new owner doesn't process and produce them
+///             a second time - out of order with the newer messages it produces.
 ///         </item>
 ///     </list>
 /// </summary>
@@ -63,17 +63,12 @@ public class KafkaConsumerService : BackgroundService
     private static readonly UpDownCounter<long> PausedPartitionsCounter =
         Program.Meter.CreateUpDownCounter<long>(
             "fhirpseudonymizer.kafka.partitions_paused",
-            description: "Number of partitions currently paused because the worker processing them stopped accepting new messages - most likely because it is retrying a transient pseudonymization backend failure."
+            description: "Number of partitions currently paused while one of their messages waits to be retried after a transient pseudonymization backend failure."
         );
-
-    private static readonly Gauge<int> WorkerQueueDepthGauge = Program.Meter.CreateGauge<int>(
-        "fhirpseudonymizer.kafka.worker.queue_depth",
-        description: "Number of messages currently queued in a worker's channel."
-    );
 
     private static readonly Gauge<int> PartitionsAssignedGauge = Program.Meter.CreateGauge<int>(
         "fhirpseudonymizer.kafka.partitions_assigned",
-        description: "Number of partitions currently assigned to this consumer instance across all subscribed topics."
+        description: "Number of partitions currently assigned to one of this instance's consumers, across all subscribed topics."
     );
 
     private static readonly TimeSpan PollTimeout = TimeSpan.FromMilliseconds(100);
@@ -87,19 +82,6 @@ public class KafkaConsumerService : BackgroundService
     private readonly KafkaMessageProcessor processor;
     private readonly KafkaConfig kafkaConfig;
     private readonly ILogger<KafkaConsumerService> logger;
-    private readonly Worker[] workers;
-    private readonly TimeSpan workerBusyTimeout;
-
-    // Written by whichever thread reports a message's outcome, read by the poll thread.
-    private readonly Channel<WorkItem> completedItems = Channel.CreateUnbounded<WorkItem>(
-        new UnboundedChannelOptions { SingleReader = true }
-    );
-
-    // Everything below is only ever touched by the poll thread (see Run), including from within
-    // the rebalance callbacks, which librdkafka invokes from inside Consume().
-    private readonly Dictionary<TopicPartition, PartitionState> partitions = [];
-    private IConsumer<byte[], string> consumer;
-    private WorkItem failedItem;
 
     public KafkaConsumerService(
         KafkaConsumerFactory consumerFactory,
@@ -112,566 +94,519 @@ public class KafkaConsumerService : BackgroundService
         this.processor = processor;
         this.kafkaConfig = kafkaConfig;
         this.logger = logger;
-
-        workerBusyTimeout = TimeSpan.FromMilliseconds(Math.Max(0, kafkaConfig.WorkerBusyTimeoutMs));
-        workers =
-        [
-            .. Enumerable
-                .Range(0, Math.Max(1, kafkaConfig.WorkerCount))
-                .Select(index => new Worker(
-                    index,
-                    Math.Max(1, kafkaConfig.WorkerChannelCapacity),
-                    Math.Max(1, kafkaConfig.WorkerChannelCapacityBytes)
-                )),
-        ];
     }
 
-    protected override System.Threading.Tasks.Task ExecuteAsync(CancellationToken stoppingToken)
+    /// <summary>
+    ///     How long to wait before making the given attempt at processing a message, after the
+    ///     previous one failed because the pseudonymization backend was unavailable.
+    /// </summary>
+    internal Func<int, TimeSpan> RetryDelay { get; init; } =
+        attempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, attempt - 2)));
+
+    protected override async System.Threading.Tasks.Task ExecuteAsync(
+        CancellationToken stoppingToken
+    )
     {
-        // The poll loop blocks (in Consume, and while waiting for a busy worker), so it gets a
-        // dedicated thread rather than tying up one of the thread pool's.
+        // Cancelled not only on shutdown but also once any consumer stops because of a message
+        // that could neither be processed nor dead-lettered, so that the others stop, too.
+        using var stopping = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+
+        var consumers = Enumerable
+            .Range(0, Math.Max(1, kafkaConfig.WorkerCount))
+            .Select(index => RunConsumer(index, stopping))
+            .ToArray();
+
+        try
+        {
+            await System.Threading.Tasks.Task.WhenAll(consumers);
+        }
+        finally
+        {
+            // The consumers only wait for the messages produced for the ones they consumed, not
+            // for the provenance published for REST API requests by the same producer, which
+            // would be lost if still queued when the producer is disposed.
+            processor.Flush(ShutdownFlushTimeout);
+        }
+    }
+
+    private System.Threading.Tasks.Task RunConsumer(int index, CancellationTokenSource stopping)
+    {
+        // Consume blocks, and so does processing a message, so each consumer gets a dedicated
+        // thread rather than tying up one of the thread pool's.
         return System.Threading.Tasks.Task.Factory.StartNew(
-            () => Run(stoppingToken),
+            () =>
+            {
+                try
+                {
+                    new PartitionConsumer(this, index).Run(stopping.Token);
+                }
+                catch
+                {
+                    stopping.Cancel();
+                    throw;
+                }
+            },
             CancellationToken.None,
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default
         );
     }
 
-    private void Run(CancellationToken stoppingToken)
+    /// <summary>
+    ///     One of the consumers, along with the bookkeeping for the partitions assigned to it. All
+    ///     of it is only ever touched by the consumer's own thread (see <see cref="Run" />),
+    ///     including from within the rebalance callbacks, which librdkafka invokes from inside
+    ///     Consume - except for the outcomes of produced messages, which are reported by the
+    ///     producer's delivery report thread.
+    /// </summary>
+    private sealed class PartitionConsumer(KafkaConsumerService service, int index)
     {
-        consumer = consumerFactory(OnPartitionsAssigned, OnPartitionsRevoked, OnPartitionsLost);
-        consumer.Subscribe(kafkaConfig.Topics);
-        logger.LogInformation(
-            "Subscribed to Kafka topics: {Topics} using {WorkerCount} workers",
-            string.Join(", ", kafkaConfig.Topics),
-            workers.Length
+        private readonly ILogger logger = service.logger;
+        private readonly KafkaMessageProcessor processor = service.processor;
+
+        // Written by whichever thread reports a message's outcome, read by the consumer's thread.
+        private readonly Channel<WorkItem> completedItems = Channel.CreateUnbounded<WorkItem>(
+            new UnboundedChannelOptions { SingleReader = true }
         );
 
-        // Cancelled not only on shutdown but also when stopping because of a failed message, so
-        // that workers stop picking up new ones in either case: anything not yet processed simply
-        // doesn't get its offset stored and is reprocessed after a restart.
-        using var workersCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            stoppingToken
-        );
-        var workerTasks = workers
-            .Select(worker =>
-                System.Threading.Tasks.Task.Run(() =>
-                    RunWorkerAsync(worker, workersCancellation.Token)
-                )
-            )
-            .ToArray();
+        private readonly Dictionary<TopicPartition, PartitionState> partitions = [];
+        private IConsumer<byte[], string> consumer;
+        private WorkItem failedItem;
 
-        try
+        public void Run(CancellationToken stoppingToken)
         {
-            RunConsumeLoop(stoppingToken);
-        }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-        {
-            // shutting down while waiting for a busy worker
-        }
-        finally
-        {
-            workersCancellation.Cancel();
-            foreach (var partition in partitions.Values)
-            {
-                partition.Cancellation.Cancel();
-            }
-
-            foreach (var worker in workers)
-            {
-                worker.Complete();
-            }
-
-            System.Threading.Tasks.Task.WaitAll(workerTasks);
-
-            // let the outcomes of messages that were already produced come in, so that their
-            // offsets get stored and committed on close below instead of reprocessed on restart
-            processor.Flush(ShutdownFlushTimeout);
-            StoreCompletedOffsets();
+            consumer = service.consumerFactory(
+                index,
+                OnPartitionsAssigned,
+                OnPartitionsRevoked,
+                OnPartitionsLost
+            );
+            consumer.Subscribe(service.kafkaConfig.Topics);
+            logger.LogInformation(
+                "Consumer {Consumer} subscribed to Kafka topics: {Topics}",
+                index,
+                string.Join(", ", service.kafkaConfig.Topics)
+            );
 
             try
             {
-                consumer.Close();
-            }
-            catch (KafkaException exc)
-            {
-                logger.LogError(exc, "Failed to cleanly close the Kafka consumer");
+                RunConsumeLoop(stoppingToken);
             }
             finally
             {
-                consumer.Dispose();
-            }
-        }
+                // let the outcomes of messages that were already produced come in, so that their
+                // offsets get stored and committed on close below instead of reprocessed on restart
+                WaitForProducedMessages([.. partitions.Values], ShutdownFlushTimeout);
+                StoreCompletedOffsets();
 
-        if (failedItem is not null)
-        {
-            throw new InvalidOperationException(
-                $"The message at {failedItem.Result.TopicPartitionOffset} could neither be processed nor sent to its dead letter topic. Stopping, so that it is reprocessed after a restart instead of being skipped."
-            );
-        }
-    }
-
-    private void RunConsumeLoop(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested && failedItem is null)
-        {
-            ConsumeResult<byte[], string> result;
-
-            try
-            {
-                result = consumer.Consume(PollTimeout);
-            }
-            catch (ConsumeException exc) when (!exc.Error.IsFatal)
-            {
-                logger.LogError(exc, "Failed to consume message from Kafka");
-                continue;
-            }
-
-            // Tombstones (and partition EOF events) have no value to pseudonymize. They are
-            // skipped without being tracked: their offsets are covered once the offset of any
-            // later message of the same partition is stored.
-            if (result?.Message?.Value is not null)
-            {
-                Dispatch(result, stoppingToken);
-            }
-
-            ResumeRecoveredWorkers();
-            StoreCompletedOffsets();
-            RecordQueueDepthMetrics();
-        }
-    }
-
-    private void RecordQueueDepthMetrics()
-    {
-        foreach (var worker in workers)
-        {
-            WorkerQueueDepthGauge.Record(
-                worker.QueuedCount,
-                new TagList { { "worker", worker.Index } }
-            );
-        }
-
-        PartitionsAssignedGauge.Record(partitions.Count);
-    }
-
-    private void Dispatch(ConsumeResult<byte[], string> result, CancellationToken stoppingToken)
-    {
-        if (!partitions.TryGetValue(result.TopicPartition, out var partition))
-        {
-            // Only if librdkafka delivered a message without announcing the assignment first,
-            // which it doesn't - kept so a partition can never be left without a worker.
-            partition = AddPartition(result.TopicPartition);
-        }
-
-        var item = new WorkItem(result, partition);
-        partition.InFlight.Enqueue(item);
-
-        var worker = workers[partition.WorkerIndex];
-
-        if (partition.HeldBack.Count > 0 || worker.IsStalled)
-        {
-            HoldBack(partition, item);
-            return;
-        }
-
-        if (worker.TryEnqueue(item) || WaitToEnqueue(worker, item, stoppingToken))
-        {
-            return;
-        }
-
-        logger.LogWarning(
-            "Worker {Worker} did not accept a new message within {Timeout}, pausing its partitions until it catches up",
-            worker.Index,
-            workerBusyTimeout
-        );
-
-        worker.IsStalled = true;
-        HoldBack(partition, item);
-    }
-
-    /// <summary>
-    ///     Waits for a worker with a full queue to make room for <paramref name="item" />, for up to
-    ///     <see cref="KafkaConfig.WorkerBusyTimeoutMs" />. Keeps storing the offsets of completed
-    ///     messages meanwhile, and stops early if one of them turned out to have failed.
-    /// </summary>
-    private bool WaitToEnqueue(Worker worker, WorkItem item, CancellationToken stoppingToken)
-    {
-        var stopwatch = Stopwatch.StartNew();
-
-        while (true)
-        {
-            worker.SpaceAvailable.Reset();
-
-            if (worker.TryEnqueue(item))
-            {
-                return true;
-            }
-
-            var remaining = workerBusyTimeout - stopwatch.Elapsed;
-            if (remaining <= TimeSpan.Zero || failedItem is not null)
-            {
-                return false;
-            }
-
-            worker.SpaceAvailable.Wait(
-                remaining < PollTimeout ? remaining : PollTimeout,
-                stoppingToken
-            );
-
-            StoreCompletedOffsets();
-        }
-    }
-
-    /// <summary>
-    ///     Keeps a message whose worker isn't accepting new ones in memory instead, and pauses its
-    ///     partition so librdkafka stops handing out more of them.
-    /// </summary>
-    private void HoldBack(PartitionState partition, WorkItem item)
-    {
-        partition.HeldBack.Enqueue(item);
-
-        if (!partition.IsPaused)
-        {
-            consumer.Pause([partition.TopicPartition]);
-            partition.IsPaused = true;
-            PausedPartitionsCounter.Add(1);
-        }
-    }
-
-    /// <summary>
-    ///     Hands the held back messages of stalled workers that have since worked off half of their
-    ///     queue over to them, oldest first, and resumes their partitions once all of them are.
-    /// </summary>
-    private void ResumeRecoveredWorkers()
-    {
-        foreach (var worker in workers)
-        {
-            if (!worker.IsStalled || !worker.IsAtMostHalfFull)
-            {
-                continue;
-            }
-
-            var allHandedOver = true;
-            foreach (var partition in worker.Partitions)
-            {
-                while (partition.HeldBack.TryPeek(out var item) && worker.TryEnqueue(item))
-                {
-                    partition.HeldBack.Dequeue();
-                }
-
-                if (partition.HeldBack.Count > 0)
-                {
-                    allHandedOver = false;
-                    break;
-                }
-            }
-
-            if (!allHandedOver)
-            {
-                continue;
-            }
-
-            worker.IsStalled = false;
-            foreach (var partition in worker.Partitions.Where(partition => partition.IsPaused))
-            {
-                Resume(partition);
-            }
-
-            logger.LogInformation(
-                "Worker {Worker} caught up, resumed consuming its partitions",
-                worker.Index
-            );
-        }
-    }
-
-    private void Resume(PartitionState partition)
-    {
-        consumer.Resume([partition.TopicPartition]);
-        partition.IsPaused = false;
-        PausedPartitionsCounter.Add(-1);
-    }
-
-    /// <summary>
-    ///     Stores the offset of every partition up to (and including) its last message that - like
-    ///     all of its predecessors - was either produced or dead-lettered. Stops at the first message
-    ///     that was abandoned (only happens when stopping to process a partition anyway) or that
-    ///     failed both, remembering the latter to stop the service.
-    /// </summary>
-    private void StoreCompletedOffsets()
-    {
-        while (completedItems.Reader.TryRead(out var completed))
-        {
-            if (!completed.Partition.IsRevoked)
-            {
-                StoreCompletedOffsets(completed.Partition);
-            }
-        }
-    }
-
-    private void StoreCompletedOffsets(PartitionState partition)
-    {
-        WorkItem lastCompleted = null;
-        while (partition.InFlight.TryPeek(out var item) && item.Outcome is { } outcome)
-        {
-            if (outcome == KafkaMessageOutcome.Abandoned)
-            {
-                break;
-            }
-
-            if (outcome == KafkaMessageOutcome.Failed)
-            {
-                failedItem ??= item;
-                break;
-            }
-
-            lastCompleted = partition.InFlight.Dequeue();
-        }
-
-        if (lastCompleted is null)
-        {
-            return;
-        }
-
-        try
-        {
-            consumer.StoreOffset(lastCompleted.Result);
-        }
-        catch (KafkaException exc)
-        {
-            // e.g. the partition was revoked in the meantime without us being told
-            logger.LogWarning(
-                exc,
-                "Failed to store offset {TopicPartitionOffset}",
-                lastCompleted.Result.TopicPartitionOffset
-            );
-        }
-    }
-
-    private void OnPartitionsAssigned(IReadOnlyList<TopicPartition> assigned)
-    {
-        // the cooperative rebalance protocol also reports rebalances that didn't assign anything
-        if (assigned.Count == 0)
-        {
-            return;
-        }
-
-        foreach (
-            var topicPartition in assigned
-                .OrderBy(p => p.Topic, StringComparer.Ordinal)
-                .ThenBy(p => p.Partition.Value)
-        )
-        {
-            AddPartition(topicPartition);
-        }
-
-        logger.LogInformation(
-            "Assigned partitions {Partitions}, now processing {PartitionsPerWorker} partitions per worker",
-            string.Join(", ", assigned),
-            string.Join(", ", workers.Select(worker => worker.Partitions.Count))
-        );
-    }
-
-    private void OnPartitionsRevoked(IReadOnlyList<TopicPartition> revoked)
-    {
-        if (revoked.Count == 0)
-        {
-            return;
-        }
-
-        var revokedPartitions = revoked
-            .Select(topicPartition => partitions.GetValueOrDefault(topicPartition))
-            .Where(partition => partition is not null)
-            .ToList();
-
-        foreach (var partition in revokedPartitions)
-        {
-            StopProcessing(partition);
-        }
-
-        WaitForStartedMessages(revokedPartitions);
-        RemovePartitions(revoked);
-
-        logger.LogInformation("Revoked partitions {Partitions}", string.Join(", ", revoked));
-    }
-
-    /// <summary>
-    ///     Waits for those messages of revoked partitions that were already being processed to be
-    ///     acknowledged (or abandoned), for up to <see cref="RevocationTimeout" />, storing their
-    ///     offsets. librdkafka commits them right after the rebalance callback returns, before the
-    ///     partitions are handed over.
-    /// </summary>
-    private void WaitForStartedMessages(List<PartitionState> revokedPartitions)
-    {
-        var stopwatch = Stopwatch.StartNew();
-
-        while (true)
-        {
-            // Goes by the messages' outcomes themselves rather than the notifications about
-            // them, which workers only post after recording an outcome - so everything seen as
-            // done here is sure to be stored below, before the partitions are handed over.
-            var inProgress = revokedPartitions
-                .SelectMany(partition => partition.InFlight)
-                .Where(item => item.IsStarted && item.Outcome is null)
-                .ToList();
-
-            foreach (var partition in revokedPartitions)
-            {
-                StoreCompletedOffsets(partition);
-            }
-
-            if (inProgress.Count == 0)
-            {
-                return;
-            }
-
-            if (stopwatch.Elapsed > RevocationTimeout)
-            {
-                logger.LogWarning(
-                    "Messages {TopicPartitionOffsets} were still being processed {Timeout} after their partitions were revoked; their partitions' new owners will process them again",
-                    string.Join(", ", inProgress.Select(item => item.Result.TopicPartitionOffset)),
-                    RevocationTimeout
-                );
-                return;
-            }
-
-            Thread.Sleep(10);
-        }
-    }
-
-    /// <summary>
-    ///     Makes sure none of a partition's messages that haven't been started yet will be, and
-    ///     cancels retrying the one being processed, if it is.
-    /// </summary>
-    private static void StopProcessing(PartitionState partition)
-    {
-        foreach (var item in partition.InFlight)
-        {
-            item.TrySkip();
-        }
-
-        partition.HeldBack.Clear();
-        partition.Cancellation.Cancel();
-    }
-
-    private void OnPartitionsLost(IReadOnlyList<TopicPartition> lost)
-    {
-        RemovePartitions(lost);
-
-        logger.LogWarning("Lost partitions {Partitions}", string.Join(", ", lost));
-    }
-
-    private PartitionState AddPartition(TopicPartition topicPartition)
-    {
-        var worker = workers.MinBy(worker => worker.Partitions.Count);
-        var partition = new PartitionState(topicPartition, worker.Index);
-
-        partitions[topicPartition] = partition;
-        worker.Partitions.Add(partition);
-
-        return partition;
-    }
-
-    /// <summary>
-    ///     Forgets partitions this consumer no longer owns. Their messages still queued for a
-    ///     worker are skipped, since their new owner processes them anyway.
-    /// </summary>
-    private void RemovePartitions(IReadOnlyList<TopicPartition> removed)
-    {
-        foreach (var topicPartition in removed)
-        {
-            if (!partitions.Remove(topicPartition, out var partition))
-            {
-                continue;
-            }
-
-            StopProcessing(partition);
-            partition.IsRevoked = true;
-            workers[partition.WorkerIndex].Partitions.Remove(partition);
-
-            if (partition.IsPaused)
-            {
-                partition.IsPaused = false;
-                PausedPartitionsCounter.Add(-1);
-
-                // don't leave it paused in case it is assigned to this consumer again later
                 try
                 {
-                    consumer.Resume([topicPartition]);
+                    consumer.Close();
                 }
                 catch (KafkaException exc)
                 {
-                    logger.LogDebug(
+                    logger.LogError(
                         exc,
-                        "Failed to resume removed partition {Partition}",
-                        topicPartition
+                        "Failed to cleanly close Kafka consumer {Consumer}",
+                        index
                     );
+                }
+                finally
+                {
+                    consumer.Dispose();
+                }
+            }
+
+            if (failedItem is not null)
+            {
+                throw new InvalidOperationException(
+                    $"The message at {failedItem.Result.TopicPartitionOffset} could neither be processed nor sent to its dead letter topic. Stopping, so that it is reprocessed after a restart instead of being skipped."
+                );
+            }
+        }
+
+        private void RunConsumeLoop(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested && failedItem is null)
+            {
+                ConsumeResult<byte[], string> result;
+
+                try
+                {
+                    result = consumer.Consume(PollTimeout);
+                }
+                catch (ConsumeException exc) when (!exc.Error.IsFatal)
+                {
+                    logger.LogError(exc, "Failed to consume message from Kafka");
+                    continue;
+                }
+
+                StoreCompletedOffsets();
+                RetryDueMessages(stoppingToken);
+
+                // Tombstones (and partition EOF events) have no value to pseudonymize. They are
+                // skipped without being tracked: their offsets are covered once the offset of any
+                // later message of the same partition is stored.
+                if (result?.Message?.Value is not null)
+                {
+                    Handle(result, stoppingToken);
                 }
             }
         }
-    }
 
-    private async System.Threading.Tasks.Task RunWorkerAsync(
-        Worker worker,
-        CancellationToken cancellationToken
-    )
-    {
-        try
+        private void Handle(ConsumeResult<byte[], string> result, CancellationToken stoppingToken)
         {
-            await foreach (var item in worker.ReadAllAsync(cancellationToken))
+            if (!partitions.TryGetValue(result.TopicPartition, out var partition))
             {
-                // skipped because its partition was revoked in the meantime
-                if (!item.TryStart())
+                // Only if librdkafka delivered a message without announcing the assignment
+                // first, which it doesn't - kept so a message can never go untracked.
+                partition = AddPartition(result.TopicPartition);
+            }
+
+            // Pausing a partition makes librdkafka discard what it prefetched for it, so this
+            // shouldn't happen - but should it, the message has to wait its turn.
+            if (partition.PendingRetry is not null)
+            {
+                partition.HeldBack.Enqueue(result);
+                return;
+            }
+
+            Process(new WorkItem(result, partition), attempt: 1, stoppingToken);
+        }
+
+        /// <summary>
+        ///     Processes a message and hands the result to the producer. If the pseudonymization
+        ///     backend is unavailable, pauses the message's partition until it is time to retry.
+        /// </summary>
+        private void Process(WorkItem item, int attempt, CancellationToken stoppingToken)
+        {
+            var partition = item.Partition;
+            if (attempt == 1)
+            {
+                partition.InFlight.Enqueue(item);
+            }
+
+            try
+            {
+                processor
+                    .ProcessAsync(
+                        item.Result,
+                        attempt,
+                        outcome => Complete(item, outcome),
+                        stoppingToken
+                    )
+                    .GetAwaiter()
+                    .GetResult();
+
+                item.IsProduced = true;
+            }
+            catch (TransientPseudonymizationException exc)
+            {
+                var delay = service.RetryDelay(attempt + 1);
+                logger.LogWarning(
+                    exc,
+                    "Pseudonymization backend unavailable while processing message from {TopicPartitionOffset} (attempt {Attempt}); retrying in {Delay}",
+                    item.Result.TopicPartitionOffset,
+                    attempt,
+                    delay
+                );
+
+                partition.PendingRetry = new PendingRetry(
+                    item,
+                    attempt + 1,
+                    Stopwatch.GetTimestamp() + (long)(delay.TotalSeconds * Stopwatch.Frequency)
+                );
+                Pause(partition);
+            }
+            catch (Exception exc)
+            {
+                // ProcessAsync handles all expected failures, and cancellation, itself; anything
+                // else is a bug
+                logger.LogError(
+                    exc,
+                    "Unexpected error processing message from {TopicPartitionOffset}",
+                    item.Result.TopicPartitionOffset
+                );
+                item.IsProduced = true;
+                Complete(item, KafkaMessageOutcome.Failed);
+            }
+        }
+
+        /// <summary>
+        ///     Retries the messages whose backoff has elapsed, followed by any of their partition's
+        ///     messages that came in meanwhile, and resumes their partitions once that worked.
+        /// </summary>
+        private void RetryDueMessages(CancellationToken stoppingToken)
+        {
+            var now = Stopwatch.GetTimestamp();
+            var due = partitions
+                .Values.Where(partition => partition.PendingRetry?.DueTimestamp <= now)
+                .ToList();
+
+            foreach (var partition in due)
+            {
+                var retry = partition.PendingRetry;
+                partition.PendingRetry = null;
+                Process(retry.Item, retry.Attempt, stoppingToken);
+
+                while (
+                    partition.PendingRetry is null && partition.HeldBack.TryDequeue(out var held)
+                )
+                {
+                    Process(new WorkItem(held, partition), attempt: 1, stoppingToken);
+                }
+
+                if (partition.PendingRetry is null)
+                {
+                    Resume(partition);
+                }
+            }
+        }
+
+        /// <summary>Called once per message, by whichever thread learns its outcome.</summary>
+        private void Complete(WorkItem item, KafkaMessageOutcome outcome)
+        {
+            item.SetOutcome(outcome);
+            completedItems.Writer.TryWrite(item);
+        }
+
+        /// <summary>
+        ///     Stores the offset of every partition up to (and including) its last message that -
+        ///     like all of its predecessors - was either produced or dead-lettered. Stops at the
+        ///     first message that was abandoned (only happens when stopping anyway) or that failed
+        ///     both, remembering the latter to stop the service.
+        /// </summary>
+        private void StoreCompletedOffsets()
+        {
+            while (completedItems.Reader.TryRead(out var completed))
+            {
+                if (!completed.Partition.IsRevoked)
+                {
+                    StoreCompletedOffsets(completed.Partition);
+                }
+            }
+        }
+
+        private void StoreCompletedOffsets(PartitionState partition)
+        {
+            WorkItem lastCompleted = null;
+            while (partition.InFlight.TryPeek(out var item) && item.Outcome is { } outcome)
+            {
+                if (outcome == KafkaMessageOutcome.Abandoned)
+                {
+                    break;
+                }
+
+                if (outcome == KafkaMessageOutcome.Failed)
+                {
+                    failedItem ??= item;
+                    break;
+                }
+
+                lastCompleted = partition.InFlight.Dequeue();
+            }
+
+            if (lastCompleted is null)
+            {
+                return;
+            }
+
+            try
+            {
+                consumer.StoreOffset(lastCompleted.Result);
+            }
+            catch (KafkaException exc)
+            {
+                // e.g. the partition was revoked in the meantime without us being told
+                logger.LogWarning(
+                    exc,
+                    "Failed to store offset {TopicPartitionOffset}",
+                    lastCompleted.Result.TopicPartitionOffset
+                );
+            }
+        }
+
+        /// <summary>
+        ///     Waits for the messages of the given partitions that were produced but not yet
+        ///     acknowledged to be, for up to <paramref name="timeout" />, storing their offsets.
+        /// </summary>
+        private void WaitForProducedMessages(List<PartitionState> waitFor, TimeSpan timeout)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            while (true)
+            {
+                // Goes by the messages' outcomes themselves rather than the notifications about
+                // them, which are only posted after recording an outcome - so everything seen as
+                // done here is sure to be stored below.
+                var unacknowledged = waitFor
+                    .SelectMany(partition => partition.InFlight)
+                    .Where(item => item.IsProduced && item.Outcome is null)
+                    .ToList();
+
+                foreach (var partition in waitFor)
+                {
+                    StoreCompletedOffsets(partition);
+                }
+
+                if (unacknowledged.Count == 0)
+                {
+                    return;
+                }
+
+                if (stopwatch.Elapsed > timeout)
+                {
+                    logger.LogWarning(
+                        "Messages {TopicPartitionOffsets} were still unacknowledged after {Timeout}; they will be processed again",
+                        string.Join(
+                            ", ",
+                            unacknowledged.Select(item => item.Result.TopicPartitionOffset)
+                        ),
+                        timeout
+                    );
+                    return;
+                }
+
+                Thread.Sleep(10);
+            }
+        }
+
+        private void OnPartitionsAssigned(IReadOnlyList<TopicPartition> assigned)
+        {
+            // the cooperative rebalance protocol also reports rebalances that didn't assign anything
+            if (assigned.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var topicPartition in assigned)
+            {
+                AddPartition(topicPartition);
+            }
+
+            RecordAssignedPartitions();
+            logger.LogInformation(
+                "Consumer {Consumer} was assigned partitions {Partitions}",
+                index,
+                string.Join(", ", assigned)
+            );
+        }
+
+        private void OnPartitionsRevoked(IReadOnlyList<TopicPartition> revoked)
+        {
+            if (revoked.Count == 0)
+            {
+                return;
+            }
+
+            // librdkafka commits the stored offsets right after this callback returns, before
+            // the partitions are handed over
+            WaitForProducedMessages(
+                [
+                    .. revoked
+                        .Select(topicPartition => partitions.GetValueOrDefault(topicPartition))
+                        .Where(partition => partition is not null),
+                ],
+                RevocationTimeout
+            );
+            RemovePartitions(revoked);
+
+            logger.LogInformation(
+                "Consumer {Consumer} had partitions {Partitions} revoked",
+                index,
+                string.Join(", ", revoked)
+            );
+        }
+
+        private void OnPartitionsLost(IReadOnlyList<TopicPartition> lost)
+        {
+            RemovePartitions(lost);
+
+            logger.LogWarning(
+                "Consumer {Consumer} lost partitions {Partitions}",
+                index,
+                string.Join(", ", lost)
+            );
+        }
+
+        private PartitionState AddPartition(TopicPartition topicPartition)
+        {
+            var partition = new PartitionState(topicPartition);
+            partitions[topicPartition] = partition;
+            return partition;
+        }
+
+        /// <summary>
+        ///     Forgets partitions this consumer no longer owns, along with any of their messages
+        ///     waiting to be retried: their new owner processes them anyway.
+        /// </summary>
+        private void RemovePartitions(IReadOnlyList<TopicPartition> removed)
+        {
+            foreach (var topicPartition in removed)
+            {
+                if (!partitions.Remove(topicPartition, out var partition))
                 {
                     continue;
                 }
 
-                try
+                partition.IsRevoked = true;
+                partition.PendingRetry = null;
+                partition.HeldBack.Clear();
+
+                if (partition.IsPaused)
                 {
-                    await processor.ProcessAsync(
-                        item.Result,
-                        outcome => Complete(item, outcome),
-                        item.Partition.Cancellation.Token
-                    );
-                }
-                catch (Exception exc)
-                {
-                    // ProcessAsync handles all expected failures, and cancellation, itself;
-                    // anything else is a bug
-                    logger.LogError(
-                        exc,
-                        "Unexpected error processing message from {TopicPartitionOffset}",
-                        item.Result.TopicPartitionOffset
-                    );
-                    Complete(item, KafkaMessageOutcome.Failed);
+                    partition.IsPaused = false;
+                    PausedPartitionsCounter.Add(-1);
+
+                    // don't leave it paused in case it is assigned to this consumer again later
+                    try
+                    {
+                        consumer.Resume([topicPartition]);
+                    }
+                    catch (KafkaException exc)
+                    {
+                        logger.LogDebug(
+                            exc,
+                            "Failed to resume removed partition {Partition}",
+                            topicPartition
+                        );
+                    }
                 }
             }
+
+            RecordAssignedPartitions();
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+
+        private void Pause(PartitionState partition)
         {
-            // stopping: messages still queued are left unprocessed
+            if (partition.IsPaused)
+            {
+                return;
+            }
+
+            consumer.Pause([partition.TopicPartition]);
+            partition.IsPaused = true;
+            PausedPartitionsCounter.Add(1);
         }
-    }
 
-    private void Complete(WorkItem item, KafkaMessageOutcome outcome)
-    {
-        item.SetOutcome(outcome);
-        completedItems.Writer.TryWrite(item);
-    }
+        private void Resume(PartitionState partition)
+        {
+            if (!partition.IsPaused)
+            {
+                return;
+            }
 
-    /// <summary>
-    ///     The worker a partition is pinned to, for the poll thread's bookkeeping and tests.
-    /// </summary>
-    internal IReadOnlyDictionary<TopicPartition, int> GetWorkerAssignments() =>
-        partitions.ToDictionary(entry => entry.Key, entry => entry.Value.WorkerIndex);
+            consumer.Resume([partition.TopicPartition]);
+            partition.IsPaused = false;
+            PausedPartitionsCounter.Add(-1);
+        }
+
+        private void RecordAssignedPartitions() =>
+            PartitionsAssignedGauge.Record(partitions.Count, new TagList { { "consumer", index } });
+    }
 
     private sealed class WorkItem(ConsumeResult<byte[], string> result, PartitionState partition)
     {
-        private const int Queued = 0;
-        private const int Started = 1;
-        private const int Skipped = 2;
-
-        private int state = Queued;
         private int outcome = -1;
 
         public ConsumeResult<byte[], string> Result { get; } = result;
@@ -679,11 +614,10 @@ public class KafkaConsumerService : BackgroundService
         public PartitionState Partition { get; } = partition;
 
         /// <summary>
-        ///     Approximate memory held by the message while it waits for a worker: its key plus its
-        ///     value, which is a UTF-16 string.
+        ///     Whether the message was handed to the producer, so an outcome is bound to follow,
+        ///     rather than waiting to be retried. Only used by the consumer's thread.
         /// </summary>
-        public long Size { get; } =
-            (result.Message.Key?.Length ?? 0) + (2L * result.Message.Value.Length);
+        public bool IsProduced { get; set; }
 
         /// <summary>How the message was handled, or <c>null</c> while it is still in progress.</summary>
         public KafkaMessageOutcome? Outcome
@@ -695,51 +629,32 @@ public class KafkaConsumerService : BackgroundService
             }
         }
 
-        public bool IsStarted => Volatile.Read(ref state) == Started;
-
-        /// <summary>
-        ///     Called by the worker before processing the message. Fails if the message was skipped
-        ///     before, the two being atomic, so a message is either processed or skipped, never both.
-        /// </summary>
-        public bool TryStart() => Interlocked.CompareExchange(ref state, Started, Queued) == Queued;
-
-        /// <summary>
-        ///     Called by the poll thread to make sure the message won't be processed, unless it
-        ///     already is.
-        /// </summary>
-        public bool TrySkip() => Interlocked.CompareExchange(ref state, Skipped, Queued) == Queued;
-
         /// <summary>Called once, by whichever thread learns how the message was handled.</summary>
         public void SetOutcome(KafkaMessageOutcome value) =>
             Volatile.Write(ref outcome, (int)value);
     }
 
-    private sealed class PartitionState(TopicPartition topicPartition, int workerIndex)
+    private sealed record PendingRetry(WorkItem Item, int Attempt, long DueTimestamp);
+
+    private sealed class PartitionState(TopicPartition topicPartition)
     {
         private volatile bool isRevoked;
 
         public TopicPartition TopicPartition { get; } = topicPartition;
 
-        public int WorkerIndex { get; } = workerIndex;
-
         /// <summary>
-        ///     Every message consumed but not yet stored as consumed, in offset order.
+        ///     Every message consumed but not yet stored as consumed, in offset order - including
+        ///     one waiting to be retried, which is always the last.
         /// </summary>
         public Queue<WorkItem> InFlight { get; } = new();
 
-        /// <summary>
-        ///     Messages not yet handed to the worker because it stopped accepting them, in offset
-        ///     order. The partition stays paused while there are any.
-        /// </summary>
-        public Queue<WorkItem> HeldBack { get; } = new();
+        /// <summary>The message waiting to be retried, if any. The partition is paused meanwhile.</summary>
+        public PendingRetry PendingRetry { get; set; }
+
+        /// <summary>Messages that came in while one was waiting to be retried, in offset order.</summary>
+        public Queue<ConsumeResult<byte[], string>> HeldBack { get; } = new();
 
         public bool IsPaused { get; set; }
-
-        /// <summary>
-        ///     Cancelled when this consumer stops processing the partition, to stop retrying a
-        ///     message that is stuck, e.g. on an unavailable pseudonymization backend.
-        /// </summary>
-        public CancellationTokenSource Cancellation { get; } = new();
 
         /// <summary>
         ///     Set once the partition is no longer owned, so that outcomes still being reported for
@@ -750,77 +665,5 @@ public class KafkaConsumerService : BackgroundService
             get => isRevoked;
             set => isRevoked = value;
         }
-    }
-
-    /// <summary>
-    ///     A worker's queue, bounded by both the number and the approximate size of the messages
-    ///     in it. A message is always accepted into an empty queue, however large it is.
-    /// </summary>
-    private sealed class Worker(int index, int maxCount, long maxBytes)
-    {
-        private readonly Channel<WorkItem> queue = Channel.CreateUnbounded<WorkItem>(
-            new UnboundedChannelOptions { SingleReader = true, SingleWriter = true }
-        );
-
-        private int queuedCount;
-        private long queuedBytes;
-
-        public int Index { get; } = index;
-
-        /// <summary>Only used by the poll thread.</summary>
-        public List<PartitionState> Partitions { get; } = [];
-
-        /// <summary>
-        ///     Whether this worker didn't accept a message within the busy timeout and hasn't
-        ///     caught up since. Only used by the poll thread.
-        /// </summary>
-        public bool IsStalled { get; set; }
-
-        /// <summary>Set whenever the worker takes a message off its queue.</summary>
-        public ManualResetEventSlim SpaceAvailable { get; } = new(false);
-
-        public int QueuedCount => Volatile.Read(ref queuedCount);
-
-        public bool IsAtMostHalfFull =>
-            Volatile.Read(ref queuedCount) <= maxCount / 2
-            && Interlocked.Read(ref queuedBytes) <= maxBytes / 2;
-
-        /// <summary>
-        ///     Only ever called from the poll thread, so the queue can only have become emptier,
-        ///     never fuller, between checking for room and adding to it.
-        /// </summary>
-        public bool TryEnqueue(WorkItem item)
-        {
-            var count = Volatile.Read(ref queuedCount);
-            if (
-                count > 0
-                && (count >= maxCount || Interlocked.Read(ref queuedBytes) + item.Size > maxBytes)
-            )
-            {
-                return false;
-            }
-
-            Interlocked.Increment(ref queuedCount);
-            Interlocked.Add(ref queuedBytes, item.Size);
-            queue.Writer.TryWrite(item);
-            return true;
-        }
-
-        public async IAsyncEnumerable<WorkItem> ReadAllAsync(
-            [System.Runtime.CompilerServices.EnumeratorCancellation]
-                CancellationToken cancellationToken
-        )
-        {
-            await foreach (var item in queue.Reader.ReadAllAsync(cancellationToken))
-            {
-                Interlocked.Decrement(ref queuedCount);
-                Interlocked.Add(ref queuedBytes, -item.Size);
-                SpaceAvailable.Set();
-
-                yield return item;
-            }
-        }
-
-        public void Complete() => queue.Writer.TryComplete();
     }
 }

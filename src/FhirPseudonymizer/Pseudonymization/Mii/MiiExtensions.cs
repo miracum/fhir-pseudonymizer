@@ -89,7 +89,7 @@ public static class MiiExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(miiConfig.RequestRetryCount));
+            .AddPolicyHandler(GetRetryPolicy(miiConfig.Retry.Count));
 
         services.AddTransient<MiiFhirClient>();
         services.AddTransient<IPseudonymServiceClient>(
