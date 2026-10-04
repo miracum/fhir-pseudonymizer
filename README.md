@@ -134,7 +134,7 @@ Additionally, there are some optional configuration values that can be set as en
 | `AnonymizationEngineConfigInline`     | The `anonymization.yaml` as an inline YAML string instead of a separate file. Takes precedence if both `Path` and `Inline` are set.                                                                                                                                                                                                                                                                                                                                                                       | `""`                        |
 | `ApiKey`                              | Key that must be set in the `X-Api-Key` header to allow requests to protected endpoints.                                                                                                                                                                                                                                                                                                                                                                                                                  | `""`                        |
 | `UseSystemTextJsonFhirSerializer`     | Enable the new `System.Text.Json`-based FHIR serializer to significantly [improve throughput and latencies](#usesystemtextjsonfhirserializer). See <https://github.com/FirelyTeam/firely-net-sdk/releases/tag/v4.0.0-r4>                                                                                                                                                                                                                                                                                  | `false`                     |
-| `PseudonymizationService`             | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `entici`, `Mii`, `None`                                                                                                                                                                                                                                                                                                                                                                                                               | `"gPAS"`                    |
+| `PseudonymizationService`             | The type of pseudonymization service to use. Can be one of `gPAS`, `Vfps`, `entici`, `Mii`, `None`                                                                                                                                                                                                                                                                                                                                                                                                        | `"gPAS"`                    |
 | `MetricsPort`                         | The port where metrics in Prometheus format should be exposed at under the `/metrics` route.                                                                                                                                                                                                                                                                                                                                                                                                              | `8081`                      |
 | `Kestrel__MaxRequestBodySize`         | The maximum allowed size, in bytes, of an incoming HTTP request body (e.g. a large FHIR Bundle posted to `$de-identify`). Requests exceeding this are rejected with `413 Payload Too Large`. Increase this if you need to process large Bundles.                                                                                                                                                                                                                                                          | `30000000`                  |
 | `SecretsDirectory`                    | Directory read for [Docker](https://docs.docker.com/engine/swarm/secrets/)/[Kubernetes](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-files-from-a-pod)-style file-per-secret mounts: each file's name becomes a configuration key (e.g. a file named `Anonymization__CryptoHashKey` sets that value) and its content becomes the value, taking precedence over `appsettings.json`/env vars/command line if both are set. Optional - ignored if the directory doesn't exist. | `"/run/secrets"`            |
@@ -150,11 +150,11 @@ Service-specific configuration settings are listed below.
 
 ### gPAS
 
-| Environment Variable | Description                                                                                                                                                               | Default    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `gPAS__Url`          | The gPAS TTP FHIR Gateway URL. E.g. `http://localhost:8080/ttp-fhir/fhir/gpas/` for gPAS `2023.1.0`. Used if `PseudonymizationService` is set to `gPAS`.                  | `""`       |
-| `gPAS__Version`      | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a version newer than 1.10.1. | `"1.10.1"` |
-| `gPAS__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                                                                                           | `3`        |
+| Environment Variable      | Description                                                                                                                                                               | Default    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `gPAS__Url`               | The gPAS TTP FHIR Gateway URL. E.g. `http://localhost:8080/ttp-fhir/fhir/gpas/` for gPAS `2023.1.0`. Used if `PseudonymizationService` is set to `gPAS`.                  | `""`       |
+| `gPAS__Version`           | Version of gPAS to support. There were breaking changes to the FHIR API in 1.10.2 and 1.10.3, so explicitely set this value if you are using a version newer than 1.10.1. | `"1.10.1"` |
+| `gPAS__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                                                                                                | `3`        |
 
 #### gPAS Basic Auth
 
@@ -180,7 +180,7 @@ Service-specific configuration settings are listed below.
 | `Vfps__Address`                                 | The Vfps service address. Use `dns:///` scheme for client-side load-balancing.                                                                                                                                                     | `""`    |
 | `Vfps__UnsafeUseInsecureChannelCallCredentials` | If set to `true`, `CallCredentials` are applied to gRPC calls made by an insecure channel. Sending authentication headers over an insecure connection has security implications and shouldn't be done in production environments.  | `true`  |
 | `Vfps__UseTls`                                  | If set to `true`, creates client-side SSL credentials loaded from disk file pointed to by the `GRPC_DEFAULT_SSL_ROOTS_FILE_PATH` environment variable. If that fails, gets the roots certificates from a well known place on disk. | `false` |
-| `Vfps__RequestRetryCount`                       | The number of times a failed request is retried, with exponential backoff.                                                                                                                                                        | `3`     |
+| `Vfps__RequestRetryCount`                       | The number of times a failed request is retried, with exponential backoff.                                                                                                                                                         | `3`     |
 
 #### Vfps Basic Auth
 
@@ -197,8 +197,8 @@ fetched from the token endpoint, cached until shortly before it expires, and sen
 `Authorization__IsEnabled=true` expects - it only accepts bearer tokens on its gRPC API, so basic auth
 does not work against such a deployment. If both are configured, OAuth takes precedence.
 
-| Environment Variable              | Description                       | Default |
-| --------------------------------- | --------------------------------- | ------- |
+| Environment Variable               | Description                       | Default |
+| ---------------------------------- | --------------------------------- | ------- |
 | `Vfps__Auth__OAuth__TokenEndpoint` | The URL of the token endpoint     | `""`    |
 | `Vfps__Auth__OAuth__ClientId`      | The client ID                     | `""`    |
 | `Vfps__Auth__OAuth__ClientSecret`  | The static (shared) client secret | `""`    |
@@ -215,11 +215,11 @@ Vfps can also issue credentials itself. Set `Vfps__Auth__AccessToken`
 to a token created in the Vfps admin UI and it is sent as the `Authorization: Bearer`
 metadata header of every gRPC call.
 
-| Environment Variable      | Description                                                            | Default |
-| ------------------------- | ---------------------------------------------------------------------- | ------- |
-| `Vfps__Auth__AccessToken` | A Vfps-issued access token, e.g. `vfps_sat_...`. Sent unchanged.       | `""`    |
+| Environment Variable      | Description                                                      | Default |
+| ------------------------- | ---------------------------------------------------------------- | ------- |
+| `Vfps__Auth__AccessToken` | A Vfps-issued access token, e.g. `vfps_sat_...`. Sent unchanged. | `""`    |
 
-Use a **service account** token (`vfps_sat_...`), created on the Vfps *Service accounts* page,
+Use a **service account** token (`vfps_sat_...`), created on the Vfps _Service accounts_ page,
 rather than a personal one (`vfps_pat_...`): a personal token carries the access of the person who
 created it and stops working when they leave. Requires `Authorization__AccessTokens__IsEnabled` on
 the Vfps side.
@@ -232,10 +232,10 @@ de-pseudonymization is used.
 
 ### entici
 
-| Environment Variable | Description                                                                                            | Default |
-| -------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
-| `entici__Url`        | The entici service base URL for FHIR operations. Used if `PseudonymizationService` is set to `entici`. | `""`    |
-| `entici__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                      | `3`     |
+| Environment Variable        | Description                                                                                            | Default |
+| --------------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
+| `entici__Url`               | The entici service base URL for FHIR operations. Used if `PseudonymizationService` is set to `entici`. | `""`    |
+| `entici__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                             | `3`     |
 
 When using entici as a pseudonymization backend, you need to set additional settings for each rule that uses the `pseudonymize` method. These can be set under a `entici` section inside the anonymization config:
 
@@ -268,10 +268,10 @@ The `Mii` service calls a backend that implements the [MII Pseudonymization Impl
 The client uses the `$pseudonymize` and `$de-pseudonymize` operations. It sends and reads the parameters `context`, `original` and `pseudonym` as `Identifier` values only.
 The `domain` of a rule becomes the value of the `context` identifier.
 
-| Environment Variable | Description                                                                                                                    | Default |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `Mii__Url`           | The base URL of the MII pseudonymization service. Used if `PseudonymizationService` is set to `Mii`.                            | `""`    |
-| `Mii__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                                                | `3`     |
+| Environment Variable     | Description                                                                                          | Default |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- | ------- |
+| `Mii__Url`               | The base URL of the MII pseudonymization service. Used if `PseudonymizationService` is set to `Mii`. | `""`    |
+| `Mii__RequestRetryCount` | The number of times a failed request is retried, with exponential backoff.                           | `3`     |
 
 When using the Mii service as a pseudonymization backend, you can optionally set the identifier systems used in the requests for each rule that uses the `pseudonymize` method. These can be set under a `mii` section inside the anonymization config. If a system is not set, the corresponding identifier is sent with only a `value`:
 
@@ -522,7 +522,7 @@ To set a per-request dynamic config, add a `config` parameter alongside
 
 `config` and `settings` can be combined in the same request: the dynamic rule
 settings are applied on top of whichever rule set - static or per-request - ends
- up being used.
+up being used.
 
 ### Date shift offset config
 
