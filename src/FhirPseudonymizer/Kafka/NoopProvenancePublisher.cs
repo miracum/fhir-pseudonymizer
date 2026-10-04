@@ -9,5 +9,20 @@ namespace FhirPseudonymizer.Kafka;
 /// </summary>
 public class NoopProvenancePublisher : IProvenancePublisher
 {
+    public Resource CapturePreImage(Resource resource) => null;
+
     public void Publish(Resource original, Resource pseudonymized, Headers headers = null) { }
+
+    public System.Threading.Tasks.Task PublishAsync(
+        Resource original,
+        Resource pseudonymized,
+        Headers headers,
+        Action<ProvenancePublishingException> onCompleted,
+        CancellationToken cancellationToken
+    )
+    {
+        // nothing to record, so nothing to wait for
+        onCompleted(null);
+        return System.Threading.Tasks.Task.CompletedTask;
+    }
 }

@@ -1,4 +1,3 @@
-using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.Model;
 using Hl7.FhirPath;
 using Microsoft.Health.Fhir.Anonymizer.Core;
@@ -14,7 +13,7 @@ public class AnonymizationFhirPathRuleTests
         AnonymizerEngine.InitializeFhirPathExtensionSymbols();
     }
 
-    private static ElementNode CreatePatientNode()
+    private static PocoNode CreatePatientNode()
     {
         var patient = new Patient
         {
@@ -34,7 +33,7 @@ public class AnonymizationFhirPathRuleTests
             BirthDate = "1970-01-01",
         };
 
-        return ElementNode.FromElement(patient.ToTypedElement());
+        return PocoNodeExtension.CreateRootNode(patient);
     }
 
     [Theory]
@@ -54,10 +53,12 @@ public class AnonymizationFhirPathRuleTests
         );
         var node = CreatePatientNode();
 
-        var expected = node.Select(rule.Expression).CastElementNodes().ToList();
+        var expected = node.Select(rule.Expression).Cast<PocoNode>().ToList();
 
-        rule.Evaluate(node).CastElementNodes().Should().Equal(expected);
-        rule.Evaluate(node).CastElementNodes().Should().Equal(expected);
+        // PocoNode's record equality also compares its lazily-populated annotations, so compare
+        // the positions in the resource they point at instead, like the anonymizer itself does
+        rule.Evaluate(node).Should().Equal(expected, PocoNodeIdentityComparer.Instance.Equals);
+        rule.Evaluate(node).Should().Equal(expected, PocoNodeIdentityComparer.Instance.Equals);
     }
 
     [Fact]

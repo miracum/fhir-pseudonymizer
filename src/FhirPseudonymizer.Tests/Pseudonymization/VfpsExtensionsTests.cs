@@ -6,8 +6,13 @@ using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Pseudonymization.Vfps;
 using Grpc.Core;
+using Grpc.Net.Client;
+using Grpc.Net.Client.Balancer;
+using Grpc.Net.Client.Configuration;
+using Grpc.Net.ClientFactory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Vfps.Protos;
 
 namespace FhirPseudonymizer.Tests.Pseudonymization;
@@ -15,6 +20,12 @@ namespace FhirPseudonymizer.Tests.Pseudonymization;
 public class VfpsExtensionsTests
 {
     private static readonly Uri VfpsAddress = new("http://vfps:8081");
+
+    private static readonly Uri HeadlessVfpsAddress = new(
+        "dns:///vfps-headless.vfps.svc.cluster.local:8081"
+    );
+
+    private const string ClientName = nameof(PseudonymService.PseudonymServiceClient);
 
     [Fact]
     public void AddVfpsClient_WithUnsetAddress_ShouldThrow()
@@ -251,10 +262,10 @@ public class VfpsExtensionsTests
     }
 
     [Theory]
-    [InlineData(0, 2)] // RequestRetryCount=0 still clamps to gRPC's minimum of 2 total attempts
+    [InlineData(0, 2)] // Retry.Count=0 still clamps to gRPC's minimum of 2 total attempts
     [InlineData(2, 3)]
-    public async Task AddVfpsClient_WithConfiguredRequestRetryCount_MakesThatManyAttemptsOnTransientErrors(
-        int requestRetryCount,
+    public async Task AddVfpsClient_WithConfiguredRetryCount_MakesThatManyAttemptsOnTransientErrors(
+        int retryCount,
         int expectedAttempts
     )
     {
@@ -264,7 +275,7 @@ public class VfpsExtensionsTests
         {
             Address = VfpsAddress,
             UnsafeUseInsecureChannelCallCredentials = true,
-            RequestRetryCount = requestRetryCount,
+            Retry = new() { Count = retryCount },
         };
 
         var services = new ServiceCollection();
@@ -304,6 +315,108 @@ public class VfpsExtensionsTests
         await InvokeCreateAsync(config, vfps);
 
         vfps.LastAuthorizationHeader.Should().BeNull();
+    }
+
+    [Fact]
+    public void AddVfpsClient_WithADnsAddress_ShouldLoadBalanceRoundRobin()
+    {
+        // Without a policy grpc-dotnet falls back to pick_first, which sends every call to one
+        // replica no matter how many the address resolves to.
+        var provider = BuildProvider(HeadlessVfpsAddress);
+
+        ConfiguredChannelOptions(provider)
+            .ServiceConfig.LoadBalancingConfigs.Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<RoundRobinConfig>();
+    }
+
+    [Fact]
+    public void AddVfpsClient_WithADnsAddress_ShouldPeriodicallyReResolveIt()
+    {
+        // The built-in dns resolver never refreshes on a timer, so replicas added after startup
+        // would never be discovered while the existing ones stay healthy.
+        var provider = BuildProvider(HeadlessVfpsAddress);
+
+        provider
+            .GetServices<ResolverFactory>()
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<DnsResolverFactory>();
+    }
+
+    [Fact]
+    public void AddVfpsClient_WithADnsAddress_ShouldBoundTheConnectTimeout()
+    {
+        var provider = BuildProvider(HeadlessVfpsAddress);
+
+        var handler = PrimaryHandler(provider);
+
+        handler.ConnectTimeout.Should().Be(VfpsExtensions.ConnectTimeout);
+        // modified in place, so the client factory's own gRPC defaults survive
+        handler.EnableMultipleHttp2Connections.Should().BeTrue();
+    }
+
+    [Fact]
+    public void AddVfpsClient_WithADnsAddress_ShouldCreateAUsableClient()
+    {
+        // grpc-dotnet validates the transport as soon as a load balancing policy is configured,
+        // and rejects anything but a plain SocketsHttpHandler - this is where a handler the
+        // balancer can't drive would surface.
+        var provider = BuildProvider(HeadlessVfpsAddress);
+
+        var act = () => provider.GetRequiredService<PseudonymService.PseudonymServiceClient>();
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void AddVfpsClient_WithAnHttpAddress_ShouldLeaveTheChannelAsItWas()
+    {
+        // A single endpoint such as a ClusterIP Service: no client-side load balancing to fix.
+        var provider = BuildProvider(VfpsAddress);
+
+        ConfiguredChannelOptions(provider).ServiceConfig.LoadBalancingConfigs.Should().BeEmpty();
+        provider.GetServices<ResolverFactory>().Should().BeEmpty();
+        PrimaryHandler(provider).ConnectTimeout.Should().Be(Timeout.InfiniteTimeSpan);
+    }
+
+    private static ServiceProvider BuildProvider(Uri address) =>
+        new ServiceCollection()
+            .AddLogging()
+            .AddVfpsClient(
+                new VfpsConfig { Address = address, UnsafeUseInsecureChannelCallCredentials = true }
+            )
+            .BuildServiceProvider();
+
+    private static GrpcChannelOptions ConfiguredChannelOptions(IServiceProvider provider)
+    {
+        var factoryOptions = provider
+            .GetRequiredService<IOptionsMonitor<GrpcClientFactoryOptions>>()
+            .Get(ClientName);
+
+        var channelOptions = new GrpcChannelOptions();
+        foreach (var configure in factoryOptions.ChannelOptionsActions)
+        {
+            configure(channelOptions);
+        }
+
+        return channelOptions;
+    }
+
+    private static SocketsHttpHandler PrimaryHandler(IServiceProvider provider)
+    {
+        HttpMessageHandler handler = provider
+            .GetRequiredService<IHttpMessageHandlerFactory>()
+            .CreateHandler(ClientName);
+
+        while (handler is DelegatingHandler delegatingHandler)
+        {
+            handler = delegatingHandler.InnerHandler;
+        }
+
+        return handler.Should().BeOfType<SocketsHttpHandler>().Subject;
     }
 
     private static async Task InvokeCreateAsync(

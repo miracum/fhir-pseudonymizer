@@ -1,8 +1,9 @@
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
@@ -36,13 +37,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         }
 
         public Task<ProcessResult> ProcessAsync(
-            ElementNode node,
+            PocoNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
         )
         {
             var processResult = new ProcessResult();
-            if (string.IsNullOrEmpty(node?.Value?.ToString()))
+            if (string.IsNullOrEmpty(node?.GetValue()?.ToString()))
             {
                 return Task.FromResult(processResult);
             }
@@ -63,16 +64,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 };
             }
 
-            var input = node.Value.ToString();
+            var input = node.GetValue().ToString();
             // Hash the id part for "reference" and "uri" nodes and hash whole input for other node types
             if (node.IsReferenceStringNode() || node.IsReferenceUriNode(input))
             {
                 var newReference = ReferenceUtility.TransformReferenceId(input, cryptoHashFunction);
-                node.Value = newReference;
+                node.SetPrimitiveValue(newReference);
             }
             else
             {
-                node.Value = cryptoHashFunction(input);
+                node.SetPrimitiveValue(cryptoHashFunction(input));
             }
 
             processResult.AddProcessRecord(AnonymizationOperations.CryptoHash, node);

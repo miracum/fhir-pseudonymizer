@@ -7,6 +7,7 @@ using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 
 namespace FhirPseudonymizer.Tests;
@@ -15,6 +16,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     : IClassFixture<CustomWebApplicationFactory<Startup>>
 {
     private readonly HttpClient client = factory.CreateClient();
+    private readonly FhirJsonDeserializer fhirJsonDeserializer = new();
 
     private readonly string fhirBundleJson =
         @"
@@ -47,7 +49,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             {
                 ["PseudonymizationService"] = "Mii",
                 ["Mii:Url"] = "http://mii-backend/",
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
             },
             ReplacePseudonymServiceClientWithFake = false,
         };
@@ -65,6 +67,23 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             .Services.GetRequiredService<IPseudonymServiceClient>()
             .Should()
             .BeOfType<CachedPseudonymServiceClient>();
+    }
+
+    [Fact]
+    public void Startup_WithTooShortCryptoHashKey_ShouldFailToStart()
+    {
+        using var weakKeyFactory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["Anonymization:CryptoHashKey"] = "fhir-pseudonymizer",
+                ["Metrics:Enabled"] = "false",
+            },
+        };
+
+        var act = () => weakKeyFactory.CreateClient();
+
+        act.Should().Throw<AnonymizerConfigurationErrorsException>();
     }
 
     [Fact]
@@ -108,6 +127,52 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Theory]
+    [InlineData("/fhir/$de-identify")]
+    [InlineData("/fhir/$de-pseudonymize")]
+    public async Task PostToFhirOperation_WithDeeplyNestedResource_ShouldSucceed(string url)
+    {
+        // Counting each level's list and element, this is deeper than MVC's default
+        // MaxValidationDepth (32), which made MVC's own model validation throw - an empty 500 -
+        // before the request ever reached the controller.
+        const int nestingDepth = 20;
+        var item = new QuestionnaireResponse.ItemComponent
+        {
+            LinkId = "leaf",
+            Answer = [new() { Value = new FhirString("answer") }],
+        };
+        for (var i = 0; i < nestingDepth; i++)
+        {
+            item = new QuestionnaireResponse.ItemComponent { LinkId = $"level-{i}", Item = [item] };
+        }
+
+        var questionnaireResponse = new QuestionnaireResponse
+        {
+            Id = "nested",
+            Status = QuestionnaireResponse.QuestionnaireResponseStatus.Completed,
+            Item = [item],
+        };
+
+        using var content = new StringContent(questionnaireResponse.ToJson());
+        content.Headers.Add("x-api-key", "dev");
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(url, content, TestContext.Current.CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = fhirJsonDeserializer.Deserialize<QuestionnaireResponse>(
+            await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)
+        );
+        var leaf = result.Item.Single();
+        for (var i = 0; i < nestingDepth; i++)
+        {
+            leaf = leaf.Item.Single();
+        }
+
+        leaf.LinkId.Should().Be("leaf");
+    }
+
     [Fact]
     public async Task PostDeIdentify_WithInlineConfigButNoResource_ShouldReturnBadRequest()
     {
@@ -119,6 +184,34 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                 Data = Encoding.UTF8.GetBytes("fhirVersion: R4\nfhirPathRules: []\n"),
             }
         );
+
+        using var content = new StringContent(parameters.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+
+        var response = await client.PostAsync(
+            "/fhir/$de-identify",
+            content,
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostDeIdentify_WithTooShortCryptoHashKeyInInlineConfig_ShouldReturnBadRequest()
+    {
+        var parameters = new Parameters()
+            .Add(
+                "config",
+                new Attachment
+                {
+                    ContentType = "application/yaml",
+                    Data = Encoding.UTF8.GetBytes(
+                        "fhirVersion: R4\nfhirPathRules:\n  - path: Resource.id\n    method: cryptoHash\nparameters:\n  cryptoHashKey: fhir-pseudonymizer\n"
+                    ),
+                }
+            )
+            .Add("resource", new Patient { Id = "example" });
 
         using var content = new StringContent(parameters.ToJson());
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
@@ -169,7 +262,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
+        var deIdentified = fhirJsonDeserializer.Deserialize<Patient>(responseContent);
 
         deIdentified.Name.Should().BeEmpty();
     }
@@ -209,7 +302,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             }
             """;
 
-        var bundle = await new FhirJsonParser().ParseAsync<Bundle>(bundleJson);
+        var bundle = fhirJsonDeserializer.Deserialize<Bundle>(bundleJson);
 
         var parameters = new Parameters()
             .Add(
@@ -238,7 +331,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+        var deIdentified = fhirJsonDeserializer.Deserialize<Bundle>(responseContent);
 
         deIdentified.Entry.Should().HaveCount(3);
         deIdentified
@@ -259,7 +352,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     [Fact]
     public async Task PostDeIdentify_WithKeyDerivationContextInInlineConfig_ShouldUseDerivedCryptoHashKeyInsteadOfStaticKey()
     {
-        const string staticCryptoHashKey = "static-master-key";
+        const string staticCryptoHashKey = TestKeys.CryptoHashKey;
         const string keyDerivationContext = "project-a";
         const string patientId = "example";
 
@@ -268,7 +361,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["Anonymization:CryptoHashKey"] = staticCryptoHashKey,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
             },
         };
 
@@ -308,7 +401,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
+        var deIdentified = fhirJsonDeserializer.Deserialize<Patient>(responseContent);
 
         var derivedKey = KeyDerivation.DeriveCryptoHashKey(
             staticCryptoHashKey,
@@ -416,13 +509,13 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             TestContext.Current.CancellationToken
         );
 
-        var encryptedPatient = new FhirJsonParser().Parse<Patient>(responseContent);
+        var encryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(responseContent);
 
         encryptedPatient.Identifier[0].Value.Should().NotBe("123456");
     }
 
     [Fact]
-    public async Task PostDePseudonymize_WithDefaultConfig_ShouldDecryptPatientIdentifier()
+    public async Task PostDeIdentifyThenDePseudonymize_WithDefaultConfig_ShouldRoundTripPatientIdentifier()
     {
         var patient =
             @"{
@@ -440,26 +533,42 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                         ]
                         },
                         ""system"": ""http://www.goodhealth.org/identifiers/mrn"",
-                        ""value"": ""F36B23C5E72E3503D6C9659DDDEB7B5D61F6B90D5E5BE65FE08726315EF67CF3""
+                        ""value"": ""123456""
                     }
                 ]
             }";
 
-        var content = new StringContent(patient);
-        content.Headers.Add("x-api-key", "dev");
-        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await client.PostAsync(
+        // The default config leaves encryptKey empty, so it's a random one generated on start -
+        // encrypting and decrypting has to happen within the same instance.
+        var encryptContent = new StringContent(patient);
+        encryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        var encryptResponse = await client.PostAsync(
+            "/fhir/$de-identify",
+            encryptContent,
+            TestContext.Current.CancellationToken
+        );
+        encryptResponse.EnsureSuccessStatusCode();
+
+        var encryptedPatientJson = await encryptResponse.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken
+        );
+
+        var decryptContent = new StringContent(encryptedPatientJson);
+        decryptContent.Headers.Add("x-api-key", "dev");
+        decryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        var decryptResponse = await client.PostAsync(
             "/fhir/$de-pseudonymize",
-            content,
+            decryptContent,
             TestContext.Current.CancellationToken
         );
+        decryptResponse.EnsureSuccessStatusCode();
 
-        response.EnsureSuccessStatusCode();
-
-        var responseContent = await response.Content.ReadAsStringAsync(
+        var decryptedPatientJson = await decryptResponse.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var decryptedPatient = await new FhirJsonParser().ParseAsync<Patient>(responseContent);
+        var decryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(
+            decryptedPatientJson
+        );
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");
     }
@@ -484,8 +593,8 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
-                ["Anonymization:CryptoHashKey"] = "test",
+                ["Metrics:Enabled"] = "false",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
             },
         };
 
@@ -497,12 +606,12 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        var fhirParser = new FhirJsonParser();
-        var input = await fhirParser.ParseAsync<Resource>(fhirBundleJson);
+        var fhirParser = new FhirJsonDeserializer();
+        var input = fhirParser.Deserialize<Resource>(fhirBundleJson);
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "json").UseDirectory("Snapshots");
+        await Verify(response.ToJson(pretty: true), "json").UseDirectory("Snapshots");
     }
 
     [Fact]
@@ -521,8 +630,8 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             var settings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
-                ["Anonymization:CryptoHashKey"] = "test",
+                ["Metrics:Enabled"] = "false",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
             };
 
             if (keyDerivationContext is not null)
@@ -541,8 +650,8 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
                 settings: new() { PreferredFormat = ResourceFormat.Json }
             );
 
-            var fhirParser = new FhirJsonParser();
-            var input = await fhirParser.ParseAsync<Resource>(fhirBundleJson);
+            var fhirParser = new FhirJsonDeserializer();
+            var input = fhirParser.Deserialize<Resource>(fhirBundleJson);
             var parameters = new Parameters().Add("resource", input);
             var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
@@ -584,9 +693,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
-                ["Anonymization:CryptoHashKey"] = "test-crypto-hash-master",
-                ["Anonymization:EncryptKey"] = "test-encrypt-master",
+                ["Metrics:Enabled"] = "false",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
+                ["Anonymization:EncryptKey"] = TestKeys.EncryptKey,
                 ["Anonymization:KeyDerivationContext"] = "project-a",
             },
         };
@@ -605,7 +714,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var encryptedPatientJson = await encryptResponse.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var encryptedPatient = new FhirJsonParser().Parse<Patient>(encryptedPatientJson);
+        var encryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(
+            encryptedPatientJson
+        );
 
         encryptedPatient.Identifier[0].Value.Should().NotBe("123456");
 
@@ -622,7 +733,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var decryptedPatientJson = await decryptResponse.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var decryptedPatient = new FhirJsonParser().Parse<Patient>(decryptedPatientJson);
+        var decryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(
+            decryptedPatientJson
+        );
 
         decryptedPatient.Identifier[0].Value.Should().Be("123456");
     }
@@ -654,9 +767,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
-                ["Anonymization:CryptoHashKey"] = "shared-crypto-hash-master",
-                ["Anonymization:EncryptKey"] = "encrypt-master-one",
+                ["Metrics:Enabled"] = "false",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
+                ["Anonymization:EncryptKey"] = TestKeys.EncryptKey,
                 ["Anonymization:KeyDerivationContext"] = "project-a",
             },
         };
@@ -666,9 +779,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
-                ["Anonymization:CryptoHashKey"] = "shared-crypto-hash-master",
-                ["Anonymization:EncryptKey"] = "encrypt-master-two",
+                ["Metrics:Enabled"] = "false",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
+                ["Anonymization:EncryptKey"] = TestKeys.OtherEncryptKey,
                 ["Anonymization:KeyDerivationContext"] = "project-a",
             },
         };
@@ -702,7 +815,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var decryptedPatientJson = await decryptResponse.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var decryptedPatient = new FhirJsonParser().Parse<Patient>(decryptedPatientJson);
+        var decryptedPatient = new FhirJsonDeserializer().Deserialize<Patient>(
+            decryptedPatientJson
+        );
 
         // DecryptProcessor swallows AES/padding errors and returns the (still encrypted) input
         // unchanged, so a mismatched key surfaces as "didn't decrypt back to the original".
@@ -729,8 +844,8 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
-                ["Anonymization:CryptoHashKey"] = "test",
+                ["Metrics:Enabled"] = "false",
+                ["Anonymization:CryptoHashKey"] = TestKeys.CryptoHashKey,
                 ["Anonymization:ShouldAddSecurityTag"] = "false",
             },
         };
@@ -743,12 +858,12 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             settings: new() { PreferredFormat = ResourceFormat.Json }
         );
 
-        var fhirParser = new FhirJsonParser();
-        var input = await fhirParser.ParseAsync<Resource>(fhirBundleJson);
+        var fhirParser = new FhirJsonDeserializer();
+        var input = fhirParser.Deserialize<Resource>(fhirBundleJson);
         var parameters = new Parameters().Add("resource", input);
         var response = await fhirClient.WholeSystemOperationAsync("de-identify", parameters);
 
-        await Verify(response.ToJson(new() { Pretty = true }), "json").UseDirectory("Snapshots");
+        await Verify(response.ToJson(pretty: true), "json").UseDirectory("Snapshots");
     }
 
     [Fact]
@@ -798,7 +913,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
             },
         };
 
@@ -818,7 +933,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+        var deIdentified = new FhirJsonDeserializer().Deserialize<Bundle>(responseContent);
 
         deIdentified.Entry.Should().ContainSingle();
         deIdentified.Entry[0].Resource.Should().BeOfType<Observation>();
@@ -832,7 +947,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         bool removeRuleFirst
     )
     {
-        const string cryptoHashKey = "test";
+        const string cryptoHashKey = TestKeys.CryptoHashKey;
 
         // Patient.name (redact) and Resource.id (cryptoHash, a general rule that also matches
         // the Patient) both target fields on the very same Patient the other rule removes
@@ -890,7 +1005,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
                 ["Anonymization:CryptoHashKey"] = cryptoHashKey,
             },
         };
@@ -911,7 +1026,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Bundle>(responseContent);
+        var deIdentified = new FhirJsonDeserializer().Deserialize<Bundle>(responseContent);
 
         // the Patient - and the redact/cryptoHash rules that would have applied to it - are gone
         deIdentified.Entry.Should().ContainSingle();
@@ -962,7 +1077,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigInline"] = inlineConfig,
-                ["EnableMetrics"] = "false",
+                ["Metrics:Enabled"] = "false",
             },
         };
 
@@ -982,7 +1097,14 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         var responseContent = await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken
         );
-        var deIdentified = new FhirJsonParser().Parse<Observation>(responseContent);
+        // Observation.code is required (1..1) by the base spec, so the strict default
+        // deserialization mode would refuse to re-parse a response that - as intended by this
+        // test - no longer has one; SYNTAXONLY skips that content-rule validation (checks only
+        // that the JSON itself is well-formed), matching the leniency the old FhirJsonParser had
+        // here.
+        var deIdentified = FhirJsonDeserializer.SYNTAXONLY.Deserialize<Observation>(
+            responseContent
+        );
 
         // the whole code element is gone - not just cleared - while sibling elements survive,
         // and both methods tag the resource the same way ("REDACTED" - remove reuses that code
@@ -991,104 +1113,5 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         deIdentified.Status.Should().Be(ObservationStatus.Final);
         deIdentified.Value.Should().NotBeNull();
         deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REDACTED");
-    }
-
-    /// <summary>
-    ///     Both serializer backends must behave identically end to end. The System.Text.Json
-    ///     backend reads the request body and writes the response body as UTF-8 streams rather
-    ///     than going through an intermediate string, so it exercises a different code path in
-    ///     <see cref="FhirInputFormatter" /> / <see cref="FhirOutputFormatter" /> than the Firely
-    ///     backend does.
-    /// </summary>
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task PostDeIdentify_WithEitherSerializerBackend_ShouldDeIdentifyTheResource(
-        bool useSystemTextJsonFhirSerializer
-    )
-    {
-        using var serializerFactory = new CustomWebApplicationFactory<Startup>
-        {
-            CustomInMemorySettings = new Dictionary<string, string>
-            {
-                ["UseSystemTextJsonFhirSerializer"] = useSystemTextJsonFhirSerializer
-                    .ToString()
-                    .ToLowerInvariant(),
-                ["EnableMetrics"] = "false",
-            },
-        };
-        using var serializerClient = serializerFactory.CreateClient();
-
-        var parameters = new Parameters()
-            .Add(
-                "config",
-                new Attachment
-                {
-                    ContentType = "application/yaml",
-                    Data = Encoding.UTF8.GetBytes(
-                        "fhirVersion: R4\nfhirPathRules:\n  - path: Patient.name\n    method: redact\n"
-                    ),
-                }
-            )
-            .Add(
-                "resource",
-                new Patient
-                {
-                    Id = "example",
-                    Name = [new HumanName { Family = "Doe", Given = ["John"] }],
-                    BirthDate = "1985-10-14",
-                }
-            );
-
-        using var content = new StringContent(parameters.ToJson());
-        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-
-        var response = await serializerClient.PostAsync(
-            "/fhir/$de-identify",
-            content,
-            TestContext.Current.CancellationToken
-        );
-
-        response.EnsureSuccessStatusCode();
-
-        var responseContent = await response.Content.ReadAsStringAsync(
-            TestContext.Current.CancellationToken
-        );
-        var deIdentified = new FhirJsonParser().Parse<Patient>(responseContent);
-
-        deIdentified.Id.Should().Be("example");
-        deIdentified.Name.Should().BeEmpty();
-        deIdentified.BirthDate.Should().Be("1985-10-14");
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task PostDeIdentify_WithEitherSerializerBackendAndInvalidBody_ShouldReturnBadRequest(
-        bool useSystemTextJsonFhirSerializer
-    )
-    {
-        using var serializerFactory = new CustomWebApplicationFactory<Startup>
-        {
-            CustomInMemorySettings = new Dictionary<string, string>
-            {
-                ["UseSystemTextJsonFhirSerializer"] = useSystemTextJsonFhirSerializer
-                    .ToString()
-                    .ToLowerInvariant(),
-                ["EnableMetrics"] = "false",
-            },
-        };
-        using var serializerClient = serializerFactory.CreateClient();
-
-        using var content = new StringContent("not json at all");
-        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-
-        var response = await serializerClient.PostAsync(
-            "/fhir/$de-identify",
-            content,
-            TestContext.Current.CancellationToken
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

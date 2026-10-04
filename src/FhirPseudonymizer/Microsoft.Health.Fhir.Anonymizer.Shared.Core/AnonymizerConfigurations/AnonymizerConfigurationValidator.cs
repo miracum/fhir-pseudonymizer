@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using Hl7.FhirPath;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings;
@@ -7,6 +6,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
 {
     public class AnonymizerConfigurationValidator
     {
+        // The HMAC-SHA256 output length RFC 2104 discourages shorter keys than, and the AES-256
+        // key size.
+        public const int MinimumKeyLengthInBytes = 32;
+
+        // AES-256 - AES would also take 16 or 24 bytes, but those fall below the minimum above.
+        public const int StaticEncryptKeyLengthInBytes = 32;
+
         private readonly ILogger _logger =
             AnonymizerLogging.CreateLogger<AnonymizerConfigurationValidator>();
 
@@ -104,46 +110,65 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
                     GeneralizeSetting.ValidateRuleSettings(rule);
                 }
             }
+        }
 
-            // Check AES key size is valid (16, 24 or 32 bytes).
-            if (!string.IsNullOrEmpty(config.Parameters?.EncryptKey))
+        /// <summary>
+        ///     Rejects an encryptKey that isn't exactly <see cref="StaticEncryptKeyLengthInBytes" />
+        ///     (as UTF-8). Only meant for the fully resolved key, and only if it's used as the AES
+        ///     key as-is - not if it's the master key a key derivation context derives it from.
+        /// </summary>
+        public void ValidateStaticEncryptKeySize(string encryptKey)
+        {
+            if (string.IsNullOrEmpty(encryptKey))
             {
-                using var aes = Aes.Create();
-                var encryptKeySize = Encoding.UTF8.GetByteCount(config.Parameters.EncryptKey) * 8;
-                if (!IsValidKeySize(encryptKeySize, aes.LegalKeySizes))
-                {
-                    throw new AnonymizerConfigurationErrorsException(
-                        $"Invalid encrypt key size : {encryptKeySize} bits! Please provide key sizes of 128, 192 or 256 bits."
-                    );
-                }
+                return;
+            }
+
+            var keyLengthInBytes = Encoding.UTF8.GetByteCount(encryptKey);
+            if (keyLengthInBytes != StaticEncryptKeyLengthInBytes)
+            {
+                throw new AnonymizerConfigurationErrorsException(
+                    $"The configured encryptKey is {keyLengthInBytes} bytes long, but is used as the AES-256 key as-is, "
+                        + $"so it must be exactly {StaticEncryptKeyLengthInBytes} bytes. Use a randomly generated key "
+                        + "instead, e.g. from `openssl rand -base64 24`, or set a key derivation context to derive "
+                        + "the AES key from it."
+                );
             }
         }
 
-        // The following method takes a bit length input and returns whether that length is a valid size
-        // validSizes for AES: MinSize=128, MaxSize=256, SkipSize=64
-        private bool IsValidKeySize(int bitLength, KeySizes[] validSizes)
+        /// <summary>
+        ///     Rejects a configured cryptoHashKey or encryptKey shorter than
+        ///     <see cref="MinimumKeyLengthInBytes" /> (as UTF-8). Meant for the fully resolved
+        ///     keys (wherever they were set), and before they're used as HKDF master keys -
+        ///     deriving from a short master key doesn't make up for its length.
+        /// </summary>
+        public void ValidateKeyLengths(ParameterConfiguration parameters)
         {
-            if (validSizes == null)
+            ValidateKeyLength(parameters?.CryptoHashKey, "cryptoHashKey", "openssl rand -hex 32");
+            // 32 characters, the exact length a statically-set encryptKey has to be.
+            ValidateKeyLength(parameters?.EncryptKey, "encryptKey", "openssl rand -base64 24");
+        }
+
+        private static void ValidateKeyLength(string key, string keyName, string generateCommand)
+        {
+            // An unset key is replaced by a random one instead, see
+            // AnonymizerConfiguration.GenerateDefaultParametersIfNotConfigured.
+            if (string.IsNullOrEmpty(key))
             {
-                return false;
+                return;
             }
 
-            for (var i = 0; i < validSizes.Length; i++)
+            var keyLengthInBytes = Encoding.UTF8.GetByteCount(key);
+            if (keyLengthInBytes < MinimumKeyLengthInBytes)
             {
-                for (
-                    var j = validSizes[i].MinSize;
-                    j <= validSizes[i].MaxSize;
-                    j += validSizes[i].SkipSize
-                )
-                {
-                    if (j == bitLength)
-                    {
-                        return true;
-                    }
-                }
+                // Never include the key itself - this message ends up in logs and, for configs
+                // sent along with a request, in the response.
+                throw new AnonymizerConfigurationErrorsException(
+                    $"The configured {keyName} is only {keyLengthInBytes} bytes long, "
+                        + $"but must be at least {MinimumKeyLengthInBytes} bytes. "
+                        + $"Use a randomly generated key instead, e.g. from `{generateCommand}`."
+                );
             }
-
-            return false;
         }
     }
 }

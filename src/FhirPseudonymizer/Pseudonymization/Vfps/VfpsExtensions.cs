@@ -3,8 +3,10 @@ using System.Text;
 using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
 using Grpc.Core;
+using Grpc.Net.Client.Balancer;
 using Grpc.Net.Client.Configuration;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Vfps.Protos;
 
 namespace FhirPseudonymizer.Pseudonymization.Vfps;
@@ -12,6 +14,10 @@ namespace FhirPseudonymizer.Pseudonymization.Vfps;
 public static class VfpsExtensions
 {
     internal const string OAuthClientName = "vfps.oAuth.client";
+
+    internal static readonly TimeSpan DnsRefreshInterval = TimeSpan.FromSeconds(15);
+
+    internal static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(5);
 
     public static IServiceCollection AddVfpsClient(
         this IServiceCollection services,
@@ -92,7 +98,7 @@ public static class VfpsExtensions
 
         var retryPolicy = new RetryPolicy
         {
-            MaxAttempts = Math.Max(2, vfpsConfig.RequestRetryCount + 1),
+            MaxAttempts = Math.Max(2, vfpsConfig.Retry.Count + 1),
             InitialBackoff = TimeSpan.FromSeconds(1),
             MaxBackoff = TimeSpan.FromSeconds(5),
             BackoffMultiplier = 1.5,
@@ -109,13 +115,33 @@ public static class VfpsExtensions
             RetryPolicy = retryPolicy,
         };
 
-        services
+        var isClientSideLoadBalanced = string.Equals(
+            vfpsConfig.Address.Scheme,
+            "dns",
+            StringComparison.OrdinalIgnoreCase
+        );
+
+        if (isClientSideLoadBalanced)
+        {
+            services.TryAddEnumerable(
+                ServiceDescriptor.Singleton<ResolverFactory>(
+                    new DnsResolverFactory(DnsRefreshInterval)
+                )
+            );
+        }
+
+        var clientBuilder = services
             .AddGrpcClient<PseudonymService.PseudonymServiceClient>(o =>
                 o.Address = vfpsConfig.Address
             )
             .ConfigureChannel(o =>
             {
                 o.ServiceConfig = new ServiceConfig { MethodConfigs = { defaultMethodConfig } };
+
+                if (isClientSideLoadBalanced)
+                {
+                    o.ServiceConfig.LoadBalancingConfigs.Add(new RoundRobinConfig());
+                }
 
                 if (vfpsConfig.UseTls)
                 {
@@ -161,6 +187,21 @@ public static class VfpsExtensions
                     }
                 }
             );
+
+        if (isClientSideLoadBalanced)
+        {
+            // Modifies the client factory's own SocketsHttpHandler rather than replacing it, so
+            // its gRPC defaults (multiple HTTP/2 connections, a pooled connection lifetime) stay.
+            clientBuilder.ConfigurePrimaryHttpMessageHandler(
+                (handler, _) =>
+                {
+                    if (handler is SocketsHttpHandler socketsHttpHandler)
+                    {
+                        socketsHttpHandler.ConnectTimeout = ConnectTimeout;
+                    }
+                }
+            );
+        }
 
         services.AddTransient<VfpsPseudonymServiceClient>();
         services.AddTransient<IPseudonymServiceClient>(

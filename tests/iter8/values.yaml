@@ -28,9 +28,8 @@ anonymizationConfig: |
   parameters:
     dateShiftKey: ""
     dateShiftScope: resource
-    cryptoHashKey: fhir-pseudonymizer
-    # must be of a valid AES key length; here the key is padded to 192 bits
-    encryptKey: fhir-pseudonymizer000000
+    cryptoHashKey: ""
+    encryptKey: ""
     enablePartialAgesForRedact: true
     enablePartialDatesForRedact: true
     enablePartialZipCodesForRedact: true
