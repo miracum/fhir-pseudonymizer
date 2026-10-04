@@ -65,10 +65,14 @@ export default function () {
     parameter: [{ name: "resource", resource }],
   };
 
-  const res = http.post(`${BASE_URL}/fhir/$de-identify`, JSON.stringify(parameters), {
-    headers: { "Content-Type": "application/fhir+json" },
-    timeout: "15s",
-  });
+  const res = http.post(
+    `${BASE_URL}/fhir/$de-identify`,
+    JSON.stringify(parameters),
+    {
+      headers: { "Content-Type": "application/fhir+json" },
+      timeout: "15s",
+    },
+  );
 
   if (
     !check(res, {
@@ -85,7 +89,9 @@ export default function () {
   const pseudonymized =
     identifiers.length === 1 && identifiers[0].value === expectedPseudonym;
 
-  check(res, { "exactly one correctly pseudonymized identifier": () => pseudonymized });
+  check(res, {
+    "exactly one correctly pseudonymized identifier": () => pseudonymized,
+  });
   invariantViolations.add(!pseudonymized);
 
   sleep(1);
