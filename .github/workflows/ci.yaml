@@ -16,14 +16,12 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@869881c224354c744e09f1d9bba9d47b5c698b44 # v1.26.0
+    uses: miracum/.github/.github/workflows/standard-build.yaml@074c1a65db6f09850cd80f38efe230036febb44e # v1.29.2
     permissions:
       contents: write
       id-token: write
       packages: write
       pull-requests: write
-      actions: read
-      security-events: write
       attestations: write
       artifact-metadata: write
     with:
@@ -32,8 +30,6 @@ jobs:
       platforms: |
         linux/amd64
         linux/arm64
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
 
   test:
     runs-on: ubuntu-24.04
@@ -340,7 +336,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@869881c224354c744e09f1d9bba9d47b5c698b44 # v1.26.0
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@074c1a65db6f09850cd80f38efe230036febb44e # v1.29.2
     permissions:
       contents: read
       pull-requests: write
@@ -351,10 +347,7 @@ jobs:
       enable-validate-gradle-wrapper: false
       codeql-languages: '["csharp"]'
       enable-codeql: true
-      enable-verify-base-image-signature: false
       dotnet-version: "10.0.x"
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
 
   playground:
     runs-on: ubuntu-24.04
