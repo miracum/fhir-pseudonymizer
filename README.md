@@ -187,10 +187,27 @@ Service-specific configuration settings are listed below.
 
 | Environment Variable                            | Description                                                                                                                                                                                                                        | Default |
 | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `Vfps__Address`                                 | The Vfps service address. Use `dns:///` scheme for client-side load-balancing.                                                                                                                                                     | `""`    |
+| `Vfps__Address`                                 | The Vfps service address, e.g. `http://vfps:8081` or `dns:///vfps-headless.vfps.svc.cluster.local:8081`. See [Vfps load balancing](#vfps-load-balancing) for which to use.                                                         | `""`    |
 | `Vfps__UnsafeUseInsecureChannelCallCredentials` | If set to `true`, `CallCredentials` are applied to gRPC calls made by an insecure channel. Sending authentication headers over an insecure connection has security implications and shouldn't be done in production environments.  | `true`  |
 | `Vfps__UseTls`                                  | If set to `true`, creates client-side SSL credentials loaded from disk file pointed to by the `GRPC_DEFAULT_SSL_ROOTS_FILE_PATH` environment variable. If that fails, gets the roots certificates from a well known place on disk. | `false` |
 | `Vfps__Retry__Count`                            | The number of times a failed request is retried, with exponential backoff.                                                                                                                                                         | `3`     |
+
+#### Vfps load balancing
+
+gRPC sends every call over one long-lived HTTP/2 connection, and a regular Kubernetes Service
+balances connections, not calls. With an `http://` address pointing at the Vfps Service, each FHIR
+Pseudonymizer replica sends all of its calls to one Vfps pod at a time. The connection is recreated
+every two minutes, so load evens out over time and newly added Vfps pods are picked up within about
+that long. This is the simpler option, and enough when Vfps runs several replicas for availability
+rather than throughput.
+
+To spread individual calls across all Vfps replicas, use a `dns:///` address pointing at the Vfps
+chart's headless Service (`<release>-headless`), e.g.
+`dns:///vfps-headless.vfps.svc.cluster.local:8081`. The client then load-balances round-robin
+across every ready pod, re-resolves the address every 15 seconds to pick up added or replaced pods,
+and gives up on a connection attempt after 5 seconds instead of waiting on a pod that no longer
+exists. Don't combine `dns:///` with a regular Service: it resolves to a single virtual IP, so there
+is nothing to balance.
 
 #### Vfps Basic Auth
 
