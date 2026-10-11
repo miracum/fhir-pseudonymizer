@@ -1,0 +1,35 @@
+/* Landing page hero */
+.fp-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fp-hero {
+  text-align: center;
+  padding: 1.5rem 0 1rem;
+}
+
+.fp-hero img {
+  width: 100%;
+  max-width: 9rem;
+}
+
+.fp-hero .fp-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0;
+}
+
+.fp-hero .fp-tagline {
+  font-size: 1.25rem;
+  margin: 1rem auto 1.5rem;
+  max-width: 38rem;
+}
+
+.fp-hero .md-button {
+  margin: 0.25rem;
+}

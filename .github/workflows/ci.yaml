@@ -349,6 +349,33 @@ jobs:
       enable-codeql: true
       dotnet-version: "10.0.x"
 
+  docs:
+    runs-on: ubuntu-24.04
+    name: docs
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          # the built site is published from this workflow, so it must not restore anything a
+          # pull request run could have written
+          enable-cache: false
+
+      # --strict fails the build on broken links between pages.
+      - name: Build site
+        run: uv run --locked zensical build --strict
+
+      - name: Upload docs site artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docs-site
+          path: site/
+          if-no-files-found: error
+
   playground:
     runs-on: ubuntu-24.04
     name: playground
@@ -458,10 +485,11 @@ jobs:
 
   deploy-pages:
     name: deploy pages
-    # the playground and microbenchmarks jobs build independently of each other and of the
+    # the docs, playground and microbenchmarks jobs build independently of each other and of the
     # container `build` job; this is the only job that combines and publishes their output.
     if: ${{ github.ref == 'refs/heads/master' }}
     needs:
+      - docs
       - playground
       - microbenchmarks
     runs-on: ubuntu-24.04
@@ -472,6 +500,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Download docs site artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: docs-site
+          path: pages-root/docs
+
       - name: Download playground site artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -483,6 +517,24 @@ jobs:
         with:
           name: benchmarks-dashboard
           path: pages-root/benchmarks
+
+      # nothing else lives at the site root, so send visitors on to the documentation
+      - name: Add root redirect to the documentation
+        run: |
+          cat > pages-root/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>FHIR Pseudonymizer</title>
+              <meta http-equiv="refresh" content="0; url=docs/" />
+              <link rel="canonical" href="https://miracum.github.io/fhir-pseudonymizer/docs/" />
+            </head>
+            <body>
+              <p>Redirecting to the <a href="docs/">FHIR Pseudonymizer documentation</a>.</p>
+            </body>
+          </html>
+          EOF
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
