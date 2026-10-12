@@ -677,18 +677,30 @@ New dependencies are chosen based on their license (must be compatible with this
 > Example runs were conducted on the following hardware:
 
 ```console
-OS=Windows 11 (10.0.22000.978/21H2)
+OS=Windows 11 (10.0.26300)
 12th Gen Intel Core i9-12900K, 1 CPU, 24 logical and 16 physical cores
 32GiB of DDR5 4800MHz RAM
 Samsung SSD 980 Pro 1TiB
-.NET SDK=7.0.101
+.NET SDK=10.0.401
 ```
 
 Prerequisites: <https://github.com/codesenberg/bombardier>
 
+The server is started in the `Development` environment with Kafka disabled and the default log
+level, so that the debug logging and the Kafka consumer from `appsettings.Development.json`
+don't skew the results:
+
 ```sh
-dotnet run -c Release --project=src/FhirPseudonymizer
+ASPNETCORE_ENVIRONMENT=Development \
+ASPNETCORE_URLS=http://localhost:5000 \
+Kafka__Enabled=false \
+Logging__LogLevel__Default=Information \
+dotnet run -c Release --no-launch-profile --project=src/FhirPseudonymizer
 ```
+
+> **Note**
+> On Windows, the Prometheus metrics listener binds to `http://+:<MetricsPort>/metrics/`, which
+> requires an elevated shell (or a URL ACL reservation via `netsh http add urlacl`).
 
 In a different terminal
 
@@ -700,18 +712,18 @@ Bombarding http://localhost:5000/fhir/$de-identify for 1m0s using 125 connection
 [====================================================================================================================] 1m0s
 Done!
 Statistics        Avg      Stdev        Max
-  Reqs/sec     21508.39    3751.90   38993.50
-  Latency        5.80ms     1.63ms   442.82ms
+  Reqs/sec     26416.66    5890.85   35211.27
+  Latency        4.73ms   747.37us   148.68ms
   Latency Distribution
-     50%     5.00ms
-     75%     6.00ms
-     90%     7.75ms
-     95%     9.00ms
-     99%    12.00ms
+     50%     4.43ms
+     75%     4.85ms
+     90%     5.51ms
+     95%     8.10ms
+     99%    10.95ms
   HTTP codes:
-    1xx - 0, 2xx - 1291159, 3xx - 0, 4xx - 0, 5xx - 0
+    1xx - 0, 2xx - 1582351, 3xx - 0, 4xx - 0, 5xx - 0
     others - 0
-  Throughput:   158.17MB/s
+  Throughput:   214.17MB/s
 ```
 
 ### Comparing static vs. dynamic config `$de-identify`
