@@ -175,12 +175,13 @@ public class KafkaConsumerService : BackgroundService
 
         public void Run(CancellationToken stoppingToken)
         {
-            consumer = service.consumerFactory(
+            using var ownedConsumer = service.consumerFactory(
                 index,
                 OnPartitionsAssigned,
                 OnPartitionsRevoked,
                 OnPartitionsLost
             );
+            consumer = ownedConsumer;
             consumer.Subscribe(service.kafkaConfig.Topics);
             logger.LogInformation(
                 "Consumer {Consumer} subscribed to Kafka topics: {Topics}",
@@ -210,10 +211,6 @@ public class KafkaConsumerService : BackgroundService
                         "Failed to cleanly close Kafka consumer {Consumer}",
                         index
                     );
-                }
-                finally
-                {
-                    consumer.Dispose();
                 }
             }
 
