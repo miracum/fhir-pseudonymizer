@@ -60,22 +60,24 @@ hide:
 
     [:octicons-arrow-right-24: Reading from Kafka](kafka.md)
 
-- :lucide-scroll-text:{ .lg .middle } **Audit trail**
+- :lucide-rocket:{ .lg .middle } **Production ready**
 
     ---
 
-    Every pseudonymized resource can produce an idempotent FHIR Provenance record naming what it
-    was derived from.
+    Release images are signed with cosign and ship with SLSA Level 3 build provenance. They
+    are built on a minimal, distroless base image and are executable following [NSA/CISA runtime hardening practices](https://media.defense.gov/2022/Aug/29/2003066362/1/1/0/CTR_KUBERNETES_HARDENING_GUIDANCE_1.2_20220829.PDF).
+    Prometheus
+    metrics and OpenTelemetry tracing are built in.
 
-    [:octicons-arrow-right-24: Provenance](provenance.md)
+    [:octicons-arrow-right-24: Image verification](image-verification.md)
 
-- :lucide-gauge:{ .lg .middle } **Fast and observable**
+    [:octicons-arrow-right-24: Observability](observability.md)
+
+- :lucide-gauge:{ .lg .middle } **Fast**
 
     ---
 
-    Tens of thousands of requests per second on a single instance, exposed Prometheus metrics,
-    OpenTelemetry tracing support, and a
-    ready-to-import Grafana dashboard.
+    Tens of thousands of requests per second on a single instance, with full horizontal scalability. Low cold-start latencies allow for automatic scale to 0.
 
     [:octicons-arrow-right-24: Performance](performance.md)
 
