@@ -28,10 +28,10 @@ nav = [
     { "Provenance" = "provenance.md" },
   ] },
   { "Pseudonymization services" = [
-    { "gPAS" = "services/gpas.md" },
-    { "Vfps" = "services/vfps.md" },
-    { "entici" = "services/entici.md" },
-    { "MII" = "services/mii.md" },
+    { "gPAS" = "pseudonymization/gpas.md" },
+    { "Vfps" = "pseudonymization/vfps.md" },
+    { "entici" = "pseudonymization/entici.md" },
+    { "MII" = "pseudonymization/mii.md" },
   ] },
   { "Operations" = [
     { "Configuration reference" = "configuration.md" },
@@ -45,8 +45,8 @@ nav = [
 
 [project.theme]
 language = "en"
-logo = "img/logo.png"
-favicon = "img/logo.png"
+logo = "img/logo.svg"
+favicon = "img/logo.svg"
 features = [
   "announce.dismiss",
   "content.action.edit",

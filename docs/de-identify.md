@@ -30,8 +30,8 @@ fhirPathRules:
 ## The `pseudonymize` method
 
 A `pseudonymize` method was added to the list of anonymization methods. It uses either
-[gPAS](services/gpas.md), [Vfps](services/vfps.md), [entici](services/entici.md) or an
-[MII-compliant service](services/mii.md) to create pseudonyms and replaces the values in the
+[gPAS](pseudonymization/gpas.md), [Vfps](pseudonymization/vfps.md), [entici](pseudonymization/entici.md) or an
+[MII-compliant service](pseudonymization/mii.md) to create pseudonyms and replaces the values in the
 resource with them. Choose which one with the `PseudonymizationService` setting.
 
 For example, the following rule replaces all identifiers of type

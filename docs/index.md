@@ -8,9 +8,10 @@ hide:
 
 <div class="fp-hero" markdown>
 
-![FHIR Pseudonymizer logo](img/logo.png)
-
-# FHIR Pseudonymizer { .fp-title }
+<div class="fp-brand">
+  <img src="img/logo.svg" alt="" />
+  <h1 class="fp-title"><span class="fp-title-accent">FHIR</span> <span>Pseudonymizer</span></h1>
+</div>
 
 <p class="fp-tagline">A REST and Kafka service for de-identifying FHIR® resources.</p>
 
@@ -39,7 +40,7 @@ hide:
     Create and reverse pseudonyms with gPAS, Vfps, entici or any service implementing the MII
     pseudonymization interface.
 
-    [:octicons-arrow-right-24: Pseudonymization services](services/vfps.md)
+    [:octicons-arrow-right-24: Pseudonymization services](pseudonymization/vfps.md)
 
 - :lucide-sliders-horizontal:{ .lg .middle } **Per-request settings**
 
@@ -72,7 +73,8 @@ hide:
 
     ---
 
-    Thousands of requests per second on a single instance, Prometheus metrics, and a
+    Tens of thousands of requests per second on a single instance, exposed Prometheus metrics,
+    OpenTelemetry tracing support, and a
     ready-to-import Grafana dashboard.
 
     [:octicons-arrow-right-24: Performance](performance.md)
@@ -80,3 +82,5 @@ hide:
 </div>
 
 <!-- prettier-ignore-end -->
+
+<p align="center" markdown><small>Logo contains elements from [twitter/twemoji](https://github.com/twitter/twemoji) licensed under [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).</small></p>

@@ -6,7 +6,6 @@
 
 ```sh
 docker run --rm -i -p 8080:8080 \
-  -e PseudonymizationService="None" \
   ghcr.io/miracum/fhir-pseudonymizer:v2.38.0
 ```
 
@@ -56,6 +55,6 @@ The recommended deployment is on Kubernetes. Use the
 ## Next steps
 
 - Write rules for your data: [De-identification](de-identify.md).
-- Create reversible, consistent pseudonyms: pick a [pseudonymization service](services/vfps.md).
+- Create reversible, consistent pseudonyms: pick a [pseudonymization service](pseudonymization/vfps.md).
 - Set keys and other options: [Configuration reference](configuration.md).
 - Process messages from [Kafka](kafka.md) instead of HTTP requests.

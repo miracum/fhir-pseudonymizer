@@ -5,7 +5,7 @@
 [![OpenSSF Baseline](https://www.bestpractices.dev/projects/14501/baseline)](https://www.bestpractices.dev/projects/14501)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14501/badge)](https://www.bestpractices.dev/projects/14501)
 
-<p align="center"><img width="100" src="docs/img/logo.png" alt="FHIR® Pseudonymizer Logo"></p>
+<p align="center"><img width="100" src="docs/img/logo.svg" alt="FHIR® Pseudonymizer Logo"></p>
 
 > Send a FHIR® resource to `/fhir/$de-identify` get it back anonymized and/or pseudonymized.
 

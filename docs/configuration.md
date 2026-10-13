@@ -29,8 +29,8 @@ for additional options.
 
 ## Service-specific settings
 
-The application supports pseudonymization using [gPAS](services/gpas.md),
-[Vfps](services/vfps.md), [entici](services/entici.md) or an [MII-compliant service](services/mii.md),
+The application supports pseudonymization using [gPAS](pseudonymization/gpas.md),
+[Vfps](pseudonymization/vfps.md), [entici](pseudonymization/entici.md) or an [MII-compliant service](pseudonymization/mii.md),
 which can be configured via the `PseudonymizationService` setting. Their settings are listed on
 each service's page.
 

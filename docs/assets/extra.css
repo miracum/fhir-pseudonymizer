@@ -13,15 +13,36 @@
   padding: 1.5rem 0 1rem;
 }
 
-.fp-hero img {
-  width: 100%;
-  max-width: 9rem;
+/* The logo sits to the left of the two-line title, which is left-aligned. */
+.fp-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.75rem, 3vw, 1.5rem);
+}
+
+.fp-brand img {
+  height: clamp(4.5rem, 20vw, 9rem);
+  width: auto;
 }
 
 .fp-hero .fp-title {
-  font-size: 2.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-size: clamp(1.5rem, 7vw, 2.6rem);
   font-weight: 700;
-  margin: 0.5rem 0 0;
+  line-height: 1.1;
+  margin: 0;
+  text-align: left;
+}
+
+.fp-title .headerlink {
+  display: none;
+}
+
+.fp-title-accent {
+  color: #e4572e;
 }
 
 .fp-hero .fp-tagline {
