@@ -87,6 +87,26 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
+    public void Startup_WithoutAnonymizationConfig_ShouldFailToStart()
+    {
+        using var noConfigFactory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigPath"] = "",
+                ["AnonymizationEngineConfigInline"] = "",
+                ["Metrics:Enabled"] = "false",
+            },
+        };
+
+        var act = () => noConfigFactory.CreateClient();
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*Anonymization config not set*");
+    }
+
+    [Fact]
     public async Task GetMetadata_ReturnsSuccessAndFhirJsonContentType()
     {
         var response = await client.GetAsync(

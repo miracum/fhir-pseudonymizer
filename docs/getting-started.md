@@ -2,28 +2,40 @@
 
 ## Run it
 
+This example
+passes a minimal de-identification config inline that hashes every `Resource.id` with a crypto-hash and redacts
+`Patient.birthDate`:
+
 <!-- x-release-please-start-version -->
 
 ```sh
 docker run --rm -i -p 8080:8080 \
+  -e AnonymizationEngineConfigInline='
+fhirVersion: R4
+fhirPathRules:
+  - path: Resource.id
+    method: cryptoHash
+  - path: Patient.birthDate
+    method: redact
+parameters:
+  cryptoHashKey: "a-secret-key-with-at-least-32-characters"
+' \
   ghcr.io/miracum/fhir-pseudonymizer:v2.38.0
 ```
 
 <!-- x-release-please-end-version -->
 
-In a second terminal, send it a sample Observation (from a checkout of the
-[repository](https://github.com/miracum/fhir-pseudonymizer)):
+In a second terminal, send it a sample Patient:
 
 ```sh
 curl -X POST -H "Content-Type:application/fhir+json" \
   "http://localhost:8080/fhir/\$de-identify" \
-  -d @benchmark/observation.json
+  -d '{"resourceType": "Patient", "id": "example", "birthDate": "1985-10-14", "gender": "female"}'
 ```
 
-This uses the
-[default anonymization config](https://github.com/miracum/fhir-pseudonymizer/blob/master/src/FhirPseudonymizer/anonymization.yaml),
-which redacts names and encrypts patient and visit identifiers. Replace it with your own rules
-by mounting a file at `/etc/anonymization.yaml` - see [De-identification](de-identify.md).
+The response contains the Patient with a hashed `id` and without a `birthDate`. To use your own
+rules from a file instead, mount it into the container and set `AnonymizationEngineConfigPath` -
+see [De-identification](de-identify.md).
 
 The OpenAPI definition of the FHIR operation endpoints is served at
 <http://localhost:8080/swagger/>:
