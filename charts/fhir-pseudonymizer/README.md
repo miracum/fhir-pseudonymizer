@@ -4,7 +4,7 @@
 
 [FHIR Pseudonymizer](https://github.com/miracum/fhir-pseudonymizer) - A Helm chart for deploying the MIRACUM FHIR Pseudonymizer
 
-## TL;DR;
+## TL;DR
 
 ```console
 helm install fhir-pseudonymizer oci://ghcr.io/miracum/fhir-pseudonymizer/charts/fhir-pseudonymizer --create-namespace -n fhir-pseudonymizer

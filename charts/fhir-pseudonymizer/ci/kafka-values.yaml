@@ -2,6 +2,11 @@
 # that the chart renders and that the container starts up and stays healthy with the
 # Kafka integration enabled. The app registers no Kafka health check, so the pod becomes
 # ready even though the broker below is unresolvable; librdkafka just logs connection errors.
+# set explicitly so the chart also installs with images from before 3.0.0, which defaulted to gPAS and
+# crashed at startup without its URL. From 3.0.0 on, `None` is the default.
+extraEnvDict:
+  PseudonymizationService: None
+
 # the service refuses to start without an anonymization config
 anonymizationConfig: |
   ---

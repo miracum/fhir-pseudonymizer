@@ -1,6 +1,8 @@
 # encrypts identifiers instead of pseudonymizing them, so no pseudonymization service is needed.
 # keys are set via environment variables instead of inside the anonymization config. They must be at least 32 bytes long.
+# `None` is set explicitly so the chart also installs with images from before 3.0.0, which defaulted to gPAS.
 extraEnvDict:
+  PseudonymizationService: None
   Anonymization__EncryptKey: ci-only-not-a-secret-key-0123456
   Anonymization__CryptoHashKey: ci-only-not-a-secret-key-0123456
 

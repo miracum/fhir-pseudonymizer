@@ -1,5 +1,10 @@
-# the defaults only. There is no default anonymization config, so the chart is installed
-# without one and the service starts up with the `None` pseudonymization service.
+# the chart's defaults plus the minimum the service needs to start: there is no default
+# anonymization config.
+# `None` is set explicitly so the chart also installs with images from before 3.0.0, which defaulted to gPAS and
+# crashed at startup without its URL. From 3.0.0 on, `None` is the default.
+extraEnvDict:
+  PseudonymizationService: None
+
 anonymizationConfig: |
   ---
   fhirVersion: R4
