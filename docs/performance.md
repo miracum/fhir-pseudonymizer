@@ -73,7 +73,7 @@ configured rules and the same endpoint using a per-request [dynamic config](dyna
 
 [src/FhirPseudonymizer.Benchmarks](https://github.com/miracum/fhir-pseudonymizer/tree/master/src/FhirPseudonymizer.Benchmarks) contains
 [BenchmarkDotNet](https://benchmarkdotnet.org/) microbenchmarks for the anonymization engine
-itself (no HTTP involved). Besides benchmarking the parsing of the shipped `anonymization.yaml`
+itself (no HTTP involved). Besides benchmarking the parsing of the sample `anonymization.yaml`
 and `hipaa-anonymization.yaml` configs, `AnonymizationBenchmarks` runs a full de-identify pass
 (parse + anonymize + serialize) using a "complex" config
 ([complex-anonymization.yaml](https://github.com/miracum/fhir-pseudonymizer/blob/master/src/FhirPseudonymizer.Benchmarks/complex-anonymization.yaml),

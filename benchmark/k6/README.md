@@ -17,10 +17,21 @@ differences in the rules applied.
 ## Prerequisites
 
 - [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
-- A running instance of the server, started with the default configuration:
+- A running instance of the server using the repository's `anonymization.yaml` (the Development
+  environment's default, which is also what the dynamic-config scenario sends):
 
   ```sh
   dotnet run -c Release --project=src/FhirPseudonymizer
+  ```
+
+  When running the container image instead, there is no default config, so mount the file and
+  point `AnonymizationEngineConfigPath` at it:
+
+  ```sh
+  docker run --rm -p 5000:8080 \
+    -e AnonymizationEngineConfigPath=/etc/anonymization.yaml \
+    -v "$PWD/src/FhirPseudonymizer/anonymization.yaml:/etc/anonymization.yaml:ro" \
+    ghcr.io/miracum/fhir-pseudonymizer:local-build
   ```
 
 ## Run

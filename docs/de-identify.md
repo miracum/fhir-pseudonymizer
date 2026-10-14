@@ -11,10 +11,11 @@ for more details on the rule configuration. An
 [example config](https://github.com/miracum/fhir-pseudonymizer/blob/master/src/FhirPseudonymizer/anonymization.yaml)
 that redacts names and encrypts patient and visit identifiers is available as a starting point.
 
-The service comes with a sample configuration to help meet the requirements of the HIPAA Safe
+The repository contains a sample configuration to help meet the requirements of the HIPAA Safe
 Harbor Method (2)(i):
 [hipaa-anonymization.yaml](https://github.com/miracum/fhir-pseudonymizer/blob/master/src/FhirPseudonymizer/hipaa-anonymization.yaml).
-Use it by setting `AnonymizationEngineConfigPath=/opt/fhir-pseudonymizer/hipaa-anonymization.yaml`.
+Neither sample is included in the container image; download the file, mount it into the container
+and point `AnonymizationEngineConfigPath` at it.
 
 All methods defined in Tools for Health Data Anonymization are supported. For example, to clamp
 a patient's birthdate to 01/01/1930 if they were born before January 1st 1931:
