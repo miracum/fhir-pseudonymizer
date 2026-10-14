@@ -93,11 +93,15 @@ The `/fhir/$re-identify` operation reverts the `pseudonymize` and `encrypt` meth
 any resource. Other methods, such as `cryptoHash`, `redact` or `dateShift`, can't be reverted.
 Accessing this endpoint requires [authentication](#authentication).
 
+It accepts the same [dynamic rule settings and config](dynamic-config.md#re-identification) as
+`$de-identify`, which have to match the ones the resource was de-identified with. Unlike
+`$de-identify`, it doesn't add any security labels to the resource, but keeps the ones it already
+has.
+
 !!! note "Deprecated: `$de-pseudonymize`"
 
     `/fhir/$de-pseudonymize` is the operation's former name. It still works as an alias, but is
-    deprecated and will be removed in a future release. A warning is logged the first time it is
-    called.
+    deprecated and will be removed in a future release.
 
 !!! warning
 

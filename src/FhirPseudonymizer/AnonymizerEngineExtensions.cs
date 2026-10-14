@@ -42,35 +42,56 @@ public static class AnonymizerEngineExtensions
         services.AddSingleton(_ => anonConfigManager);
 
         services.AddSingleton<IAnonymizerEngine>(sp =>
-        {
-            var anonConfig = sp.GetRequiredService<AnonymizerConfigurationManager>();
-            var engine = new AnonymizerEngine(anonConfig);
-
-            var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor(
-                "pseudonymize",
-                new PseudonymizationProcessor(psnClient, appConfig.Features)
-            );
-
-            return engine;
-        });
+            CreateAnonymizerEngine(
+                sp.GetRequiredService<AnonymizerConfigurationManager>(),
+                sp.GetRequiredService<IPseudonymServiceClient>(),
+                appConfig.Features
+            )
+        );
 
         services.AddSingleton<IDePseudonymizerEngine>(sp =>
-        {
-            var anonConfig = sp.GetRequiredService<AnonymizerConfigurationManager>();
-            var engine = new DePseudonymizerEngine(anonConfig);
-
-            var psnClient = sp.GetRequiredService<IPseudonymServiceClient>();
-            engine.AddProcessor(
-                "pseudonymize",
-                new DePseudonymizationProcessor(psnClient, appConfig.Features)
-            );
-
-            engine.AddProcessor("encrypt", new DecryptProcessor(anonConfig.GetEncryptKeyBytes()));
-            return engine;
-        });
+            CreateDePseudonymizerEngine(
+                sp.GetRequiredService<AnonymizerConfigurationManager>(),
+                sp.GetRequiredService<IPseudonymServiceClient>(),
+                appConfig.Features
+            )
+        );
 
         return services;
+    }
+
+    /// <summary>
+    ///     The engine behind <c>$de-identify</c>: the built-in processors, plus pseudonymization
+    ///     through the configured pseudonymization service.
+    /// </summary>
+    public static AnonymizerEngine CreateAnonymizerEngine(
+        AnonymizerConfigurationManager configurationManager,
+        IPseudonymServiceClient psnClient,
+        FeatureManagement features
+    )
+    {
+        var engine = new AnonymizerEngine(configurationManager);
+        engine.AddProcessor("pseudonymize", new PseudonymizationProcessor(psnClient, features));
+        return engine;
+    }
+
+    /// <summary>
+    ///     The engine behind <c>$re-identify</c>: only the reversible methods, each replaced by
+    ///     its inverse. Rules using any other method are left alone.
+    /// </summary>
+    public static DePseudonymizerEngine CreateDePseudonymizerEngine(
+        AnonymizerConfigurationManager configurationManager,
+        IPseudonymServiceClient psnClient,
+        FeatureManagement features
+    )
+    {
+        var engine = new DePseudonymizerEngine(configurationManager);
+        engine.AddProcessor("pseudonymize", new DePseudonymizationProcessor(psnClient, features));
+        engine.AddProcessor(
+            "encrypt",
+            new DecryptProcessor(configurationManager.GetEncryptKeyBytes())
+        );
+        return engine;
     }
 
     public static void LogErrorIfPseudonymizationServiceIsMissing(

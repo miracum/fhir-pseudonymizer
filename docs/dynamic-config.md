@@ -134,6 +134,14 @@ config:
 `config` and `settings` can be combined in the same request: the dynamic rule settings are
 applied on top of whichever rule set - static or per-request - ends up being used.
 
+## Re-identification
+
+[`$re-identify`](de-identify.md#re-identify) accepts the same `Parameters` request body, with
+`settings` and `config`. To revert a resource, send the same ones it was de-identified with:
+pseudonyms are looked up in the domain the `settings` resolve to, and only the rules of the given
+`config` are reverted. With different ones, pseudonyms are looked up in the wrong domain, and values
+de-identified by rules the used config lacks are returned as-is.
+
 ## Date shift offset
 
 `dateShiftFixedOffsetInDays` can be set in two places, and both can be used at the same time:

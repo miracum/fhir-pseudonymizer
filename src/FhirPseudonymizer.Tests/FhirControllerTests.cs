@@ -73,6 +73,59 @@ public class FhirControllerTests
     }
 
     [Fact]
+    public async Task ReIdentify_ParsesDynamicSettingsAndDoesNotAddSecurityTags()
+    {
+        const string domainPrefix = "domain-prefix";
+        var domainPrefixValue = new FhirString("test-");
+        var patient = new Patient { Id = "inner" };
+        Resource reIdentifiedResource = null;
+        AnonymizerSettings settings = null;
+
+        var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
+        A.CallTo(() =>
+                dePseudonymizer.DePseudonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Invokes(
+                (Resource r, AnonymizerSettings s, CancellationToken _) =>
+                {
+                    reIdentifiedResource = r;
+                    settings = s;
+                }
+            )
+            .Returns(patient);
+
+        var controller = new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            A.Fake<IAnonymizerEngine>(),
+            dePseudonymizer,
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
+        );
+
+        var parameters = new Parameters()
+            .Add("settings", new[] { Tuple.Create<string, Base>(domainPrefix, domainPrefixValue) })
+            .Add("resource", patient);
+
+        await controller.ReIdentify(parameters, TestContext.Current.CancellationToken);
+
+        reIdentifiedResource.Should().BeSameAs(patient);
+        settings.ShouldAddSecurityTag.Should().BeFalse();
+        settings
+            .DynamicRuleSettings.Should()
+            .ContainKey(domainPrefix)
+            .WhoseValue.Should()
+            .Be(domainPrefixValue);
+    }
+
+    [Fact]
     public async Task DeIdentify_ParsesDateShiftFixedOffsetInDaysSetting()
     {
         const string settingKey = "dateShiftFixedOffsetInDays";
