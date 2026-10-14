@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "fhir-pseudonymizer.fullname" . }}-test-connection"
+  labels:
+    {{- include "fhir-pseudonymizer.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    polaris.fairwinds.com/topologySpreadConstraint-exempt: "true"
+    polaris.fairwinds.com/priorityClassNotSet-exempt: "true"
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: {{ .Values.tests.automountServiceAccountToken }}
+  containers:
+    - name: probe-readiness-endpoint
+      image: "{{ .Values.curl.image.registry }}/{{ .Values.curl.image.repository }}:{{ .Values.curl.image.tag }}"
+      imagePullPolicy: IfNotPresent
+      command: ["curl", "--fail-with-body"]
+      args: ["{{ include "fhir-pseudonymizer.fullname" . }}:{{ .Values.service.port }}/ready"]
+      {{- with $.Values.restrictedContainerSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tests.resources }}
+      resources: {{- toYaml .Values.tests.resources | nindent 10 }}
+      {{- else if ne .Values.tests.resourcesPreset "none" }}
+      resources: {{- include "common.resources.preset" (dict "type" .Values.tests.resourcesPreset) | nindent 10 }}
+      {{- end }}
+      livenessProbe:
+        exec:
+          command: ["true"]
+      readinessProbe:
+        exec:
+          command: ["true"]
+    - name: probe-metrics-endpoint
+      image: "{{ .Values.curl.image.registry }}/{{ .Values.curl.image.repository }}:{{ .Values.curl.image.tag }}"
+      imagePullPolicy: IfNotPresent
+      command: ["curl", "--fail-with-body"]
+      args: ["{{ include "fhir-pseudonymizer.fullname" . }}:{{ .Values.service.metricsPort }}/metrics"]
+      {{- with $.Values.restrictedContainerSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tests.resources }}
+      resources: {{- toYaml .Values.tests.resources | nindent 10 }}
+      {{- else if ne .Values.tests.resourcesPreset "none" }}
+      resources: {{- include "common.resources.preset" (dict "type" .Values.tests.resourcesPreset) | nindent 10 }}
+      {{- end }}
+      livenessProbe:
+        exec:
+          command: ["true"]
+      readinessProbe:
+        exec:
+          command: ["true"]

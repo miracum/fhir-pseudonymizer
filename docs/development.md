@@ -90,12 +90,19 @@ docker build -t ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG} .
 
 kind load docker-image ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG}
 
+# vfps is the pseudonymization backend and is deployed separately
+helm upgrade --install \
+  --wait \
+  --timeout=10m \
+  vfps oci://ghcr.io/miracum/vfps/charts/vfps --version 1.23.2
+
+helm dependency update charts/fhir-pseudonymizer
 helm upgrade --install \
   --set="image.tag=${IMAGE_TAG}" \
   -f tests/iter8/values.yaml \
   --wait \
   --timeout=10m \
-  fhir-pseudonymizer oci://ghcr.io/miracum/charts/fhir-pseudonymizer
+  fhir-pseudonymizer charts/fhir-pseudonymizer
 
 kubectl apply -f tests/iter8/experiment.yaml
 

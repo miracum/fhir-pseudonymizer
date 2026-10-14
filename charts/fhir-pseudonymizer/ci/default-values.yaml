@@ -1,0 +1,11 @@
+# the defaults only. There is no default anonymization config, so the chart is installed
+# without one and the service starts up with the `None` pseudonymization service.
+anonymizationConfig: |
+  ---
+  fhirVersion: R4
+  fhirPathRules:
+    - path: nodesByType('HumanName')
+      method: redact
+  parameters:
+    dateShiftKey: ""
+    dateShiftScope: resource

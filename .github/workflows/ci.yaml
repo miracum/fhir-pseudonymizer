@@ -31,6 +31,78 @@ jobs:
         linux/amd64
         linux/arm64
 
+  # ct install (inside standard-chart-publish.yaml's install job) only runs on PRs that change
+  # something under the chart's own directory - it's gated by `ct list-changed`, a plain git diff
+  # scoped to the chart directory that has no idea `chart.helm-extra-set-args` below even exists.
+  # Without this, a PR that only touches src/ or the Dockerfile would build and push a new image
+  # but never actually deploy it via the chart, silently skipping the one check that would catch
+  # an image that fails its readiness/liveness probes or otherwise can't come up under Helm.
+  detect-app-changes:
+    name: detect changes affecting chart deployability
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check for changes under src/ or the Dockerfile since the PR's base
+        id: check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # only meaningful for pull_request events. push/release/merge_group already get a full
+          # ct install regardless (list-changed's own base-branch diff has nothing to compare
+          # against on those), so there's nothing for this job to add there.
+          if [ "${EVENT_NAME}" != "pull_request" ] ||
+            git diff --quiet "${BASE_SHA}" -- src/ Dockerfile charts/fhir-pseudonymizer/; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+  chart:
+    needs:
+      - build
+      - detect-app-changes
+    uses: miracum/.github/.github/workflows/standard-chart-publish.yaml@43926b6aa69b5a63e15378200f698ce8cfeefc88 # v1.29.3
+    permissions:
+      contents: read
+      packages: write # to push the chart and its signature/attestation to ghcr.io
+      id-token: write # for keyless chart signing and OIDC-based attestations
+      attestations: write # to publish build provenance attestations
+      artifact-metadata: write # required by actions/attest-build-provenance
+    with:
+      chart-path: charts/fhir-pseudonymizer
+      # published as ghcr.io/miracum/fhir-pseudonymizer/charts/fhir-pseudonymizer rather than the
+      # default ghcr.io/miracum/fhir-pseudonymizer/fhir-pseudonymizer, matching the
+      # .../charts/<name> layout used elsewhere in the org (e.g. vfps).
+      registry: ghcr.io/${{ github.repository }}/charts
+      # stable per PR (no commit sha), so every push to the same PR overwrites this one OCI tag
+      # instead of piling up a new prerelease version per commit. Empty on every other event,
+      # which falls back to the workflow's own default: release events use the release tag,
+      # everything else uses Chart.yaml's version.
+      version: ${{ github.event_name == 'pull_request' && format('0.0.0-pr{0}', github.event.pull_request.number) || '' }}
+      lint-config: .github/ct/ct.yaml
+      # force ct install to run even when the PR doesn't touch charts/fhir-pseudonymizer/ itself,
+      # as long as it changed something that could affect whether the chart still deploys (see
+      # detect-app-changes above).
+      install-all: ${{ needs.detect-app-changes.outputs.changed == 'true' }}
+      # test ct install against the image this PR just built instead of the tag baked into
+      # values.yaml, so a PR can't pass chart testing against a stale/unrelated release image.
+      # Restricted to same-repo PRs: forked PRs never get their image pushed to ghcr.io (see
+      # standard-build.yaml), so kind wouldn't be able to pull it - falls back to the chart's
+      # default tag there.
+      helm-extra-set-args: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) && format('--set=image.tag={0}', needs.build.outputs.image-version) || '' }}
+      image-digest: ${{ needs.build.outputs.image-digest }}
+      image-tag-path: .image.tag
+
   test:
     runs-on: ubuntu-24.04
     name: unit test
@@ -271,17 +343,29 @@ jobs:
       - name: List images in cluster
         run: docker exec kind-control-plane crictl images
 
+      - name: Install "vfps"
+        env:
+          VFPS_CHART_VERSION: "1.23.2"
+        run: |
+          helm install \
+            --wait \
+            --timeout=10m \
+            vfps \
+            oci://ghcr.io/miracum/vfps/charts/vfps \
+            --version "${VFPS_CHART_VERSION}"
+
       - name: Install "fhir-pseudonymizer"
         env:
           IMAGE_TAG: ${{ needs.build.outputs.image-version }}
         run: |
+          helm dependency update charts/fhir-pseudonymizer
           helm install \
             --set="image.tag=${IMAGE_TAG}" \
             -f tests/iter8/values.yaml \
             --wait \
             --timeout=10m \
             fhir-pseudonymizer \
-            oci://ghcr.io/miracum/charts/fhir-pseudonymizer
+            charts/fhir-pseudonymizer
 
       - name: Launch iter8 experiment
         run: kubectl apply -f tests/iter8/experiment.yaml

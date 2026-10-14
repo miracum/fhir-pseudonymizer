@@ -1,0 +1,244 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.badgesSection" . }}
+
+[FHIR Pseudonymizer](https://github.com/miracum/fhir-pseudonymizer) - {{ template "chart.description" . }}
+
+## TL;DR;
+
+```console
+helm install fhir-pseudonymizer oci://ghcr.io/miracum/fhir-pseudonymizer/charts/fhir-pseudonymizer --create-namespace -n fhir-pseudonymizer
+```
+
+## Introduction
+
+This chart deploys the MIRACUM FHIR Pseudonymizer on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+
+## Prerequisites
+
+- Kubernetes v1.19+
+- Helm v3
+
+## Installing the Chart
+
+To install the chart with the release name `fhir-pseudonymizer`:
+
+```console
+helm install fhir-pseudonymizer oci://ghcr.io/miracum/fhir-pseudonymizer/charts/fhir-pseudonymizer --create-namespace -n fhir-pseudonymizer
+```
+
+The command deploys the FHIR Pseudonymizer on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+
+> **Tip**: List all releases using `helm list`
+
+## Uninstalling the Chart
+
+To uninstall/delete the `fhir-pseudonymizer` release:
+
+```console
+helm delete fhir-pseudonymizer -n fhir-pseudonymizer
+```
+
+The command removes all the Kubernetes components associated with the chart and deletes the release.
+
+## Configuration
+
+Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example:
+
+```console
+helm install fhir-pseudonymizer oci://ghcr.io/miracum/fhir-pseudonymizer/charts/fhir-pseudonymizer -n fhir-pseudonymizer --set replicaCount=2
+```
+
+Alternatively, a YAML file that specifies the values for the parameters can be provided while
+installing the chart. For example:
+
+```console
+helm install fhir-pseudonymizer oci://ghcr.io/miracum/fhir-pseudonymizer/charts/fhir-pseudonymizer -n fhir-pseudonymizer --values values.yaml
+```
+
+### Environment variables
+
+The chart only exposes a few dedicated values for things that need Kubernetes resources, such as `anonymizationConfig`,
+`kafka.*`, or `ingress.*`. Everything else, including the pseudonymization service and its authentication, is configured
+using environment variables. See the [configuration reference](https://miracum.github.io/fhir-pseudonymizer/docs/configuration/)
+for the available ones.
+
+Set them as a plain map using `extraEnvDict`:
+
+```yaml
+extraEnvDict:
+  Anonymization__ShouldAddSecurityTag: "false"
+  Metrics__Enabled: "true"
+```
+
+Variables that need `valueFrom`, e.g. to read a credential from a secret, are set using `extraEnv` in Kubernetes' regular
+`name`/`valueFrom` syntax. If a variable is set in both, the one from `extraEnv` wins.
+
+```yaml
+extraEnv:
+  - name: Anonymization__EncryptKey
+    valueFrom:
+      secretKeyRef:
+        name: fhir-pseudonymizer-keys
+        key: encrypt-key
+```
+
+### Authentication
+
+Protected endpoints such as `$re-identify` require OAuth 2.0 access tokens in JWT format. Configure the token issuer using the
+`Auth__Jwt__*` environment variables:
+
+```yaml
+extraEnvDict:
+  Auth__Jwt__Authority: https://keycloak.example.com/realms/example
+  Auth__Jwt__Audience: fhir-pseudonymizer
+```
+
+## Anonymization and pseudonymization
+
+Anonymization rules are configured directly in the `values.yaml` using `anonymizationConfig`. There is no default, the
+service fails to start without one. For example, the following configuration redacts all names and encrypts the medical
+record and visit numbers:
+
+```yaml
+anonymizationConfig: |
+  ---
+  fhirVersion: R4
+  fhirPathRules:
+    - path: nodesByType('HumanName')
+      method: redact
+    - path: nodesByType('Identifier').where(type.coding.where(system='http://terminology.hl7.org/CodeSystem/v2-0203' and code='VN').exists()).value
+      method: encrypt
+    - path: nodesByType('Identifier').where(type.coding.where(system='http://terminology.hl7.org/CodeSystem/v2-0203' and code='MR').exists()).value
+      method: encrypt
+  parameters:
+    dateShiftKey: ""
+    dateShiftScope: resource
+    enablePartialAgesForRedact: true
+    enablePartialDatesForRedact: true
+    enablePartialZipCodesForRedact: true
+    restrictedZipCodeTabulationAreas: []
+```
+
+`anonymizationConfig` also accepts a regular YAML object instead of a string, which is useful when the rules are
+composed from several values files or set with `--set`. The chart renders it to the same `anonymization.yaml`:
+
+```yaml
+anonymizationConfig:
+  fhirVersion: R4
+  fhirPathRules:
+    - path: nodesByType('HumanName')
+      method: redact
+  parameters:
+    dateShiftKey: ""
+    dateShiftScope: resource
+```
+
+To use a ConfigMap that already exists in the namespace, e.g. one managed by another tool, set `existingAnonymizationConfigMap`
+instead of `anonymizationConfig`. The chart then creates no ConfigMap of its own and mounts the existing one. The config is
+read from the `anonymization.yaml` key unless `existingAnonymizationConfigMapKey` says otherwise:
+
+```yaml
+existingAnonymizationConfigMap: my-anonymization-rules
+existingAnonymizationConfigMapKey: anonymization.yaml
+```
+
+Setting both `existingAnonymizationConfigMap` and `anonymizationConfig` fails the installation. Since the chart can't see the
+ConfigMap's content, changing it does not restart the pods; do that yourself, e.g. with `kubectl rollout restart`.
+
+Keys are best kept out of the config. The `Anonymization__CryptoHashKey` and `Anonymization__EncryptKey` environment
+variables must be at least 32 bytes long and can be read from a secret as shown [above](#environment-variables).
+
+### Pseudonymization service
+
+To use the `pseudonymize` method, select a pseudonymization service and configure it using environment variables. The chart
+does not deploy one. For example, to use an existing Vfps instance:
+
+```yaml
+extraEnvDict:
+  PseudonymizationService: Vfps
+  Vfps__Address: dns:///vfps-headless.vfps.svc.cluster.local:8081
+```
+
+Or gPAS, with the password read from a secret:
+
+```yaml
+extraEnvDict:
+  PseudonymizationService: gPAS
+  gPAS__Url: http://gpas:8080/ttp-fhir/fhir/gpas/
+  gPAS__Auth__Basic__Username: fhir-pseudonymizer
+extraEnv:
+  - name: gPAS__Auth__Basic__Password
+    valueFrom:
+      secretKeyRef:
+        name: gpas-credentials
+        key: password
+```
+
+The available services and their settings are listed in the
+[configuration reference](https://miracum.github.io/fhir-pseudonymizer/docs/configuration/#service-specific-settings).
+
+## Reading from Kafka
+
+In addition to the HTTP API, the FHIR Pseudonymizer can consume FHIR resources/bundles directly from one or more Kafka topics,
+pseudonymize them, and produce the result to a per-topic output topic. Set `kafka.enabled=true`, point `kafka.bootstrapServers`
+at your brokers, and list the input topics as an array:
+
+```yaml
+kafka:
+  enabled: true
+  bootstrapServers: "kafka:9092"
+  topics:
+    - fhir.patient
+    - fhir.observation
+```
+
+The output topic is derived from the input topic by a regular expression match-and-replace. The default prepends
+`pseudonymized.` to every input topic, so `fhir.patient` becomes `pseudonymized.fhir.patient`. To instead insert it after a
+common prefix, turning `fhir.patient` into `fhir.pseudonymized.patient`:
+
+```yaml
+kafka:
+  outputTopicPattern: '^fhir\.'
+  outputTopicReplacement: "fhir.pseudonymized."
+```
+
+Every entry of `kafka.topics`, as well as `kafka.provenanceTopic` and `kafka.consumer.groupId`, is evaluated as a template.
+The consumer group id defaults to the release's fullname; note that it is also part of the name of the dead letter topic that
+messages which could not be pseudonymized are sent to: `error.<input-topic>.<group-id>`.
+
+Settings not exposed as a dedicated value can be set through the `kafka.client`, `kafka.consumer.config`, and
+`kafka.producer.config` maps. Their keys are the property names of `Confluent.Kafka.ClientConfig`, `ConsumerConfig`, and
+`ProducerConfig` respectively, and they are passed to the container as `Kafka__Client__<key>`, `Kafka__Consumer__<key>`, and
+`Kafka__Producer__<key>` environment variables:
+
+```yaml
+kafka:
+  client:
+    securityProtocol: SaslSsl
+    saslMechanism: ScramSha512
+    saslUsername: fhir-pseudonymizer
+  consumer:
+    config:
+      sessionTimeoutMs: "45000"
+```
+
+Since these end up in the pod spec in plaintext, set credentials via `extraEnv` with a `secretKeyRef` instead:
+
+```yaml
+extraEnv:
+  - name: Kafka__Client__SaslPassword
+    valueFrom:
+      secretKeyRef:
+        name: fhir-pseudonymizer-kafka-user
+        key: password
+```
+
+If the brokers use TLS with a private CA, mount the CA certificate using `extraVolumes`/`extraVolumeMounts` and point
+`kafka.client.sslCaLocation` at it.
+
+Note that the application exposes no Kafka health check: a pod that cannot reach its brokers still reports itself as ready,
+and only logs connection errors. Use the `fhirpseudonymizer_kafka_messages_total` metric and the consumer group's lag to
+monitor whether messages are actually being processed.
+
+{{ template "chart.valuesSection" . }}

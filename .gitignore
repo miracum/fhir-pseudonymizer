@@ -376,3 +376,5 @@ tests/chaos/argo
 # documentation site build output and its Python environment (zensical.toml, pyproject.toml)
 /site/
 /.venv/
+
+charts/**/charts/
