@@ -6,6 +6,8 @@
 # crashed at startup without its URL. From 3.0.0 on, `None` is the default.
 extraEnvDict:
   PseudonymizationService: None
+  # the output message keys are crypto-hashed by default, which requires a key of at least 32 bytes
+  Kafka__CryptoHashMessageKeys__Key: ci-only-not-a-secret-key-0123456
 
 # the service refuses to start without an anonymization config
 anonymizationConfig: |

@@ -193,6 +193,20 @@ kafka:
     - fhir.observation
 ```
 
+By default, the keys of the produced messages are crypto-hashed, and the service refuses to start without a key to do that with. Set
+`Kafka__CryptoHashMessageKeys__Key` to a randomly generated key of at least 32 bytes, e.g. from `openssl rand -hex 32`, preferably
+read from a secret using `extraEnv`. Use the same key for every replica and keep it stable, so a message key is always hashed to
+the same value. Alternatively, set `Kafka__CryptoHashMessageKeys__Enabled` to `"false"` to keep the input messages' keys.
+
+```yaml
+extraEnv:
+  - name: Kafka__CryptoHashMessageKeys__Key
+    valueFrom:
+      secretKeyRef:
+        name: fhir-pseudonymizer-kafka-keys
+        key: message-key-hash-key
+```
+
 The output topic is derived from the input topic by a regular expression match-and-replace. The default prepends
 `pseudonymized.` to every input topic, so `fhir.patient` becomes `pseudonymized.fhir.patient`. To instead insert it after a
 common prefix, turning `fhir.patient` into `fhir.pseudonymized.patient`:

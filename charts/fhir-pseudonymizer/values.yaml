@@ -260,7 +260,9 @@ restrictedContainerSecurityContext:
 # [README.md](README.md#reading-from-kafka) for details.
 kafka:
   # -- master switch for all Kafka integration: consuming from `kafka.topics` and publishing
-  # provenance bundles to `kafka.provenanceTopic`. Requires `kafka.bootstrapServers` to be set.
+  # provenance bundles to `kafka.provenanceTopic`. Requires `kafka.bootstrapServers` to be set, as well as the
+  # `Kafka__CryptoHashMessageKeys__Key` environment variable (or `Kafka__CryptoHashMessageKeys__Enabled=false`), see
+  # [README.md](README.md#reading-from-kafka).
   enabled: false
   # -- comma-separated list of `host:port` Kafka brokers to bootstrap from, e.g. `kafka:9092`
   bootstrapServers: ""
