@@ -19,8 +19,8 @@ const DYNAMIC_CONFIG_START_SECONDS = STATIC_CONFIG_TOTAL_SECONDS + GAP_SECONDS;
 const observationJson = open("../observation.json");
 const observationResource = JSON.parse(observationJson);
 
-// The default rules the server itself is expected to be running with (see the "Run" section
-// in ../../README.md) - reused here as the inline config attachment for the dynamic-config
+// The rules the server itself is expected to be running with (see the "Prerequisites" section
+// in ./README.md) - reused here as the inline config attachment for the dynamic-config
 // scenario so both scenarios apply the exact same de-identification rules. That isolates the
 // comparison to the cost of building/caching a per-request rule set rather than differences in
 // the rules applied.

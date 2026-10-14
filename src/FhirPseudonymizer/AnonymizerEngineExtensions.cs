@@ -34,7 +34,7 @@ public static class AnonymizerEngineExtensions
         else
         {
             throw new InvalidOperationException(
-                "Anonymization config not set. Specify either a path or an inline config."
+                "Anonymization config not set. Set either AnonymizationEngineConfigPath or AnonymizationEngineConfigInline."
             );
         }
 

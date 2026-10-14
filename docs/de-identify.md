@@ -3,17 +3,19 @@
 ## `$de-identify`
 
 The server provides a `/fhir/$de-identify` operation to de-identify received FHIR resources
-according to the rules in its
-[anonymization.yaml](https://github.com/miracum/fhir-pseudonymizer/blob/master/src/FhirPseudonymizer/anonymization.yaml).
-See [Tools for Health Data Anonymization](https://github.com/microsoft/Tools-for-Health-Data-Anonymization)
-for more details on the rule configuration. The file is mounted at `/etc/anonymization.yaml`
-within the container by default; see [Configuration](configuration.md) for how to point the
-service somewhere else, or to pass the config inline.
+according to the rules in its `anonymization.yaml`. There is no default config: the service fails to
+start unless you either mount a file and set `AnonymizationEngineConfigPath`, or pass the rules
+via `AnonymizationEngineConfigInline`; see [Configuration](configuration.md). See
+[Tools for Health Data Anonymization](https://github.com/microsoft/Tools-for-Health-Data-Anonymization)
+for more details on the rule configuration. An
+[example config](https://github.com/miracum/fhir-pseudonymizer/blob/master/src/FhirPseudonymizer/anonymization.yaml)
+that redacts names and encrypts patient and visit identifiers is available as a starting point.
 
-The service comes with a sample configuration to help meet the requirements of the HIPAA Safe
+The repository contains a sample configuration to help meet the requirements of the HIPAA Safe
 Harbor Method (2)(i):
 [hipaa-anonymization.yaml](https://github.com/miracum/fhir-pseudonymizer/blob/master/src/FhirPseudonymizer/hipaa-anonymization.yaml).
-Use it by setting `AnonymizationEngineConfigPath=/etc/hipaa-anonymization.yaml`.
+Neither sample is included in the container image; download the file, mount it into the container
+and point `AnonymizationEngineConfigPath` at it.
 
 All methods defined in Tools for Health Data Anonymization are supported. For example, to clamp
 a patient's birthdate to 01/01/1930 if they were born before January 1st 1931:

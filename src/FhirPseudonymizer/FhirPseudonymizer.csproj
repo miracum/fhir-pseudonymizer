@@ -41,9 +41,6 @@
     <PackageReference Include="Blake3" Version="3.0.2" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="*.yaml" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-  </ItemGroup>
-  <ItemGroup>
     <Protobuf Include="Protos\**\*.proto" GrpcServices="Client" />
   </ItemGroup>
   <ItemGroup>

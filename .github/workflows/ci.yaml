@@ -157,8 +157,12 @@ jobs:
         env:
           IMAGE: ${{ fromJson(needs.build.outputs.image-meta-json).tags[0] }}
         run: |
+          # there is no default anonymization config. Use the same rules the k6 script sends as the
+          # dynamic config so both scenarios apply identical rules.
           docker run -d --name=fhir-pseudonymizer -p 8080:8080 \
             -e PseudonymizationService=None \
+            -e AnonymizationEngineConfigPath=/etc/anonymization.yaml \
+            -v "${PWD}/src/FhirPseudonymizer/anonymization.yaml:/etc/anonymization.yaml:ro" \
             "${IMAGE}"
 
       - name: Wait for container to become ready

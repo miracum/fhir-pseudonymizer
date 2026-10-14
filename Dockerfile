@@ -40,7 +40,6 @@ ENTRYPOINT [ "true" ]
 
 FROM runtime
 COPY LICENSE .
-COPY --from=build /build/publish/*anonymization.yaml /etc/
 COPY --from=build /build/publish .
 COPY --from=build /build/packages.lock.json .
 
