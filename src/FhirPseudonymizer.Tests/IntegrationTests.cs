@@ -1144,6 +1144,176 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REDACTED");
     }
 
+    private const string PseudonymizeIdentifiersConfig =
+        "fhirVersion: R4\nfhirPathRules:\n  - path: nodesByType('Identifier').value\n    method: pseudonymize\n    domain: patient\n";
+
+    [Fact]
+    public async Task PostDeIdentifyThenReIdentify_WithDomainPrefix_ShouldLookUpPseudonymsInThePrefixedDomain()
+    {
+        using var psnFactory = CreatePseudonymizingFactory();
+        using var psnClient = CreateAuthenticatedClient(psnFactory);
+        var domainPrefix = Tuple.Create<string, Base>("domain-prefix", new FhirString("miracum-"));
+
+        var deIdentified = await PostAsync<Patient>(
+            psnClient,
+            "/fhir/$de-identify",
+            new Parameters()
+                .Add("settings", [domainPrefix])
+                .Add("resource", new Patient { Identifier = [new() { Value = "123" }] })
+        );
+        deIdentified.Identifier[0].Value.Should().Be("pseuded-123@miracum-patient");
+
+        var reIdentified = await PostAsync<Patient>(
+            psnClient,
+            "/fhir/$re-identify",
+            new Parameters().Add("settings", [domainPrefix]).Add("resource", deIdentified)
+        );
+
+        // The fake pseudonym service echoes the domain it was asked to look the pseudonym up in.
+        reIdentified
+            .Identifier[0]
+            .Value.Should()
+            .Be("original-pseuded-123@miracum-patient@miracum-patient");
+    }
+
+    [Fact]
+    public async Task PostReIdentify_ShouldNotAddSecurityTags()
+    {
+        using var psnFactory = CreatePseudonymizingFactory();
+        using var psnClient = CreateAuthenticatedClient(psnFactory);
+
+        var reIdentified = await PostAsync<Patient>(
+            psnClient,
+            "/fhir/$re-identify",
+            new Patient { Identifier = [new() { Value = "pseuded-123@patient" }] }
+        );
+
+        reIdentified.Identifier[0].Value.Should().Be("original-pseuded-123@patient@patient");
+        reIdentified.Meta?.Security.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task PostReIdentify_ShouldKeepExistingSecurityTags()
+    {
+        using var psnFactory = CreatePseudonymizingFactory();
+        using var psnClient = CreateAuthenticatedClient(psnFactory);
+
+        var deIdentified = await PostAsync<Patient>(
+            psnClient,
+            "/fhir/$de-identify",
+            new Patient { Identifier = [new() { Value = "123" }] }
+        );
+        var securityTags = deIdentified.Meta.Security.Select(c => c.Code).ToList();
+        securityTags.Should().NotBeEmpty();
+
+        var reIdentified = await PostAsync<Patient>(psnClient, "/fhir/$re-identify", deIdentified);
+
+        reIdentified.Meta.Security.Select(c => c.Code).Should().Equal(securityTags);
+    }
+
+    [Fact]
+    public async Task PostDeIdentifyThenReIdentify_WithInlineConfig_ShouldRevertUsingTheInlineConfigsRules()
+    {
+        // Encrypting the family name is a rule only the inline config has - the static one
+        // redacts names instead.
+        var config = new Attachment
+        {
+            ContentType = "application/yaml",
+            Data = Encoding.UTF8.GetBytes(
+                "fhirVersion: R4\nfhirPathRules:\n  - path: Patient.name.family\n    method: encrypt\n"
+            ),
+        };
+
+        var deIdentified = await PostAsync<Patient>(
+            authenticatedClient,
+            "/fhir/$de-identify",
+            new Parameters()
+                .Add("config", config)
+                .Add("resource", new Patient { Name = [new() { Family = "Doe" }] })
+        );
+        deIdentified.Name[0].Family.Should().NotBe("Doe");
+
+        var reIdentifiedWithStaticRules = await PostAsync<Patient>(
+            authenticatedClient,
+            "/fhir/$re-identify",
+            deIdentified.DeepCopy()
+        );
+        reIdentifiedWithStaticRules.Name[0].Family.Should().Be(deIdentified.Name[0].Family);
+
+        var reIdentified = await PostAsync<Patient>(
+            authenticatedClient,
+            "/fhir/$re-identify",
+            new Parameters().Add("config", config).Add("resource", deIdentified)
+        );
+        reIdentified.Name[0].Family.Should().Be("Doe");
+    }
+
+    [Fact]
+    public async Task PostReIdentify_WithInvalidInlineConfig_ShouldReturnBadRequest()
+    {
+        var parameters = new Parameters()
+            .Add(
+                "config",
+                new Attachment
+                {
+                    ContentType = "application/yaml",
+                    Data = Encoding.UTF8.GetBytes(
+                        "fhirVersion: R4\nfhirPathRules:\n  - path: Resource.id\n    method: cryptoHash\nparameters:\n  cryptoHashKey: fhir-pseudonymizer\n"
+                    ),
+                }
+            )
+            .Add("resource", new Patient { Id = "example" });
+
+        var response = await PostFhirAsync(authenticatedClient, "/fhir/$re-identify", parameters);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostReIdentify_WithParametersButNoResource_ShouldReturnBadRequest()
+    {
+        var parameters = new Parameters().Add(
+            "settings",
+            [Tuple.Create<string, Base>("domain-prefix", new FhirString("miracum-"))]
+        );
+
+        var response = await PostFhirAsync(authenticatedClient, "/fhir/$re-identify", parameters);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    private static CustomWebApplicationFactory<Startup> CreatePseudonymizingFactory() =>
+        new()
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["AnonymizationEngineConfigPath"] = "",
+                ["AnonymizationEngineConfigInline"] = PseudonymizeIdentifiersConfig,
+                ["Metrics:Enabled"] = "false",
+            },
+        };
+
+    private static async Task<HttpResponseMessage> PostFhirAsync(
+        HttpClient httpClient,
+        string url,
+        Resource resource
+    )
+    {
+        using var content = new StringContent(resource.ToJson());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        return await httpClient.PostAsync(url, content, TestContext.Current.CancellationToken);
+    }
+
+    private async Task<T> PostAsync<T>(HttpClient httpClient, string url, Resource resource)
+        where T : Resource
+    {
+        var response = await PostFhirAsync(httpClient, url, resource);
+        response.EnsureSuccessStatusCode();
+        return fhirJsonDeserializer.Deserialize<T>(
+            await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)
+        );
+    }
+
     private static HttpClient CreateAuthenticatedClient(
         CustomWebApplicationFactory<Startup> factory
     )
