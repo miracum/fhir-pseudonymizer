@@ -20,6 +20,9 @@
   <ItemGroup>
     <AdditionalFiles Include="..\..\.stylecop.json" />
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
-    <None Include="..\FhirPseudonymizer\anonymization.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <None
+      Include="..\FhirPseudonymizer\anonymization.yaml"
+      CopyToOutputDirectory="PreserveNewest"
+    />
   </ItemGroup>
 </Project>
