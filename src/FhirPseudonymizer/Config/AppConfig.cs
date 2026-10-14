@@ -7,7 +7,7 @@ public record AppConfig
 {
     public string AnonymizationEngineConfigPath { get; init; }
     public string AnonymizationEngineConfigInline { get; set; }
-    public string ApiKey { get; init; }
+    public AuthConfig Auth { get; init; } = new();
     public PseudonymizationServiceType PseudonymizationService { get; init; } =
         PseudonymizationServiceType.None;
     public CacheConfig Cache { get; init; } = new();
@@ -21,6 +21,54 @@ public record AppConfig
     public AnonymizationConfig Anonymization { get; set; } = new();
     public KafkaConfig Kafka { get; init; } = new();
     public KestrelConfig Kestrel { get; init; } = new();
+}
+
+public record AuthConfig
+{
+    public JwtAuthConfig Jwt { get; init; } = new();
+}
+
+/// <summary>
+///     Authenticates requests to the protected operations using OAuth 2.0 access tokens in JWT
+///     format, issued by an OpenID Connect provider.
+/// </summary>
+public record JwtAuthConfig
+{
+    /// <summary>
+    ///     The token issuer, e.g. <c>https://keycloak.example.com/realms/example</c>. Its signing
+    ///     keys are fetched from the issuer's OpenID Connect discovery document. While this is
+    ///     unset, the protected operations reject every request.
+    /// </summary>
+    public string Authority { get; init; }
+
+    /// <summary>
+    ///     The value tokens must have in their <c>aud</c> claim. Required whenever
+    ///     <see cref="Authority" /> is set: otherwise, a token the issuer handed out for any other
+    ///     of its clients would be accepted, too.
+    /// </summary>
+    public string Audience { get; init; }
+
+    /// <summary>
+    ///     Overrides where the discovery document is fetched from. Defaults to
+    ///     <c>{Authority}/.well-known/openid-configuration</c>. Useful if the service reaches the
+    ///     issuer at a different address than the public one in the tokens' <c>iss</c> claim.
+    /// </summary>
+    public string MetadataAddress { get; init; }
+
+    public bool RequireHttpsMetadata { get; init; } = true;
+
+    /// <summary>
+    ///     If set, a token must have this scope in its <c>scope</c> (or <c>scp</c>) claim.
+    /// </summary>
+    public string RequiredScope { get; init; }
+
+    /// <summary>
+    ///     If set, a token must have this role in its <c>roles</c> claim or in Keycloak's
+    ///     <c>realm_access.roles</c>.
+    /// </summary>
+    public string RequiredRole { get; init; }
+
+    public bool IsEnabled => !string.IsNullOrWhiteSpace(Authority);
 }
 
 public record MetricsConfig

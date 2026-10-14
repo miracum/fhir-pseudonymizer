@@ -44,6 +44,8 @@ namespace FhirPseudonymizer.Controllers
                 description: "Histogram of received bundle sizes."
             );
 
+        private static int hasLoggedDePseudonymizeDeprecation;
+
         private readonly IAnonymizerEngine anonymizer;
         private readonly AnonymizationConfig config;
         private readonly IDePseudonymizerEngine dePseudonymizer;
@@ -316,21 +318,23 @@ namespace FhirPseudonymizer.Controllers
         /// <summary>
         ///     Revert any reversible de-identification methods previously applied to the given FHIR resource.
         /// </summary>
-        /// <param name="resource">The FHIR resource containing pseudonymized fields that are to be de-pseudonymized.</param>
+        /// <param name="resource">The FHIR resource containing pseudonymized or encrypted fields that are to be re-identified.</param>
         /// <param name="cancellationToken">
-        ///     Bound to the request's abort token. If the caller disconnects, de-pseudonymization
+        ///     Bound to the request's abort token. If the caller disconnects, re-identification
         ///     stops instead of running the remaining lookups to completion.
         /// </param>
         /// <returns>The modified FHIR resource with the pseudonymized fields replaced with the original value.</returns>
-        /// <response code="200">Returns the de-pseudonymized resource</response>
+        /// <response code="200">Returns the re-identified resource</response>
+        /// <response code="403">The caller is authenticated, but lacks the required scope or role</response>
         /// <response code="499">The caller aborted the request before it was processed</response>
-        [HttpPost("$de-pseudonymize")]
-        [Authorize]
+        [HttpPost("$re-identify")]
+        [Authorize(Policy = AuthExtensions.ReIdentifyPolicy)]
         [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
-        public async Task<ObjectResult> DePseudonymize(
+        public async Task<ObjectResult> ReIdentify(
             [FromBody] Resource resource,
             CancellationToken cancellationToken
         )
@@ -342,7 +346,7 @@ namespace FhirPseudonymizer.Controllers
             }
 
             logger.LogDebug(
-                "De-Pseudonymizing resource {resourceType}/{resourceId}",
+                "Re-identifying resource {resourceType}/{resourceId}",
                 resource.TypeName,
                 resource.Id
             );
@@ -351,7 +355,7 @@ namespace FhirPseudonymizer.Controllers
             {
                 BundleSizeHistogram.Record(
                     bundle.Entry.Count,
-                    new TagList { { "operation", nameof(DePseudonymize) } }
+                    new TagList { { "operation", nameof(ReIdentify) } }
                 );
             }
 
@@ -359,7 +363,7 @@ namespace FhirPseudonymizer.Controllers
             {
                 return Ok(
                     await AnonymizationMetrics.MeasureAsync(
-                        AnonymizationMetrics.OperationDePseudonymize,
+                        AnonymizationMetrics.OperationReIdentify,
                         AnonymizationMetrics.SourceRest,
                         resource,
                         () =>
@@ -373,7 +377,7 @@ namespace FhirPseudonymizer.Controllers
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                logger.LogInformation("DePseudonymize cancelled by the caller");
+                logger.LogInformation("ReIdentify cancelled by the caller");
                 return StatusCode(
                     StatusCodes.Status499ClientClosedRequest,
                     CreateCancelledOutcome()
@@ -381,12 +385,46 @@ namespace FhirPseudonymizer.Controllers
             }
             catch (Exception exc)
             {
-                logger.LogError(exc, "DePseudonymize failed");
+                logger.LogError(exc, "ReIdentify failed");
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     GetInternalErrorOutcome(exc)
                 );
             }
+        }
+
+        /// <summary>
+        ///     Deprecated: use <c>$re-identify</c> instead, which this is an alias of.
+        /// </summary>
+        /// <param name="resource">The FHIR resource containing pseudonymized or encrypted fields that are to be re-identified.</param>
+        /// <param name="cancellationToken">Bound to the request's abort token.</param>
+        /// <returns>The modified FHIR resource with the pseudonymized fields replaced with the original value.</returns>
+        /// <response code="200">Returns the re-identified resource</response>
+        /// <response code="403">The caller is authenticated, but lacks the required scope or role</response>
+        /// <response code="499">The caller aborted the request before it was processed</response>
+        [HttpPost("$de-pseudonymize")]
+        [Authorize(Policy = AuthExtensions.ReIdentifyPolicy)]
+        [Obsolete("Use $re-identify instead.")]
+        [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
+        public Task<ObjectResult> DePseudonymize(
+            [FromBody] Resource resource,
+            CancellationToken cancellationToken
+        )
+        {
+            // Once per process, so callers still on the old name show up in the logs without
+            // flooding them.
+            if (Interlocked.Exchange(ref hasLoggedDePseudonymizeDeprecation, 1) == 0)
+            {
+                logger.LogWarning(
+                    "$de-pseudonymize is deprecated and will be removed in a future release. Use $re-identify instead."
+                );
+            }
+
+            return ReIdentify(resource, cancellationToken);
         }
 
         /// <summary>

@@ -284,7 +284,7 @@ public class FhirControllerTests
     }
 
     [Fact]
-    public async Task DePseudonymize_WhenCancelled_ReturnsClientClosedRequest()
+    public async Task ReIdentify_WhenCancelled_ReturnsClientClosedRequest()
     {
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
@@ -311,7 +311,7 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        var response = await controller.DePseudonymize(new Bundle(), cts.Token);
+        var response = await controller.ReIdentify(new Bundle(), cts.Token);
 
         response.StatusCode.Should().Be(StatusCodes.Status499ClientClosedRequest);
         response.Value.Should().BeOfType<OperationOutcome>();
@@ -356,7 +356,7 @@ public class FhirControllerTests
     }
 
     [Fact]
-    public async Task DePseudonymize_DoesNotPublishProvenance()
+    public async Task ReIdentify_DoesNotPublishProvenance()
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
         A.CallTo(() =>
@@ -382,7 +382,7 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        await controller.DePseudonymize(
+        await controller.ReIdentify(
             new Patient { Id = "123" },
             TestContext.Current.CancellationToken
         );
@@ -398,7 +398,7 @@ public class FhirControllerTests
     }
 
     [Fact]
-    public async Task DePseudonymize_WithExceptionThrownInDePseudonymizer_ShouldReturnInternalError()
+    public async Task ReIdentify_WithExceptionThrownInDePseudonymizer_ShouldReturnInternalError()
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
         A.CallTo(() =>
@@ -422,7 +422,7 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        var response = await controller.DePseudonymize(
+        var response = await controller.ReIdentify(
             new Bundle(),
             TestContext.Current.CancellationToken
         );

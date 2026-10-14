@@ -274,7 +274,7 @@
       "type": "stat",
       "id": 4,
       "title": "REST requests / s",
-      "description": "Requests to the FHIR operations ($de-identify, $de-pseudonymize) per second.",
+      "description": "Requests to the FHIR operations ($de-identify, $re-identify) per second.",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
