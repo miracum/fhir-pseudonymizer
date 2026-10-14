@@ -19,6 +19,21 @@ to also start a Keycloak instance with a pre-configured fhir-pseudonymizer clien
 docker compose -f compose.dev.yaml --profile=keycloak up
 ```
 
+The `Development` environment's `appsettings.Development.json` uses it as the issuer of the
+tokens required for [`$re-identify`](de-identify.md#re-identify), so a token for the
+pre-configured client can be used to call it:
+
+```sh
+TOKEN=$(curl -s \
+  -d grant_type=client_credentials \
+  -d client_id=fhir-pseudonymizer \
+  -d client_secret=3X3XlDpW7qw76sVUNP6Q8RliRJJi2tBr \
+  http://localhost:8083/realms/fhir-pseudonymizer-test/protocol/openid-connect/token | jq -r .access_token)
+```
+
+Request it via `localhost`, not `127.0.0.1`: Keycloak sets the token's issuer to the address it
+was requested from, and the issuer has to match the configured `Auth__Jwt__Authority`.
+
 To also start a local Kafka broker for testing the [Kafka](kafka.md) consumer, set
 `--profile=kafka`:
 

@@ -18,10 +18,21 @@ namespace FhirPseudonymizer.Tests
         /// </summary>
         public bool ReplacePseudonymServiceClientWithFake { get; set; } = true;
 
+        /// <summary>
+        /// If set to false, the application doesn't accept tokens from <see cref="TestTokens" />,
+        /// so Auth:Jwt behaves as configured, without a stand-in for the issuer.
+        /// </summary>
+        public bool TrustTestTokenIssuer { get; set; } = true;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureTestServices(services =>
             {
+                if (TrustTestTokenIssuer)
+                {
+                    TestTokens.TrustTestIssuer(services);
+                }
+
                 if (!ReplacePseudonymServiceClientWithFake)
                 {
                     return;
@@ -81,6 +92,17 @@ namespace FhirPseudonymizer.Tests
                         optional: false,
                         reloadOnChange: false
                     );
+
+                    if (TrustTestTokenIssuer)
+                    {
+                        configBuilder.AddInMemoryCollection(
+                            new Dictionary<string, string>
+                            {
+                                ["Auth:Jwt:Authority"] = TestTokens.Issuer,
+                                ["Auth:Jwt:Audience"] = TestTokens.Audience,
+                            }
+                        );
+                    }
 
                     if (CustomInMemorySettings is not null)
                     {

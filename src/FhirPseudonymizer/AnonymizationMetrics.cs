@@ -5,7 +5,7 @@ using Hl7.Fhir.Model;
 namespace FhirPseudonymizer;
 
 /// <summary>
-///     Records how long the anonymization engine took to de-identify (or de-pseudonymize) a single
+///     Records how long the anonymization engine took to de-identify (or re-identify) a single
 ///     resource or bundle - both in total and per resource it contains, so durations stay
 ///     comparable no matter how large the bundles are. Shared by the REST API and the Kafka
 ///     consumer, told apart by the <c>source</c> tag.
@@ -14,7 +14,7 @@ public static class AnonymizationMetrics
 {
     // The same values the REST API's fhirpseudonymizer.received.bundle_size uses.
     public const string OperationDeIdentify = nameof(Controllers.FhirController.DeIdentify);
-    public const string OperationDePseudonymize = nameof(Controllers.FhirController.DePseudonymize);
+    public const string OperationReIdentify = nameof(Controllers.FhirController.ReIdentify);
 
     public const string SourceKafka = "kafka";
     public const string SourceRest = "rest";

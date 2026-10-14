@@ -87,13 +87,57 @@ Errors returned by the pseudonymization service are mapped onto these: one rejec
 `OutOfRange`, or gPAS, entici or MII with a 4xx status other than 401, 403, 408 and 429) becomes a
 422, and an outage that persists even after the HTTP/gRPC client's own retries becomes a 503.
 
-## `$de-pseudonymize`
+## `$re-identify`
 
-The `/fhir/$de-pseudonymize` operation reverts the `pseudonymize` and `encrypt` methods applied
-to any resource. Accessing this endpoint requires authentication, so make sure to set the
-`ApiKey` setting and send it in the `X-Api-Key` header.
+The `/fhir/$re-identify` operation reverts the `pseudonymize` and `encrypt` methods applied to
+any resource. Other methods, such as `cryptoHash`, `redact` or `dateShift`, can't be reverted.
+Accessing this endpoint requires [authentication](#authentication).
+
+!!! note "Deprecated: `$de-pseudonymize`"
+
+    `/fhir/$de-pseudonymize` is the operation's former name. It still works as an alias, but is
+    deprecated and will be removed in a future release. A warning is logged the first time it is
+    called.
 
 !!! warning
 
     If decryption or de-pseudonymization of a value fails, the original value is returned. This
     behavior may change or be made configurable in the future.
+
+### Authentication
+
+`$re-identify` requires an OAuth 2.0 access token in JWT format, issued by the OpenID Connect
+provider configured using `Auth__Jwt__Authority` and sent in the `Authorization: Bearer` header.
+If `Auth__Jwt__Authority` isn't set, every request is rejected with `401 Unauthorized`.
+
+A token must be signed by the issuer, not be expired and contain `Auth__Jwt__Audience` in its
+`aud` claim. Optionally, `Auth__Jwt__RequiredScope` and `Auth__Jwt__RequiredRole` additionally
+restrict access to tokens with that scope or role. A valid token without it is rejected with
+`403 Forbidden`. See the
+[configuration reference](configuration.md) for all settings.
+
+For example, to accept tokens issued by Keycloak to clients with the `re-identifier` realm role:
+
+```sh
+Auth__Jwt__Authority=https://keycloak.example.com/realms/example
+Auth__Jwt__Audience=fhir-pseudonymizer
+Auth__Jwt__RequiredRole=re-identifier
+```
+
+Keycloak doesn't add a client's ID to the `aud` claim of tokens issued to other clients by default.
+Add an _Audience_ mapper with _Included Client Audience_ set to `fhir-pseudonymizer` to the
+calling client, or to a client scope assigned to it. A caller can then obtain a token using the
+client credentials grant:
+
+```sh
+TOKEN=$(curl -s \
+  -d grant_type=client_credentials \
+  -d client_id=my-client \
+  -d client_secret=... \
+  https://keycloak.example.com/realms/example/protocol/openid-connect/token | jq -r .access_token)
+
+curl -X POST http://localhost:8080/fhir/\$re-identify \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/fhir+json" \
+  -d @pseudonymized-patient.json
+```

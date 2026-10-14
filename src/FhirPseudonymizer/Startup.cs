@@ -53,7 +53,7 @@ public class Startup
         services.AddSingleton(_ => appConfig.Features);
         services.AddSingleton(_ => appConfig.Anonymization);
 
-        services.AddApiKeyAuth(appConfig.ApiKey);
+        services.AddAuth(appConfig.Auth);
 
         // Required by the OAuth implementation. Could be used for all cache implementations later.
         services.AddDistributedMemoryCache();
@@ -190,6 +190,11 @@ public class Startup
         AnonymizerEngineExtensions.LogErrorIfPseudonymizationServiceIsMissing(
             app.ApplicationServices.GetRequiredService<AnonymizerConfigurationManager>(),
             app.ApplicationServices.GetRequiredService<AppConfig>().PseudonymizationService,
+            loggerFactory.CreateLogger<Startup>()
+        );
+
+        AuthExtensions.LogInformationIfReIdentifyIsDisabled(
+            app.ApplicationServices.GetRequiredService<AppConfig>().Auth,
             loggerFactory.CreateLogger<Startup>()
         );
 

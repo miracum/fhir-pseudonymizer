@@ -78,7 +78,7 @@ public class AnonymizationMetricsTests
         var patient = new Patient();
 
         await AnonymizationMetrics.MeasureAsync(
-            AnonymizationMetrics.OperationDePseudonymize,
+            AnonymizationMetrics.OperationReIdentify,
             AnonymizationMetrics.SourceRest,
             patient,
             () => Task.FromResult<Resource>(patient),
@@ -87,7 +87,7 @@ public class AnonymizationMetricsTests
 
         var resourceCount = resourceCounts.Measurements.Should().ContainSingle().Subject;
         resourceCount.Value.Should().Be(1);
-        resourceCount.Tags["operation"].Should().Be("DePseudonymize");
+        resourceCount.Tags["operation"].Should().Be("ReIdentify");
         resourceCount.Tags["source"].Should().Be("rest");
     }
 

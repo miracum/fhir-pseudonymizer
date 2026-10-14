@@ -16,6 +16,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     : IClassFixture<CustomWebApplicationFactory<Startup>>
 {
     private readonly HttpClient client = factory.CreateClient();
+    private readonly HttpClient authenticatedClient = CreateAuthenticatedClient(factory);
     private readonly FhirJsonDeserializer fhirJsonDeserializer = new();
 
     private readonly string fhirBundleJson =
@@ -135,20 +136,25 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
 
     [Theory]
     [InlineData("/fhir/$de-identify")]
+    [InlineData("/fhir/$re-identify")]
     [InlineData("/fhir/$de-pseudonymize")]
     public async Task PostToFhirOperation_WithInvalidContent_ShouldReturnBadRequest(string url)
     {
         var content = new StringContent("asd");
-        content.Headers.Add("x-api-key", "dev");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
-        var response = await client.PostAsync(url, content, TestContext.Current.CancellationToken);
+        var response = await authenticatedClient.PostAsync(
+            url,
+            content,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Theory]
     [InlineData("/fhir/$de-identify")]
+    [InlineData("/fhir/$re-identify")]
     [InlineData("/fhir/$de-pseudonymize")]
     public async Task PostToFhirOperation_WithDeeplyNestedResource_ShouldSucceed(string url)
     {
@@ -174,10 +180,13 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         };
 
         using var content = new StringContent(questionnaireResponse.ToJson());
-        content.Headers.Add("x-api-key", "dev");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
 
-        var response = await client.PostAsync(url, content, TestContext.Current.CancellationToken);
+        var response = await authenticatedClient.PostAsync(
+            url,
+            content,
+            TestContext.Current.CancellationToken
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -443,7 +452,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostDeIdentify_WithoutApiKeyHeader_ShouldBeAllowed()
+    public async Task PostDeIdentify_WithoutCredentials_ShouldBeAllowed()
     {
         var patient =
             @"{
@@ -462,31 +471,32 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    [Fact]
-    public async Task PostDePseudonymize_WithoutApiKeyHeader_ShouldReturnUnauthorized()
+    [Theory]
+    [InlineData("/fhir/$re-identify")]
+    [InlineData("/fhir/$de-pseudonymize")]
+    public async Task PostReIdentify_WithoutCredentials_ShouldReturnUnauthorized(string url)
     {
         var content = new StringContent("");
         content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var response = await client.PostAsync(
-            "/fhir/$de-pseudonymize",
-            content,
-            TestContext.Current.CancellationToken
-        );
+        var response = await client.PostAsync(url, content, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact]
-    public async Task PostDePseudonymize_WithWrongApiKey_ShouldReturnUnauthorized()
+    [Theory]
+    [InlineData("/fhir/$re-identify")]
+    [InlineData("/fhir/$de-pseudonymize")]
+    public async Task PostReIdentify_WithInvalidToken_ShouldReturnUnauthorized(string url)
     {
-        var content = new StringContent("");
-        content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        content.Headers.Add("x-api-key", "wrong-key");
-        var response = await client.PostAsync(
-            "/fhir/$de-pseudonymize",
-            content,
-            TestContext.Current.CancellationToken
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(""),
+        };
+        request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        request.Headers.Authorization = TestTokens.BearerHeader(
+            TestTokens.Create(signingKey: TestTokens.CreateSigningKey("unknown-key"))
         );
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -535,7 +545,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostDeIdentifyThenDePseudonymize_WithDefaultConfig_ShouldRoundTripPatientIdentifier()
+    public async Task PostDeIdentifyThenReIdentify_WithDefaultConfig_ShouldRoundTripPatientIdentifier()
     {
         var patient =
             @"{
@@ -574,10 +584,9 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         );
 
         var decryptContent = new StringContent(encryptedPatientJson);
-        decryptContent.Headers.Add("x-api-key", "dev");
         decryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
-        var decryptResponse = await client.PostAsync(
-            "/fhir/$de-pseudonymize",
+        var decryptResponse = await authenticatedClient.PostAsync(
+            "/fhir/$re-identify",
             decryptContent,
             TestContext.Current.CancellationToken
         );
@@ -689,7 +698,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostDeIdentifyThenDePseudonymize_WithKeyDerivationContextAndNoStaticEncryptKey_ShouldRoundTripEncryptedValue()
+    public async Task PostDeIdentifyThenReIdentify_WithKeyDerivationContextAndNoStaticEncryptKey_ShouldRoundTripEncryptedValue()
     {
         var inlineConfig =
             @"
@@ -741,10 +750,10 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         encryptedPatient.Identifier[0].Value.Should().NotBe("123456");
 
         var decryptContent = new StringContent(encryptedPatientJson);
-        decryptContent.Headers.Add("x-api-key", "dev");
         decryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        factoryClient.DefaultRequestHeaders.Authorization = TestTokens.BearerHeader();
         var decryptResponse = await factoryClient.PostAsync(
-            "/fhir/$de-pseudonymize",
+            "/fhir/$re-identify",
             decryptContent,
             TestContext.Current.CancellationToken
         );
@@ -761,7 +770,7 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
     }
 
     [Fact]
-    public async Task PostDeIdentifyThenDePseudonymize_WithSameKeyDerivationContextButDifferentEncryptMasterKey_ShouldNotDecryptWithEachOthersKey()
+    public async Task PostDeIdentifyThenReIdentify_WithSameKeyDerivationContextButDifferentEncryptMasterKey_ShouldNotDecryptWithEachOthersKey()
     {
         var inlineConfig =
             @"
@@ -823,10 +832,10 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         );
 
         var decryptContent = new StringContent(encryptedPatientJson);
-        decryptContent.Headers.Add("x-api-key", "dev");
         decryptContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/fhir+json");
+        decryptingClient.DefaultRequestHeaders.Authorization = TestTokens.BearerHeader();
         var decryptResponse = await decryptingClient.PostAsync(
-            "/fhir/$de-pseudonymize",
+            "/fhir/$re-identify",
             decryptContent,
             TestContext.Current.CancellationToken
         );
@@ -1133,5 +1142,14 @@ public class IntegrationTests(CustomWebApplicationFactory<Startup> factory)
         deIdentified.Status.Should().Be(ObservationStatus.Final);
         deIdentified.Value.Should().NotBeNull();
         deIdentified.Meta.Security.Should().ContainSingle(coding => coding.Code == "REDACTED");
+    }
+
+    private static HttpClient CreateAuthenticatedClient(
+        CustomWebApplicationFactory<Startup> factory
+    )
+    {
+        var authenticatedClient = factory.CreateClient();
+        authenticatedClient.DefaultRequestHeaders.Authorization = TestTokens.BearerHeader();
+        return authenticatedClient;
     }
 }
