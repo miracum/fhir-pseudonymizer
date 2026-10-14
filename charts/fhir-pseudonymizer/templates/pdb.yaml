@@ -1,0 +1,18 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+kind: PodDisruptionBudget
+apiVersion: policy/v1
+metadata:
+  name: {{ include "fhir-pseudonymizer.fullname" . }}
+  labels:
+    {{- include "fhir-pseudonymizer.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "fhir-pseudonymizer.matchLabels" . | nindent 6 }}
+{{- end }}

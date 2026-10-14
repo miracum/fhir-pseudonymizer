@@ -62,7 +62,7 @@ Open <http://localhost:8080/swagger>, or POST any FHIR resource to
 ## Kubernetes
 
 The recommended deployment is on Kubernetes. Use the
-[Helm chart](https://github.com/miracum/charts/tree/master/charts/fhir-pseudonymizer).
+[Helm chart](https://github.com/miracum/fhir-pseudonymizer/tree/master/charts/fhir-pseudonymizer).
 
 ## Next steps
 

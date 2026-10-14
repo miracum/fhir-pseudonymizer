@@ -24,27 +24,7 @@ anonymizationConfig: |
     enablePartialZipCodesForRedact: true
     restrictedZipCodeTabulationAreas: []
 
-pseudonymizationService: Vfps
-
-vfps:
-  enabled: true
-  replicaCount: 3
-  postgresql:
-    auth:
-      database: "vfps"
-  appsettings: |
-    {
-      "Init": {
-        "v1": {
-          "Namespaces": [
-            {
-              "Name": "stress",
-              "Description": "a namespace for stress testing",
-              "PseudonymGenerationMethod": "Sha256HexEncoded",
-              "PseudonymLength": 64,
-              "PseudonymPrefix": "stress-"
-            }
-          ]
-        }
-      }
-    }
+# vfps is installed separately using ./vfps-values.yaml, see ../../.github/workflows/chaos.yaml
+extraEnvDict:
+  PseudonymizationService: Vfps
+  Vfps__Address: dns:///vfps-headless:8081

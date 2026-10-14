@@ -48,6 +48,14 @@
         {
           "type": "generic",
           "path": "tests/chaos/fhir-pseudonymizer-values.yaml"
+        },
+        {
+          "type": "generic",
+          "path": "charts/fhir-pseudonymizer/Chart.yaml"
+        },
+        {
+          "type": "generic",
+          "path": "charts/fhir-pseudonymizer/values.yaml"
         }
       ]
     }

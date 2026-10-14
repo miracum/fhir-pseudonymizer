@@ -1,0 +1,41 @@
+# NOTE: there's no Kafka broker in the chart-testing cluster, so this only smoke-tests
+# that the chart renders and that the container starts up and stays healthy with the
+# Kafka integration enabled. The app registers no Kafka health check, so the pod becomes
+# ready even though the broker below is unresolvable; librdkafka just logs connection errors.
+# set explicitly so the chart also installs with images from before 3.0.0, which defaulted to gPAS and
+# crashed at startup without its URL. From 3.0.0 on, `None` is the default.
+extraEnvDict:
+  PseudonymizationService: None
+  # the output message keys are crypto-hashed by default, which requires a key of at least 32 bytes
+  Kafka__CryptoHashMessageKeys__Key: ci-only-not-a-secret-key-0123456
+
+# the service refuses to start without an anonymization config
+anonymizationConfig: |
+  ---
+  fhirVersion: R4
+  fhirPathRules:
+    - path: nodesByType('HumanName')
+      method: redact
+  parameters:
+    dateShiftKey: ""
+    dateShiftScope: resource
+
+kafka:
+  enabled: true
+  bootstrapServers: "kafka.fixtures.svc.cluster.local:9092"
+  topics:
+    - fhir.patient
+    - fhir.observation
+  outputTopicPattern: '^fhir\.'
+  outputTopicReplacement: "fhir.pseudonymized."
+  provenanceTopic: "fhir.provenance"
+  workerCount: 2
+  workerChannelCapacity: 50
+  client:
+    securityProtocol: Plaintext
+  consumer:
+    config:
+      sessionTimeoutMs: "45000"
+  producer:
+    config:
+      lingerMs: "100"

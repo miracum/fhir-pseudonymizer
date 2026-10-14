@@ -1,0 +1,15 @@
+{{- if include "fhir-pseudonymizer.createAnonymizationConfigMap" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fhir-pseudonymizer.fullname" . }}-anonymization
+  labels:
+    {{- include "fhir-pseudonymizer.labels" . | nindent 4 }}
+data:
+{{- if (.Files.Glob "files/anonymization.yaml") }}
+{{- (.Files.Glob "files/anonymization.yaml").AsConfig | nindent 2 }}
+{{- else if .Values.anonymizationConfig }}
+  anonymization.yaml: |
+    {{- include "fhir-pseudonymizer.anonymizationConfig" . | nindent 4 }}
+{{- end }}
+{{ end }}

@@ -39,7 +39,7 @@ There is no default anonymization config - the service fails to start without on
 
 An example for deploying using (Docker) Compose can be found in the [compose folder](./compose/README.md).
 
-The recommended deployment is on Kubernetes. See <https://github.com/miracum/charts/tree/master/charts/fhir-pseudonymizer> for a Helm Chart.
+The recommended deployment is on Kubernetes. See <https://github.com/miracum/fhir-pseudonymizer/tree/master/charts/fhir-pseudonymizer> for a Helm Chart.
 
 ## Contributing
 

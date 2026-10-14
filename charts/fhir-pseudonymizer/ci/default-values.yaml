@@ -1,0 +1,16 @@
+# the chart's defaults plus the minimum the service needs to start: there is no default
+# anonymization config.
+# `None` is set explicitly so the chart also installs with images from before 3.0.0, which defaulted to gPAS and
+# crashed at startup without its URL. From 3.0.0 on, `None` is the default.
+extraEnvDict:
+  PseudonymizationService: None
+
+anonymizationConfig: |
+  ---
+  fhirVersion: R4
+  fhirPathRules:
+    - path: nodesByType('HumanName')
+      method: redact
+  parameters:
+    dateShiftKey: ""
+    dateShiftScope: resource

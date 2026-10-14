@@ -1,0 +1,27 @@
+apiVersion: v2
+name: fhir-pseudonymizer
+description: A Helm chart for deploying the MIRACUM FHIR Pseudonymizer
+type: application
+sources:
+  - https://github.com/miracum/fhir-pseudonymizer
+home: https://github.com/miracum/fhir-pseudonymizer
+dependencies:
+  - name: common
+    repository: oci://ghcr.io/miracum/charts
+    version: 0.1.1
+version: 2.38.0 # x-release-please-version
+appVersion: 2.38.0 # x-release-please-version
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/operator: "false"
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/recommendations: |
+    - url: https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
+  # When using the list of objects option the valid supported kinds are
+  # added, changed, deprecated, removed, fixed and security.
+  artifacthub.io/changes: |-
+    # When using the list of objects option the valid supported kinds are
+    # added, changed, deprecated, removed, fixed and security.
+    - kind: changed
+      description: "Updated docker.io/curlimages/curl to 8.23.0"
