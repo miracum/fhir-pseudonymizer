@@ -91,10 +91,13 @@ docker build -t ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG} .
 kind load docker-image ghcr.io/miracum/fhir-pseudonymizer:${IMAGE_TAG}
 
 # vfps is the pseudonymization backend and is deployed separately
+# (argo workflows is only needed by the chaos test)
+helm dependency update tests/prerequisites
 helm upgrade --install \
+  --set="argo-workflows.enabled=false" \
   --wait \
   --timeout=10m \
-  vfps oci://ghcr.io/miracum/vfps/charts/vfps --version 1.23.2
+  prerequisites tests/prerequisites
 
 helm dependency update charts/fhir-pseudonymizer
 helm upgrade --install \

@@ -33,16 +33,14 @@ jobs:
           chmod +x ./argo
           ./argo version
 
-      - name: Install vfps
+      - name: Install the prerequisites (vfps and argo workflows)
         working-directory: tests/chaos
-        env:
-          VFPS_CHART_VERSION: "1.23.2"
         run: |
+          helm dependency update ../prerequisites
           helm upgrade --install --create-namespace -n fhir-pseudonymizer \
-            -f vfps-values.yaml \
+            -f prerequisites-values.yaml \
             --wait --timeout 10m \
-            vfps oci://ghcr.io/miracum/vfps/charts/vfps \
-            --version "${VFPS_CHART_VERSION}"
+            prerequisites ../prerequisites
 
       - name: Install fhir-pseudonymizer
         working-directory: tests/chaos
@@ -63,14 +61,6 @@ jobs:
             --set chaosDaemon.runtime=containerd \
             --set chaosDaemon.socketPath='/run/containerd/containerd.sock'
           kubectl apply -f chaos-mesh-rbac.yaml
-
-      - name: Install argo workflows
-        working-directory: tests/chaos
-        run: |
-          helm upgrade --install --create-namespace -n argo-workflows \
-            -f argo-workflows-values.yaml \
-            --wait \
-            argo-workflows oci://ghcr.io/argoproj/argo-helm/argo-workflows
 
       - name: Run chaos test
         working-directory: tests/chaos

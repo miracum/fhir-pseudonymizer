@@ -1,0 +1,20 @@
+# overrides for ../prerequisites
+vfps:
+  replicaCount: 3
+
+  appsettings: |
+    {
+      "Init": {
+        "v1": {
+          "Namespaces": [
+            {
+              "Name": "stress",
+              "Description": "a namespace for stress testing",
+              "PseudonymGenerationMethod": "Sha256HexEncoded",
+              "PseudonymLength": 64,
+              "PseudonymPrefix": "stress-"
+            }
+          ]
+        }
+      }
+    }

@@ -1,8 +1,0 @@
-controller:
-  workflowNamespaces:
-    - default
-    - argo-workflows
-    - fhir-pseudonymizer
-
-server:
-  extraArgs: [--auth-mode=server]

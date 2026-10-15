@@ -378,3 +378,4 @@ tests/chaos/argo
 /.venv/
 
 charts/**/charts/
+tests/**/charts/

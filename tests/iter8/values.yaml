@@ -6,7 +6,7 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-# vfps is installed separately, see .github/workflows/ci.yaml and docs/development.md.
+# vfps is installed via ../prerequisites, see .github/workflows/ci.yaml and docs/development.md.
 # the namespaces are created by the iter8 test.
 # see ./experiment.yaml
 extraEnvDict:
