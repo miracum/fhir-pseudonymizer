@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792097081266,
+  "lastUpdate": 1792097991189,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -4182,6 +4182,132 @@ window.BENCHMARK_DATA = {
             "value": 473419662.3333333,
             "unit": "ns",
             "range": "± 230843842.99323553"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "64022198+miracum-bot@users.noreply.github.com",
+            "name": "miracum-bot",
+            "username": "miracum-bot"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bcad147536ee08e4bb32b694ce4b7ad07ac5e7c0",
+          "message": "chore(master): release 3.0.0 (#453)\n\n:robot: I have created a release *beep* *boop*\n---\n\n\n##\n[3.0.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.38.0...v3.0.0)\n(2026-10-15)\n\n\n### ⚠ BREAKING CHANGES\n\n* auth against re-identify via api keys is no longer possible. A JWT has\nto be fetched from an IdP first instead.\n* the application fails to start without a specified anonymization\nconfig. This breaks deployments relying on the default\nanonymization.yaml.\n* **kafka:** required to be set by default if kafka processing is\nenabled. Changes message keys and downstream routing.\n* Any *__RequestRetryCount settings are now ignored\n* smaller length keys will now fail validation\n* previous MetricsEnabled and MetricsPort config now ignored.\n* pseudonymization service is now unset by default, anyone relying on\ngPAS will now encounter an error. If using gPAS, at leat version 2023 is\nrequired.\n* this serializer may be less lenient than the pervious default\n* URIs that look like FHIR server URLs and contain ~ or - are now\nprocessed identical to URIs without those values. E.g. the system\nhttps://example-test/fhir/Patient/123 was previously hashed to by\nreplacing the entire value with a hash, now, just the 123 is hashed.\nThis is a fix towards the more correct behavior.\n* The v6 libs may be more strict when it comes to parsing resources.\nAdditionally, all timestamps are now searialized with sub-second\nprecision.\n\n### Features\n\n* added more metrics and ready-to-import dashboard\n([aaaabd8](https://github.com/miracum/fhir-pseudonymizer/commit/aaaabd85b36be1f435a59c4dc10b423cec063795))\n* correctly encrypt/hash uri systems that contain ~, -\n([#429](https://github.com/miracum/fhir-pseudonymizer/issues/429))\n([17c3fc1](https://github.com/miracum/fhir-pseudonymizer/commit/17c3fc12851a162ca1fc540c543f1ab87291e508))\n* default to PseudonymizationService: None instead of gPAS and remove\ngPAS version config\n([#431](https://github.com/miracum/fhir-pseudonymizer/issues/431))\n([18b8307](https://github.com/miracum/fhir-pseudonymizer/commit/18b83071ed78d2295d5d7cadfbad32abdc409363))\n* default to using the System.Text.Json-based FHIR serializer\n([#430](https://github.com/miracum/fhir-pseudonymizer/issues/430))\n([2056c17](https://github.com/miracum/fhir-pseudonymizer/commit/2056c1727ea4d54832639f3ce801166a056a14d1))\n* **kafka:** setting for crypto-hashing message keys\n([#439](https://github.com/miracum/fhir-pseudonymizer/issues/439))\n([7f86690](https://github.com/miracum/fhir-pseudonymizer/commit/7f86690df2fbc947c4e8643b0b54a455455b61b2))\n* moved chart from miracum/charts to this repo\n([#451](https://github.com/miracum/fhir-pseudonymizer/issues/451))\n([5bf6add](https://github.com/miracum/fhir-pseudonymizer/commit/5bf6add530cc2070f665f81127d4ebcf5dcc3fee))\n* moved metrics config inside a dedicated Metrics key\n([#432](https://github.com/miracum/fhir-pseudonymizer/issues/432))\n([746c042](https://github.com/miracum/fhir-pseudonymizer/commit/746c0423e5e75dc3136fb3f60752f3e8de035e83))\n* moved retry config into a dedicated config object\n([#435](https://github.com/miracum/fhir-pseudonymizer/issues/435))\n([3b1d60d](https://github.com/miracum/fhir-pseudonymizer/commit/3b1d60dc0ea1ad75d8c968a7b4e44b6be8520ae9))\n* removed default anonymization config\n([#448](https://github.com/miracum/fhir-pseudonymizer/issues/448))\n([b2c2e0c](https://github.com/miracum/fhir-pseudonymizer/commit/b2c2e0c6efc5c728d4f5def5e48951bbf9f399af))\n* replaced api key auth with JWT tokens\n([#449](https://github.com/miracum/fhir-pseudonymizer/issues/449))\n([ffa9c0a](https://github.com/miracum/fhir-pseudonymizer/commit/ffa9c0aa969133a21db5168adac376d7429330ec))\n* require at least 32-byte long keys\n([#433](https://github.com/miracum/fhir-pseudonymizer/issues/433))\n([46ea1a8](https://github.com/miracum/fhir-pseudonymizer/commit/46ea1a893420056675e749cc19c08c49191b279d))\n* updated to FHIR.NET v6\n([#373](https://github.com/miracum/fhir-pseudonymizer/issues/373))\n([7cf89e8](https://github.com/miracum/fhir-pseudonymizer/commit/7cf89e821dd53f32b914fe17fbdd33b4fd202aa6))\n\n\n### Bug Fixes\n\n* bubble up non-transient Vfps pseudonymization errors to the caller\n([4733fb5](https://github.com/miracum/fhir-pseudonymizer/commit/4733fb59fd90125b1cf0f7ac8ef652790594a286))\n* client-side gRPC load-balancing with more aggressive timeouts\n([#442](https://github.com/miracum/fhir-pseudonymizer/issues/442))\n([af1d47e](https://github.com/miracum/fhir-pseudonymizer/commit/af1d47eaa9b06463618b9827c58dde35b96e40d3))\n* dont write in-flight messages to the DLQ on shutdown exceptions\n([#437](https://github.com/miracum/fhir-pseudonymizer/issues/437))\n([6570162](https://github.com/miracum/fhir-pseudonymizer/commit/65701627506c2bcdcbf0922524a56913cd36c748))\n* **kafka:** same commit guarantees for provenance as for output\nmessages\n([#440](https://github.com/miracum/fhir-pseudonymizer/issues/440))\n([10852b2](https://github.com/miracum/fhir-pseudonymizer/commit/10852b245d9bbf95e0f794683f3a844273d55cc3))\n* support dynamic settings and config in $re-identify\n([#450](https://github.com/miracum/fhir-pseudonymizer/issues/450))\n([ec3d996](https://github.com/miracum/fhir-pseudonymizer/commit/ec3d9960787511782666a53dfdd69fc0ac5edb9b))\n\n\n### Performance Improvements\n\n* disable mvc model validation\n([#436](https://github.com/miracum/fhir-pseudonymizer/issues/436))\n([8274e8d](https://github.com/miracum/fhir-pseudonymizer/commit/8274e8d6ef2e574eefda2cc6d0560f7acb06dbfd))\n\n\n### Documentation\n\n* added a dedicated docs site\n([#446](https://github.com/miracum/fhir-pseudonymizer/issues/446))\n([655da66](https://github.com/miracum/fhir-pseudonymizer/commit/655da66b9d61c9ee1479bc4edc8b83ac2cf17433))\n* fixed outdated cryptohash documentation and re-prettier'd everything\n([#441](https://github.com/miracum/fhir-pseudonymizer/issues/441))\n([15d2cc6](https://github.com/miracum/fhir-pseudonymizer/commit/15d2cc678551c555aba52077cd69cd90284512eb))\n* minor docs updates\n([#447](https://github.com/miracum/fhir-pseudonymizer/issues/447))\n([4cbb4ea](https://github.com/miracum/fhir-pseudonymizer/commit/4cbb4ea4eae988bd451bb88a811bef4aa0ac57ce))\n* updated README benchmark numbers\n([ed0625f](https://github.com/miracum/fhir-pseudonymizer/commit/ed0625f7dbb23ef0d9b20bcbab02c38424bc73df))\n\n\n### Miscellaneous Chores\n\n* **release:** prepare v3 release\n([#434](https://github.com/miracum/fhir-pseudonymizer/issues/434))\n([36e9d6f](https://github.com/miracum/fhir-pseudonymizer/commit/36e9d6f28127ed6b060835a6e76cac28554caa52))\n\n\n### CI/CD\n\n* refactor vfps/argo workflow chart\n([#452](https://github.com/miracum/fhir-pseudonymizer/issues/452))\n([e64f081](https://github.com/miracum/fhir-pseudonymizer/commit/e64f081053b9b7bb0f18f4e342a5cc745a6a28b8))\n* replace deprecated slsa-verifier with gh cli\n([#443](https://github.com/miracum/fhir-pseudonymizer/issues/443))\n([c78a688](https://github.com/miracum/fhir-pseudonymizer/commit/c78a688bca65cd382ba264a37588851476600d07))\n\n---\nThis PR was generated with [Release\nPlease](https://github.com/googleapis/release-please). See\n[documentation](https://github.com/googleapis/release-please#release-please).",
+          "timestamp": "2026-10-15T22:56:12+02:00",
+          "tree_id": "711eae8c95d61714f32e37de02b3a40819bcad9a",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/bcad147536ee08e4bb32b694ce4b7ad07ac5e7c0"
+        },
+        "date": 1792097990272,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 119411217.22580644,
+            "unit": "ns",
+            "range": "± 3591673.100240766"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1904621.5229166667,
+            "unit": "ns",
+            "range": "± 16688.09798943521"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 1699.9495233389048,
+            "unit": "ns",
+            "range": "± 2.4340439096692985"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 23758724.05078125,
+            "unit": "ns",
+            "range": "± 463636.7045787903"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 351.81581881841026,
+            "unit": "ns",
+            "range": "± 1.8484826699055272"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 829763045,
+            "unit": "ns",
+            "range": "± 5561633.246431214"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 1948688165,
+            "unit": "ns",
+            "range": "± 22190918.601519044"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 844293992.3333334,
+            "unit": "ns",
+            "range": "± 9482794.109561399"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 2043816180,
+            "unit": "ns",
+            "range": "± 7430733.566577865"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 844483006.6666666,
+            "unit": "ns",
+            "range": "± 9989009.42737899"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 1529610167,
+            "unit": "ns",
+            "range": "± 8399786.278724238"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 368333229.6666667,
+            "unit": "ns",
+            "range": "± 103314509.24072778"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 558176076.3333334,
+            "unit": "ns",
+            "range": "± 238074397.00235394"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 393460854.6666667,
+            "unit": "ns",
+            "range": "± 76532748.73387767"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 602240218.3333334,
+            "unit": "ns",
+            "range": "± 214792586.24877274"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 374414267,
+            "unit": "ns",
+            "range": "± 107019666.03796908"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 512149425.3333333,
+            "unit": "ns",
+            "range": "± 267677170.26881394"
           }
         ]
       }
