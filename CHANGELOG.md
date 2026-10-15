@@ -1,5 +1,69 @@
 # Changelog
 
+## [3.0.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.38.0...v3.0.0) (2026-10-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* auth against re-identify via api keys is no longer possible. A JWT has to be fetched from an IdP first instead.
+* the application fails to start without a specified anonymization config. This breaks deployments relying on the default anonymization.yaml.
+* **kafka:** required to be set by default if kafka processing is enabled. Changes message keys and downstream routing.
+* Any *__RequestRetryCount settings are now ignored
+* smaller length keys will now fail validation
+* previous MetricsEnabled and MetricsPort config now ignored.
+* pseudonymization service is now unset by default, anyone relying on gPAS will now encounter an error. If using gPAS, at leat version 2023 is required.
+* this serializer may be less lenient than the pervious default
+* URIs that look like FHIR server URLs and contain ~ or - are now processed identical to URIs without those values. E.g. the system https://example-test/fhir/Patient/123 was previously hashed to by replacing the entire value with a hash, now, just the 123 is hashed. This is a fix towards the more correct behavior.
+* The v6 libs may be more strict when it comes to parsing resources. Additionally, all timestamps are now searialized with sub-second precision.
+
+### Features
+
+* added more metrics and ready-to-import dashboard ([aaaabd8](https://github.com/miracum/fhir-pseudonymizer/commit/aaaabd85b36be1f435a59c4dc10b423cec063795))
+* correctly encrypt/hash uri systems that contain ~, - ([#429](https://github.com/miracum/fhir-pseudonymizer/issues/429)) ([17c3fc1](https://github.com/miracum/fhir-pseudonymizer/commit/17c3fc12851a162ca1fc540c543f1ab87291e508))
+* default to PseudonymizationService: None instead of gPAS and remove gPAS version config ([#431](https://github.com/miracum/fhir-pseudonymizer/issues/431)) ([18b8307](https://github.com/miracum/fhir-pseudonymizer/commit/18b83071ed78d2295d5d7cadfbad32abdc409363))
+* default to using the System.Text.Json-based FHIR serializer ([#430](https://github.com/miracum/fhir-pseudonymizer/issues/430)) ([2056c17](https://github.com/miracum/fhir-pseudonymizer/commit/2056c1727ea4d54832639f3ce801166a056a14d1))
+* **kafka:** setting for crypto-hashing message keys ([#439](https://github.com/miracum/fhir-pseudonymizer/issues/439)) ([7f86690](https://github.com/miracum/fhir-pseudonymizer/commit/7f86690df2fbc947c4e8643b0b54a455455b61b2))
+* moved chart from miracum/charts to this repo ([#451](https://github.com/miracum/fhir-pseudonymizer/issues/451)) ([5bf6add](https://github.com/miracum/fhir-pseudonymizer/commit/5bf6add530cc2070f665f81127d4ebcf5dcc3fee))
+* moved metrics config inside a dedicated Metrics key ([#432](https://github.com/miracum/fhir-pseudonymizer/issues/432)) ([746c042](https://github.com/miracum/fhir-pseudonymizer/commit/746c0423e5e75dc3136fb3f60752f3e8de035e83))
+* moved retry config into a dedicated config object ([#435](https://github.com/miracum/fhir-pseudonymizer/issues/435)) ([3b1d60d](https://github.com/miracum/fhir-pseudonymizer/commit/3b1d60dc0ea1ad75d8c968a7b4e44b6be8520ae9))
+* removed default anonymization config ([#448](https://github.com/miracum/fhir-pseudonymizer/issues/448)) ([b2c2e0c](https://github.com/miracum/fhir-pseudonymizer/commit/b2c2e0c6efc5c728d4f5def5e48951bbf9f399af))
+* replaced api key auth with JWT tokens ([#449](https://github.com/miracum/fhir-pseudonymizer/issues/449)) ([ffa9c0a](https://github.com/miracum/fhir-pseudonymizer/commit/ffa9c0aa969133a21db5168adac376d7429330ec))
+* require at least 32-byte long keys ([#433](https://github.com/miracum/fhir-pseudonymizer/issues/433)) ([46ea1a8](https://github.com/miracum/fhir-pseudonymizer/commit/46ea1a893420056675e749cc19c08c49191b279d))
+* updated to FHIR.NET v6 ([#373](https://github.com/miracum/fhir-pseudonymizer/issues/373)) ([7cf89e8](https://github.com/miracum/fhir-pseudonymizer/commit/7cf89e821dd53f32b914fe17fbdd33b4fd202aa6))
+
+
+### Bug Fixes
+
+* bubble up non-transient Vfps pseudonymization errors to the caller ([4733fb5](https://github.com/miracum/fhir-pseudonymizer/commit/4733fb59fd90125b1cf0f7ac8ef652790594a286))
+* client-side gRPC load-balancing with more aggressive timeouts ([#442](https://github.com/miracum/fhir-pseudonymizer/issues/442)) ([af1d47e](https://github.com/miracum/fhir-pseudonymizer/commit/af1d47eaa9b06463618b9827c58dde35b96e40d3))
+* dont write in-flight messages to the DLQ on shutdown exceptions ([#437](https://github.com/miracum/fhir-pseudonymizer/issues/437)) ([6570162](https://github.com/miracum/fhir-pseudonymizer/commit/65701627506c2bcdcbf0922524a56913cd36c748))
+* **kafka:** same commit guarantees for provenance as for output messages ([#440](https://github.com/miracum/fhir-pseudonymizer/issues/440)) ([10852b2](https://github.com/miracum/fhir-pseudonymizer/commit/10852b245d9bbf95e0f794683f3a844273d55cc3))
+* support dynamic settings and config in $re-identify ([#450](https://github.com/miracum/fhir-pseudonymizer/issues/450)) ([ec3d996](https://github.com/miracum/fhir-pseudonymizer/commit/ec3d9960787511782666a53dfdd69fc0ac5edb9b))
+
+
+### Performance Improvements
+
+* disable mvc model validation ([#436](https://github.com/miracum/fhir-pseudonymizer/issues/436)) ([8274e8d](https://github.com/miracum/fhir-pseudonymizer/commit/8274e8d6ef2e574eefda2cc6d0560f7acb06dbfd))
+
+
+### Documentation
+
+* added a dedicated docs site ([#446](https://github.com/miracum/fhir-pseudonymizer/issues/446)) ([655da66](https://github.com/miracum/fhir-pseudonymizer/commit/655da66b9d61c9ee1479bc4edc8b83ac2cf17433))
+* fixed outdated cryptohash documentation and re-prettier'd everything ([#441](https://github.com/miracum/fhir-pseudonymizer/issues/441)) ([15d2cc6](https://github.com/miracum/fhir-pseudonymizer/commit/15d2cc678551c555aba52077cd69cd90284512eb))
+* minor docs updates ([#447](https://github.com/miracum/fhir-pseudonymizer/issues/447)) ([4cbb4ea](https://github.com/miracum/fhir-pseudonymizer/commit/4cbb4ea4eae988bd451bb88a811bef4aa0ac57ce))
+* updated README benchmark numbers ([ed0625f](https://github.com/miracum/fhir-pseudonymizer/commit/ed0625f7dbb23ef0d9b20bcbab02c38424bc73df))
+
+
+### Miscellaneous Chores
+
+* **release:** prepare v3 release ([#434](https://github.com/miracum/fhir-pseudonymizer/issues/434)) ([36e9d6f](https://github.com/miracum/fhir-pseudonymizer/commit/36e9d6f28127ed6b060835a6e76cac28554caa52))
+
+
+### CI/CD
+
+* refactor vfps/argo workflow chart ([#452](https://github.com/miracum/fhir-pseudonymizer/issues/452)) ([e64f081](https://github.com/miracum/fhir-pseudonymizer/commit/e64f081053b9b7bb0f18f4e342a5cc745a6a28b8))
+* replace deprecated slsa-verifier with gh cli ([#443](https://github.com/miracum/fhir-pseudonymizer/issues/443)) ([c78a688](https://github.com/miracum/fhir-pseudonymizer/commit/c78a688bca65cd382ba264a37588851476600d07))
+
 ## [2.38.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.37.3...v2.38.0) (2026-09-24)
 
 
