@@ -39,7 +39,7 @@ jobs:
   # an image that fails its readiness/liveness probes or otherwise can't come up under Helm.
   detect-app-changes:
     name: detect changes affecting chart deployability
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     outputs:
@@ -104,7 +104,7 @@ jobs:
       image-tag-path: .image.tag
 
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: unit test
     needs:
       - build
@@ -186,7 +186,7 @@ jobs:
 
   k6-benchmark:
     name: k6 benchmark
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # the container image is only uploaded as an artifact for pull_request events, see
     # standard-build.yaml's "Upload container image" step.
     if: ${{ github.event_name == 'pull_request' }}
@@ -290,7 +290,7 @@ jobs:
 
   iter8-test:
     name: run iter8 tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: ${{ github.event_name == 'pull_request' }}
     needs:
       - build
@@ -437,7 +437,7 @@ jobs:
       dotnet-version: "10.0.x"
 
   docs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: docs
     steps:
       - name: Checkout code
@@ -464,7 +464,7 @@ jobs:
           if-no-files-found: error
 
   playground:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: playground
     steps:
       - name: Checkout code
@@ -490,7 +490,7 @@ jobs:
           path: publish-output/wwwroot
 
   microbenchmarks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: microbenchmarks
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
     permissions:
@@ -579,7 +579,7 @@ jobs:
       - docs
       - playground
       - microbenchmarks
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       pages: write
       id-token: write
