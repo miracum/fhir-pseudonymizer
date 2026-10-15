@@ -1,0 +1,16 @@
+vfps:
+  # keeps the service name `vfps-headless` referenced by the fhir-pseudonymizer test values
+  fullnameOverride: vfps
+
+argo-workflows:
+  enabled: true
+
+  # keeps the ClusterRole name `argo-workflows-admin` referenced in ../chaos/chaos-mesh-rbac.yaml
+  fullnameOverride: argo-workflows
+
+  controller:
+    workflowNamespaces:
+      - fhir-pseudonymizer
+
+  server:
+    extraArgs: [--auth-mode=server]

@@ -35,7 +35,7 @@ spec:
         - fhir-pseudonymizer
       labelSelectors:
         app.kubernetes.io/name: vfps
-        app.kubernetes.io/instance: vfps
+        app.kubernetes.io/instance: prerequisites
     mode: one
     action: pod-failure
     duration: 30s

@@ -24,7 +24,7 @@ anonymizationConfig: |
     enablePartialZipCodesForRedact: true
     restrictedZipCodeTabulationAreas: []
 
-# vfps is installed separately using ./vfps-values.yaml, see ../../.github/workflows/chaos.yaml
+# vfps is installed as part of ../prerequisites, see ../../.github/workflows/chaos.yaml
 extraEnvDict:
   PseudonymizationService: Vfps
   Vfps__Address: dns:///vfps-headless:8081
