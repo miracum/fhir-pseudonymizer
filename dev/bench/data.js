@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792100128628,
+  "lastUpdate": 1792100687961,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -4812,6 +4812,132 @@ window.BENCHMARK_DATA = {
             "value": 298373520.3333333,
             "unit": "ns",
             "range": "± 3750682.1919163363"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "77778a9fc8a84ce51cc81f646a4c998637658dac",
+          "message": "chore(deps): update github-actions (#459)\n\nThis PR contains the following updates:\n\n| Package | Type | Update | Change | Pending |\n|---|---|---|---|---|\n|\n[actions/deploy-pages](https://redirect.github.com/actions/deploy-pages)\n| action | patch | `v5.0.0` → `v5.0.1` | |\n|\n[benchmark-action/github-action-benchmark](https://redirect.github.com/benchmark-action/github-action-benchmark)\n| action | patch | `v1.22.1` → `v1.22.2` | |\n|\n[docker/setup-buildx-action](https://redirect.github.com/docker/setup-buildx-action)\n| action | minor | `v4.3.0` → `v4.4.1` | |\n|\n[github/codeql-action](https://redirect.github.com/github/codeql-action)\n| action | minor | `v4.37.9` → `v4.38.2` | `v4.39.0` (+1) |\n| [helm/kind-action](https://redirect.github.com/helm/kind-action) |\naction | minor | `v1.14.0` → `v1.15.0` | `v1.15.1` |\n\n---\n\n### Release Notes\n\n<details>\n<summary>actions/deploy-pages</summary>\n\n###\n[`v5.0.1`](https://redirect.github.com/actions/deploy-pages/releases/tag/v5.0.1)\n\n[Compare\nSource](https://redirect.github.com/actions/deploy-pages/compare/v5.0.0...v5.0.1)\n\n### Changelog\n\n- Add backoff and jitter to deployment polling\n[@&#8203;yoannchaudet](https://redirect.github.com/yoannchaudet)\n([#&#8203;444](https://redirect.github.com/actions/deploy-pages/issues/444))\n- Improve deployment request test coverage\n[@&#8203;adwitiyagoyal](https://redirect.github.com/adwitiyagoyal)\n([#&#8203;440](https://redirect.github.com/actions/deploy-pages/issues/440))\n\n***\n\nSee details of [all code\nchanges](https://redirect.github.com/actions/deploy-pages/compare/v5.0.0...v5.0.1)\nsince previous release.\n\n:warning: For use with products other than GitHub.com, such as GitHub\nEnterprise Server, please consult the [compatibility\ntable](https://redirect.github.com/actions/deploy-pages/#compatibility).\n\n</details>\n\n<details>\n<summary>benchmark-action/github-action-benchmark</summary>\n\n###\n[`v1.22.2`](https://redirect.github.com/benchmark-action/github-action-benchmark/blob/HEAD/CHANGELOG.md#v1222---15-Sep-2026)\n\n[Compare\nSource](https://redirect.github.com/benchmark-action/github-action-benchmark/compare/v1.22.1...v1.22.2)\n\n- **perf** shallow-clone the target branch only\n([#&#8203;364](https://redirect.github.com/benchmark-action/github-action-benchmark/issues/364))\n\n</details>\n\n<details>\n<summary>docker/setup-buildx-action</summary>\n\n###\n[`v4.4.1`](https://redirect.github.com/docker/setup-buildx-action/releases/tag/v4.4.1)\n\n[Compare\nSource](https://redirect.github.com/docker/setup-buildx-action/compare/v4.4.0...v4.4.1)\n\n- Skip BuildKit image pre-pulls for explicit endpoints by\n[@&#8203;crazy-max](https://redirect.github.com/crazy-max) in\n[#&#8203;624](https://redirect.github.com/docker/setup-buildx-action/pull/624)\n\n**Full Changelog**:\n<https://github.com/docker/setup-buildx-action/compare/v4.4.0...v4.4.1>\n\n###\n[`v4.4.0`](https://redirect.github.com/docker/setup-buildx-action/releases/tag/v4.4.0)\n\n[Compare\nSource](https://redirect.github.com/docker/setup-buildx-action/compare/v4.3.0...v4.4.0)\n\n- Use official Buildx releases for cloud driver by\n[@&#8203;crazy-max](https://redirect.github.com/crazy-max) in\n[#&#8203;606](https://redirect.github.com/docker/setup-buildx-action/pull/606)\n- Pull BuildKit image before builder creation by\n[@&#8203;crazy-max](https://redirect.github.com/crazy-max) in\n[#&#8203;609](https://redirect.github.com/docker/setup-buildx-action/pull/609)\n- Use shared error helpers for Buildx and Docker commands by\n[@&#8203;crazy-max](https://redirect.github.com/crazy-max) in\n[#&#8203;620](https://redirect.github.com/docker/setup-buildx-action/pull/620)\n- Bump\n[@&#8203;docker/actions-toolkit](https://redirect.github.com/docker/actions-toolkit)\nfrom 0.95.0 to 0.100.0 in\n[#&#8203;610](https://redirect.github.com/docker/setup-buildx-action/pull/610)\n[#&#8203;618](https://redirect.github.com/docker/setup-buildx-action/pull/618)\n[#&#8203;619](https://redirect.github.com/docker/setup-buildx-action/pull/619)\n- Bump [@&#8203;humanfs/node](https://redirect.github.com/humanfs/node)\nfrom 0.16.7 to 0.16.8 in\n[#&#8203;614](https://redirect.github.com/docker/setup-buildx-action/pull/614)\n- Bump js-yaml from 5.3.0 to 5.4.2 in\n[#&#8203;608](https://redirect.github.com/docker/setup-buildx-action/pull/608)\n[#&#8203;617](https://redirect.github.com/docker/setup-buildx-action/pull/617)\n- Bump postcss-selector-parser from 7.1.1 to 7.1.5 in\n[#&#8203;611](https://redirect.github.com/docker/setup-buildx-action/pull/611)\n\n**Full Changelog**:\n<https://github.com/docker/setup-buildx-action/compare/v4.3.0...v4.4.0>\n\n</details>\n\n<details>\n<summary>github/codeql-action</summary>\n\n###\n[`v4.38.2`](https://redirect.github.com/github/codeql-action/releases/tag/v4.38.2)\n\n[Compare\nSource](https://redirect.github.com/github/codeql-action/compare/v4.38.1...v4.38.2)\n\n- Update default CodeQL bundle version to\n[2.27.1](https://redirect.github.com/github/codeql-action/releases/tag/codeql-bundle-v2.27.1).\n[#&#8203;4160](https://redirect.github.com/github/codeql-action/pull/4160)\n\n###\n[`v4.38.1`](https://redirect.github.com/github/codeql-action/releases/tag/v4.38.1)\n\n[Compare\nSource](https://redirect.github.com/github/codeql-action/compare/v4.38.0...v4.38.1)\n\n- The CodeQL Action now has experimental support for CodeQL releases for\nwhich per-language bundles are available. Per-language bundles support\nanalysis for a single language and are therefore smaller than the\ncombined bundles that allow analysis for all supported languages. As a\nresult, per-language bundles take up less space on disk and are faster\nto download. We expect to roll this change out to everyone in the coming\nweeks.\n[#&#8203;4146](https://redirect.github.com/github/codeql-action/pull/4146)\n\n###\n[`v4.38.0`](https://redirect.github.com/github/codeql-action/releases/tag/v4.38.0)\n\n[Compare\nSource](https://redirect.github.com/github/codeql-action/compare/v4.37.9...v4.38.0)\n\n- On GitHub-hosted runners, the CodeQL Action now deletes unused CodeQL\nbundles from the toolcache before downloading a different bundle, which\nfrees up disk space for the analysis. We expect to roll this change out\nto everyone in September.\n[#&#8203;4124](https://redirect.github.com/github/codeql-action/pull/4124)\n- The CodeQL Action now supports CodeQL releases that are compatible\nwith Linux Arm64 and downloads the native `linux-arm64` CodeQL bundle\nwhen available.\n[#&#8203;4072](https://redirect.github.com/github/codeql-action/pull/4072)\n- Update default CodeQL bundle version to\n[2.27.0](https://redirect.github.com/github/codeql-action/releases/tag/codeql-bundle-v2.27.0).\n[#&#8203;4129](https://redirect.github.com/github/codeql-action/pull/4129)\n\n</details>\n\n<details>\n<summary>helm/kind-action</summary>\n\n###\n[`v1.15.0`](https://redirect.github.com/helm/kind-action/releases/tag/v1.15.0)\n\n[Compare\nSource](https://redirect.github.com/helm/kind-action/compare/v1.14.0...v1.15.0)\n\n#### What's Changed\n\n- clean up ci by [@&#8203;cpanato](https://redirect.github.com/cpanato)\nin [#&#8203;158](https://redirect.github.com/helm/kind-action/pull/158)\n- Bump actions/checkout from 6.0.2 to 6.0.3 in the actions group by\n[@&#8203;dependabot](https://redirect.github.com/dependabot)\\[bot] in\n[#&#8203;161](https://redirect.github.com/helm/kind-action/pull/161)\n- fix: propagate registry_port to container and containerd by\n[@&#8203;Bisman-Singh](https://redirect.github.com/Bisman-Singh) in\n[#&#8203;160](https://redirect.github.com/helm/kind-action/pull/160)\n- fix: add curl retry flags to download calls by\n[@&#8203;kaovilai](https://redirect.github.com/kaovilai) in\n[#&#8203;165](https://redirect.github.com/helm/kind-action/pull/165)\n- Bump actions/checkout from 6.0.3 to 7.0.1 by\n[@&#8203;dependabot](https://redirect.github.com/dependabot)\\[bot] in\n[#&#8203;166](https://redirect.github.com/helm/kind-action/pull/166)\n- chore: bump default kind and kubectl by\n[@&#8203;yurnov](https://redirect.github.com/yurnov) in\n[#&#8203;169](https://redirect.github.com/helm/kind-action/pull/169)\n- Report url that could not be downloaded by\n[@&#8203;jsoref](https://redirect.github.com/jsoref) in\n[#&#8203;167](https://redirect.github.com/helm/kind-action/pull/167)\n\n#### New Contributors\n\n- [@&#8203;Bisman-Singh](https://redirect.github.com/Bisman-Singh) made\ntheir first contribution in\n[#&#8203;160](https://redirect.github.com/helm/kind-action/pull/160)\n- [@&#8203;kaovilai](https://redirect.github.com/kaovilai) made their\nfirst contribution in\n[#&#8203;165](https://redirect.github.com/helm/kind-action/pull/165)\n- [@&#8203;yurnov](https://redirect.github.com/yurnov) made their first\ncontribution in\n[#&#8203;169](https://redirect.github.com/helm/kind-action/pull/169)\n- [@&#8203;jsoref](https://redirect.github.com/jsoref) made their first\ncontribution in\n[#&#8203;167](https://redirect.github.com/helm/kind-action/pull/167)\n\n**Full Changelog**:\n<https://github.com/helm/kind-action/compare/v1.14.0...v1.15.0>\n\n</details>\n\n---\n\n### Configuration\n\n📅 **Schedule**: (UTC)\n\n- Branch creation\n  - On day 1 of the month, every 3 months (`* * 1 */3 *`)\n- Automerge\n  - At any time (no schedule defined)\n\n🚦 **Automerge**: Enabled.\n\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\nrebase/retry checkbox.\n\n👻 **Immortal**: This PR will be recreated if closed unmerged. Get\n[config\nhelp](https://redirect.github.com/renovatebot/renovate/discussions) if\nthat's undesired.\n\n---\n\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\nthis box\n\n---\n\nThis PR was generated by [Mend Renovate](https://mend.io/renovate/).\nView the [repository job\nlog](https://developer.mend.io/github/miracum/fhir-pseudonymizer).\n\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiI0NC4xNjQuMSIsInVwZGF0ZWRJblZlciI6IjQ0LjE2NC4xIiwidGFyZ2V0QnJhbmNoIjoibWFzdGVyIiwibGFiZWxzIjpbXX0=-->\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-10-15T21:38:20Z",
+          "tree_id": "b2956e4d6920c75956d12d5a39c4ef3b4ae2b5ed",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/77778a9fc8a84ce51cc81f646a4c998637658dac"
+        },
+        "date": 1792100687150,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 62763288.196078435,
+            "unit": "ns",
+            "range": "± 1234030.1121942163"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 822676.5700520833,
+            "unit": "ns",
+            "range": "± 13961.953984011641"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 967.2749536037445,
+            "unit": "ns",
+            "range": "± 18.095698561763847"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 10648459.886458334,
+            "unit": "ns",
+            "range": "± 154102.94220539648"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 215.3786834081014,
+            "unit": "ns",
+            "range": "± 0.5309386784419352"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 511538256.3333333,
+            "unit": "ns",
+            "range": "± 63168436.14061825"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 1136567267,
+            "unit": "ns",
+            "range": "± 42125285.05919614"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 536265155.6666667,
+            "unit": "ns",
+            "range": "± 95676829.2682303"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 1257038556.3333333,
+            "unit": "ns",
+            "range": "± 45386383.774088636"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 592379477.3333334,
+            "unit": "ns",
+            "range": "± 27232713.50843104"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 882036882.3333334,
+            "unit": "ns",
+            "range": "± 39977684.93138416"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 186031825.33333334,
+            "unit": "ns",
+            "range": "± 30959057.02838012"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 542637908.6666666,
+            "unit": "ns",
+            "range": "± 153815343.89886466"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 179419163.66666666,
+            "unit": "ns",
+            "range": "± 33212854.62770215"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 486878183.6666667,
+            "unit": "ns",
+            "range": "± 168524045.15690628"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 189174573,
+            "unit": "ns",
+            "range": "± 24341889.70670718"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 338932811.6666667,
+            "unit": "ns",
+            "range": "± 60470385.83853862"
           }
         ]
       }
