@@ -7,21 +7,74 @@ public record AppConfig
 {
     public string AnonymizationEngineConfigPath { get; init; }
     public string AnonymizationEngineConfigInline { get; set; }
-    public bool UseSystemTextJsonFhirSerializer { get; init; }
-    public string ApiKey { get; init; }
-    public PseudonymizationServiceType PseudonymizationService { get; init; }
+    public AuthConfig Auth { get; init; } = new();
+    public PseudonymizationServiceType PseudonymizationService { get; init; } =
+        PseudonymizationServiceType.None;
     public CacheConfig Cache { get; init; } = new();
     public CacheConfig AnonymizerEngineCache { get; init; } = new();
     public GPasConfig GPas { get; init; } = new();
     public VfpsConfig Vfps { get; init; } = new();
     public EnticiConfig Entici { get; init; } = new();
     public MiiConfig Mii { get; init; } = new();
-    public ushort MetricsPort { get; set; } = 8081;
-    public bool EnableMetrics { get; set; } = true;
+    public MetricsConfig Metrics { get; init; } = new();
     public FeatureManagement Features { get; set; } = new();
     public AnonymizationConfig Anonymization { get; set; } = new();
     public KafkaConfig Kafka { get; init; } = new();
     public KestrelConfig Kestrel { get; init; } = new();
+}
+
+public record AuthConfig
+{
+    public JwtAuthConfig Jwt { get; init; } = new();
+}
+
+/// <summary>
+///     Authenticates requests to the protected operations using OAuth 2.0 access tokens in JWT
+///     format, issued by an OpenID Connect provider.
+/// </summary>
+public record JwtAuthConfig
+{
+    /// <summary>
+    ///     The token issuer, e.g. <c>https://keycloak.example.com/realms/example</c>. Its signing
+    ///     keys are fetched from the issuer's OpenID Connect discovery document. While this is
+    ///     unset, the protected operations reject every request.
+    /// </summary>
+    public string Authority { get; init; }
+
+    /// <summary>
+    ///     The value tokens must have in their <c>aud</c> claim. Required whenever
+    ///     <see cref="Authority" /> is set: otherwise, a token the issuer handed out for any other
+    ///     of its clients would be accepted, too.
+    /// </summary>
+    public string Audience { get; init; }
+
+    /// <summary>
+    ///     Overrides where the discovery document is fetched from. Defaults to
+    ///     <c>{Authority}/.well-known/openid-configuration</c>. Useful if the service reaches the
+    ///     issuer at a different address than the public one in the tokens' <c>iss</c> claim.
+    /// </summary>
+    public string MetadataAddress { get; init; }
+
+    public bool RequireHttpsMetadata { get; init; } = true;
+
+    /// <summary>
+    ///     If set, a token must have this scope in its <c>scope</c> (or <c>scp</c>) claim.
+    /// </summary>
+    public string RequiredScope { get; init; }
+
+    /// <summary>
+    ///     If set, a token must have this role in its <c>roles</c> claim or in Keycloak's
+    ///     <c>realm_access.roles</c>.
+    /// </summary>
+    public string RequiredRole { get; init; }
+
+    public bool IsEnabled => !string.IsNullOrWhiteSpace(Authority);
+}
+
+public record MetricsConfig
+{
+    public bool Enabled { get; init; } = true;
+    public ushort Port { get; init; } = 8081;
 }
 
 public record KestrelConfig
@@ -48,30 +101,15 @@ public record KafkaConfig
     /// </summary>
     public string OutputTopicPattern { get; init; } = "^";
     public string OutputTopicReplacement { get; init; } = "pseudonymized.";
+
+    public CryptoHashMessageKeysConfig CryptoHashMessageKeys { get; init; } = new();
+
+    /// <summary>
+    ///     The number of consumers, each processing the messages of the partitions assigned to it
+    ///     one after another. More than the number of partitions assigned to this instance just
+    ///     sit idle.
+    /// </summary>
     public int WorkerCount { get; init; } = Environment.ProcessorCount;
-
-    /// <summary>
-    ///     The maximum number of messages queued per worker. Together with
-    ///     <see cref="WorkerChannelCapacityBytes" />, whichever is reached first, this should
-    ///     comfortably exceed what librdkafka hands out for a single partition in one go (up to
-    ///     max.partition.fetch.bytes, 1 MiB by default) - otherwise the other workers run dry while
-    ///     one partition's messages are handed to their (busy) worker.
-    /// </summary>
-    public int WorkerChannelCapacity { get; init; } = 10_000;
-
-    /// <summary>
-    ///     The maximum approximate in-memory size of the messages queued per worker. A message is
-    ///     always accepted into an empty queue, however large it is.
-    /// </summary>
-    public long WorkerChannelCapacityBytes { get; init; } = 16 * 1024 * 1024;
-
-    /// <summary>
-    ///     How long the consumer waits for a worker with a full queue to accept another message
-    ///     before pausing the partitions that worker processes (e.g. because it is retrying a
-    ///     pseudonymization backend that is down), so that all other partitions keep being
-    ///     consumed meanwhile.
-    /// </summary>
-    public int WorkerBusyTimeoutMs { get; init; } = 1000;
 
     /// <summary>
     ///     The topic that FHIR Provenance resources documenting the pseudonymization of a message
@@ -104,6 +142,12 @@ public record KafkaConfig
     public ProducerConfig Producer { get; init; } = new();
 }
 
+public record CryptoHashMessageKeysConfig
+{
+    public bool Enabled { get; init; } = true;
+    public string Key { get; init; }
+}
+
 public record CacheConfig
 {
     public uint SizeLimit { get; init; }
@@ -114,8 +158,7 @@ public record CacheConfig
 public record GPasConfig
 {
     public Uri Url { get; init; }
-    public int RequestRetryCount { get; init; }
-    public string Version { get; init; }
+    public PseudonymServiceRetryConfig Retry { get; init; } = new();
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
 }
 
@@ -123,7 +166,7 @@ public record EnticiConfig
 {
     public Uri Url { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
-    public int RequestRetryCount { get; init; }
+    public PseudonymServiceRetryConfig Retry { get; init; } = new();
 }
 
 public record VfpsConfig
@@ -132,7 +175,7 @@ public record VfpsConfig
     public VfpsAuthConfig Auth { get; init; } = new();
     public bool UnsafeUseInsecureChannelCallCredentials { get; init; }
     public bool UseTls { get; init; }
-    public int RequestRetryCount { get; init; }
+    public PseudonymServiceRetryConfig Retry { get; init; } = new();
 }
 
 /// <summary>
@@ -161,7 +204,7 @@ public record MiiConfig
 {
     public Uri Url { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
-    public int RequestRetryCount { get; init; }
+    public PseudonymServiceRetryConfig Retry { get; init; } = new();
 }
 
 public record PseudonymServiceAuthConfig
@@ -187,6 +230,11 @@ public record PseudonymServiceBasicAuthConfig
 {
     public string Username { get; init; }
     public string Password { get; init; }
+}
+
+public record PseudonymServiceRetryConfig
+{
+    public int Count { get; init; }
 }
 
 public record FeatureManagement

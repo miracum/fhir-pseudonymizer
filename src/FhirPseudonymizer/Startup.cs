@@ -8,6 +8,7 @@ using FhirPseudonymizer.Pseudonymization.GPas;
 using FhirPseudonymizer.Pseudonymization.Mii;
 using FhirPseudonymizer.Pseudonymization.Vfps;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Caching.Memory;
@@ -39,9 +40,9 @@ public class Startup
             },
         };
 
-        if (appConfig.EnableMetrics)
+        if (appConfig.Metrics.Enabled)
         {
-            services.AddMetrics(appConfig.MetricsPort);
+            services.AddMetrics(appConfig.Metrics.Port);
         }
 
         services.Configure<KestrelServerOptions>(options =>
@@ -49,11 +50,10 @@ public class Startup
         );
 
         services.AddSingleton(_ => appConfig);
-        services.AddSingleton(_ => appConfig.GPas);
         services.AddSingleton(_ => appConfig.Features);
         services.AddSingleton(_ => appConfig.Anonymization);
 
-        services.AddApiKeyAuth(appConfig.ApiKey);
+        services.AddAuth(appConfig.Auth);
 
         // Required by the OAuth implementation. Could be used for all cache implementations later.
         services.AddDistributedMemoryCache();
@@ -148,17 +148,10 @@ public class Startup
 
         services.AddControllers(options =>
         {
-            var useSystemTextJsonFhirSerializer = Configuration.GetValue(
-                "UseSystemTextJsonFhirSerializer",
-                false
-            );
-            options.InputFormatters.Insert(
-                0,
-                new FhirInputFormatter(useSystemTextJsonFhirSerializer)
-            );
-            options.OutputFormatters.Insert(
-                0,
-                new FhirOutputFormatter(useSystemTextJsonFhirSerializer)
+            options.InputFormatters.Insert(0, new FhirInputFormatter());
+            options.OutputFormatters.Insert(0, new FhirOutputFormatter());
+            options.ModelMetadataDetailsProviders.Add(
+                new SuppressChildValidationMetadataProvider(typeof(Hl7.Fhir.Model.Base))
             );
         });
 
@@ -193,6 +186,17 @@ public class Startup
         // creates its loggers via AnonymizerLogging instead of using DI, so without this it never
         // picks up the app's configured logging providers/levels and silently discards all log output.
         AnonymizerLogging.LoggerFactory = loggerFactory;
+
+        AnonymizerEngineExtensions.LogErrorIfPseudonymizationServiceIsMissing(
+            app.ApplicationServices.GetRequiredService<AnonymizerConfigurationManager>(),
+            app.ApplicationServices.GetRequiredService<AppConfig>().PseudonymizationService,
+            loggerFactory.CreateLogger<Startup>()
+        );
+
+        AuthExtensions.LogInformationIfReIdentifyIsDisabled(
+            app.ApplicationServices.GetRequiredService<AppConfig>().Auth,
+            loggerFactory.CreateLogger<Startup>()
+        );
 
         if (env.IsDevelopment())
         {

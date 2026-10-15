@@ -23,14 +23,48 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
-      - name: Install Task
-        uses: arduino/setup-task@c0bc642852239c2689f73f4ea6459c29405f3c52 # v3.0.0
-        with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create KinD cluster
+        run: kind create cluster --name kind
 
-      - name: Run chaos-test task
-        run: task chaos-test
+      - name: Install the argo workflows CLI
+        working-directory: tests/chaos
+        run: |
+          curl -sL -o - https://github.com/argoproj/argo-workflows/releases/download/v3.5.2/argo-linux-amd64.gz | gunzip > argo
+          chmod +x ./argo
+          ./argo version
+
+      - name: Install the prerequisites (vfps and argo workflows)
+        working-directory: tests/chaos
+        run: |
+          helm dependency update ../prerequisites
+          helm upgrade --install --create-namespace -n fhir-pseudonymizer \
+            -f prerequisites-values.yaml \
+            --wait --timeout 10m \
+            prerequisites ../prerequisites
+
+      - name: Install fhir-pseudonymizer
+        working-directory: tests/chaos
+        run: |
+          helm dependency update ../../charts/fhir-pseudonymizer
+          helm upgrade --install -n fhir-pseudonymizer \
+            -f fhir-pseudonymizer-values.yaml \
+            --wait \
+            fhir-pseudonymizer ../../charts/fhir-pseudonymizer
+
+      - name: Install chaos-mesh and the chaos test resources
+        working-directory: tests/chaos
+        run: |
+          helm repo add chaos-mesh https://charts.chaos-mesh.org
+          kubectl create configmap k6-chaos-script --from-file=k6-chaos-test.js -n fhir-pseudonymizer --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create configmap chaos-yaml --from-file=chaos.yaml -n fhir-pseudonymizer --dry-run=client -o yaml | kubectl apply -f -
+          helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh --create-namespace --wait -n chaos-mesh \
+            --set chaosDaemon.runtime=containerd \
+            --set chaosDaemon.socketPath='/run/containerd/containerd.sock'
+          kubectl apply -f chaos-mesh-rbac.yaml
+
+      - name: Run chaos test
+        working-directory: tests/chaos
+        run: ./argo submit workflow.yaml -n fhir-pseudonymizer --wait --log
 
       - name: Print cluster logs
         if: always()

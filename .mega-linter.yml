@@ -39,5 +39,10 @@ REPOSITORY_KICS_ARGUMENTS:
 
 REPOSITORY_KICS_CONFIG_FILE: .kics.yaml
 
+# Helm templates use Go templating ({{ ... }}), which isn't valid YAML on its own and trips
+# yamllint's parser with real syntax errors - not just style complaints. `ct lint` (see the
+# chart job in ci.yaml) is the actual YAML/schema linter for the chart.
+YAML_YAMLLINT_FILTER_REGEX_EXCLUDE: (charts/[^/]+/templates/)
+
 ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
   - GITHUB_TOKEN

@@ -49,8 +49,15 @@ public class VfpsPseudonymServiceClientTests
         ).WithInnerException<RpcException>();
     }
 
-    [Fact]
-    public async Task GetOrCreatePseudonymFor_WhenVfpsRejectsTheInput_ThrowsTheOriginalRpcException()
+    [Theory]
+    [InlineData(StatusCode.InvalidArgument)]
+    [InlineData(StatusCode.FailedPrecondition)]
+    [InlineData(StatusCode.NotFound)]
+    [InlineData(StatusCode.AlreadyExists)]
+    [InlineData(StatusCode.OutOfRange)]
+    public async Task GetOrCreatePseudonymFor_WhenVfpsRejectsTheInput_ThrowsPseudonymizationRejectedExceptionWithTheDetail(
+        StatusCode statusCode
+    )
     {
         // Arrange
         var client = A.Fake<PseudonymService.PseudonymServiceClient>();
@@ -64,9 +71,7 @@ public class VfpsPseudonymServiceClientTests
                 )
             )
             .Throws(() =>
-                throw new RpcException(
-                    new Status(StatusCode.InvalidArgument, "doesn't match the required pattern")
-                )
+                throw new RpcException(new Status(statusCode, "doesn't match the required pattern"))
             );
 
         var sut = new VfpsPseudonymServiceClient(
@@ -83,7 +88,48 @@ public class VfpsPseudonymServiceClientTests
             );
 
         // Assert
-        await act.Should().ThrowAsync<RpcException>();
+        (await act.Should().ThrowAsync<PseudonymizationRejectedException>())
+            .WithMessage("*doesn't match the required pattern*")
+            .WithInnerException<RpcException>();
+    }
+
+    [Theory]
+    [InlineData(StatusCode.Unknown)]
+    [InlineData(StatusCode.DeadlineExceeded)]
+    public async Task GetOrCreatePseudonymFor_WhenVfpsFailsOtherwise_ThrowsTheOriginalRpcException(
+        StatusCode statusCode
+    )
+    {
+        // Arrange
+        var client = A.Fake<PseudonymService.PseudonymServiceClient>();
+
+        A.CallTo(() =>
+                client.CreateAsync(
+                    A<PseudonymServiceCreateRequest>._,
+                    null,
+                    null,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(() => throw new RpcException(new Status(statusCode, "something went wrong")));
+
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
+
+        // Act
+        var act = async () =>
+            await sut.GetOrCreatePseudonymFor(
+                "test",
+                "namespace",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        // Assert
+        (await act.Should().ThrowExactlyAsync<RpcException>())
+            .Which.StatusCode.Should()
+            .Be(statusCode);
     }
 
     [Fact]

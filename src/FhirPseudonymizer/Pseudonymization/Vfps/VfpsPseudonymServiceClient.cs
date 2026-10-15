@@ -3,7 +3,10 @@ using Vfps.Protos;
 
 namespace FhirPseudonymizer.Pseudonymization.Vfps;
 
-public class VfpsPseudonymServiceClient : IPseudonymServiceClient
+public class VfpsPseudonymServiceClient(
+    ILogger<VfpsPseudonymServiceClient> logger,
+    PseudonymService.PseudonymServiceClient client
+) : IPseudonymServiceClient
 {
     // Also used by VfpsExtensions to configure the gRPC channel's own fast retry policy, so a
     // status code only needs to be added here once to be treated as transient by both.
@@ -15,18 +18,20 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
         StatusCode.PermissionDenied,
     ];
 
-    private readonly ILogger<VfpsPseudonymServiceClient> logger;
+    // The request itself was rejected, e.g. InvalidArgument for a value that doesn't match the
+    // namespace's required pattern, or NotFound for a namespace that doesn't exist.
+    internal static readonly HashSet<StatusCode> RejectedStatusCodes =
+    [
+        StatusCode.InvalidArgument,
+        StatusCode.FailedPrecondition,
+        StatusCode.NotFound,
+        StatusCode.AlreadyExists,
+        StatusCode.OutOfRange,
+    ];
 
-    public VfpsPseudonymServiceClient(
-        ILogger<VfpsPseudonymServiceClient> logger,
-        PseudonymService.PseudonymServiceClient client
-    )
-    {
-        Client = client;
-        this.logger = logger;
-    }
+    private readonly ILogger<VfpsPseudonymServiceClient> logger = logger;
 
-    private PseudonymService.PseudonymServiceClient Client { get; }
+    private PseudonymService.PseudonymServiceClient Client { get; } = client;
 
     public async Task<string> GetOrCreatePseudonymFor(
         string value,
@@ -50,6 +55,13 @@ public class VfpsPseudonymServiceClient : IPseudonymServiceClient
         {
             throw new TransientPseudonymizationException(
                 $"Vfps pseudonymization call failed with status {exc.StatusCode}.",
+                exc
+            );
+        }
+        catch (RpcException exc) when (RejectedStatusCodes.Contains(exc.StatusCode))
+        {
+            throw new PseudonymizationRejectedException(
+                $"Vfps rejected the pseudonymization request with status {exc.StatusCode}: {exc.Status.Detail}",
                 exc
             );
         }

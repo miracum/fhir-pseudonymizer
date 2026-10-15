@@ -57,6 +57,110 @@ public static class MetricsConfigurationExtensions
                             ],
                         }
                     )
+                    // Down to a millisecond, since a single resource with no (or only cached)
+                    // pseudonyms takes about that long, up to the minutes a large bundle may
+                    // take waiting for a slow pseudonymization service.
+                    .AddView(
+                        "fhirpseudonymizer.anonymization.duration",
+                        new ExplicitBucketHistogramConfiguration
+                        {
+                            Boundaries =
+                            [
+                                0.001,
+                                0.0025,
+                                0.005,
+                                0.01,
+                                0.025,
+                                0.05,
+                                0.1,
+                                0.25,
+                                0.5,
+                                1,
+                                2.5,
+                                5,
+                                10,
+                                30,
+                                60,
+                                120,
+                                300,
+                            ],
+                        }
+                    )
+                    .AddView(
+                        "fhirpseudonymizer.anonymization.resource.duration",
+                        new ExplicitBucketHistogramConfiguration
+                        {
+                            Boundaries =
+                            [
+                                0.0001,
+                                0.00025,
+                                0.0005,
+                                0.001,
+                                0.0025,
+                                0.005,
+                                0.01,
+                                0.025,
+                                0.05,
+                                0.1,
+                                0.25,
+                                0.5,
+                                1,
+                                2.5,
+                                5,
+                                10,
+                            ],
+                        }
+                    )
+                    // Unlike fhirpseudonymizer.received.bundle_size, this includes single
+                    // resources (1), and bundles far larger than 100 entries.
+                    .AddView(
+                        "fhirpseudonymizer.anonymization.resources",
+                        new ExplicitBucketHistogramConfiguration
+                        {
+                            Boundaries =
+                            [
+                                1,
+                                2,
+                                5,
+                                10,
+                                20,
+                                50,
+                                100,
+                                200,
+                                500,
+                                1000,
+                                2000,
+                                5000,
+                                10000,
+                            ],
+                        }
+                    )
+                    // Up to a minute, since the clients' own retries back off for seconds each.
+                    .AddView(
+                        "fhirpseudonymizer.pseudonymization.request.duration",
+                        new ExplicitBucketHistogramConfiguration
+                        {
+                            Boundaries =
+                            [
+                                0.0005,
+                                0.001,
+                                0.0025,
+                                0.005,
+                                0.01,
+                                0.025,
+                                0.05,
+                                0.1,
+                                0.25,
+                                0.5,
+                                1,
+                                2.5,
+                                5,
+                                10,
+                                30,
+                                60,
+                            ],
+                        }
+                    )
                     // A standalone HttpListener on its own port, rather than
                     // AddPrometheusExporter()/MapPrometheusScrapingEndpoint(): that alternative
                     // maps /metrics onto the app's own Kestrel pipeline, which means adding a

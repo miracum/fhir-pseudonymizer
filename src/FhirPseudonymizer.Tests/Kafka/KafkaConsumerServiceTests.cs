@@ -14,7 +14,6 @@ namespace FhirPseudonymizer.Tests.Kafka;
 public class KafkaConsumerServiceTests
 {
     private const string InputTopic = "input-topic";
-    private const string OutputTopic = "pseudonymized.input-topic";
 
     private static TopicPartition InputPartition(int partition) =>
         new(InputTopic, new Partition(partition));
@@ -68,111 +67,39 @@ public class KafkaConsumerServiceTests
     }
 
     private static KafkaConsumerService CreateService(
-        ScriptedConsumer consumer,
+        KafkaConsumerFactory consumerFactory,
         RecordingProducer producer,
         IAnonymizerEngine anonymizer,
-        KafkaConfig kafkaConfig
+        KafkaConfig kafkaConfig,
+        TimeSpan? retryDelay = null
     )
     {
         var processor = new KafkaMessageProcessor(
             producer.Producer,
             anonymizer,
             A.Fake<AnonymizationConfig>(),
-            kafkaConfig,
-            A.Fake<IProvenancePublisher>(),
+            // these tests tell the produced messages apart by their keys
+            kafkaConfig with
+            {
+                CryptoHashMessageKeys = new() { Enabled = false },
+            },
+            new NoopProvenancePublisher(),
             A.Fake<ILogger<KafkaMessageProcessor>>()
         );
 
         return new KafkaConsumerService(
-            consumer.Factory,
+            consumerFactory,
             processor,
             kafkaConfig,
             A.Fake<ILogger<KafkaConsumerService>>()
-        );
+        )
+        {
+            RetryDelay = _ => retryDelay ?? TimeSpan.FromMinutes(1),
+        };
     }
 
-    [Theory]
-    [InlineData(1)]
-    [InlineData(4)]
-    [InlineData(8)]
-    [InlineData(12)]
-    [InlineData(16)]
-    public async Task AssignedPartitionsAreSpreadEvenlyAcrossWorkers(int workerCount)
-    {
-        var cancellationToken = TestContext.Current.CancellationToken;
-        var consumer = new ScriptedConsumer();
-        var service = CreateService(
-            consumer,
-            new RecordingProducer(),
-            CreateAnonymizer(),
-            new KafkaConfig { WorkerCount = workerCount }
-        );
-
-        consumer.Assign([.. Enumerable.Range(0, 12).Select(InputPartition)]);
-        var assignments = consumer.RunOnPollThread(service.GetWorkerAssignments);
-
-        await service.StartAsync(cancellationToken);
-        try
-        {
-            var partitionsPerWorker = (await assignments.WaitAsync(cancellationToken))
-                .Values.GroupBy(worker => worker)
-                .Select(group => group.Count())
-                .ToList();
-
-            partitionsPerWorker.Should().HaveCount(Math.Min(12, workerCount));
-            (partitionsPerWorker.Max() - partitionsPerWorker.Min()).Should().BeLessThanOrEqualTo(1);
-        }
-        finally
-        {
-            await service.StopAsync(cancellationToken);
-        }
-    }
-
-    [Fact]
-    public async Task PartitionsAssignedInALaterRebalanceGoToTheLeastLoadedWorkers()
-    {
-        var cancellationToken = TestContext.Current.CancellationToken;
-        var consumer = new ScriptedConsumer();
-        var service = CreateService(
-            consumer,
-            new RecordingProducer(),
-            CreateAnonymizer(),
-            new KafkaConfig { WorkerCount = 2 }
-        );
-
-        consumer.Assign(InputPartition(0), InputPartition(1), InputPartition(2), InputPartition(3));
-        var initial = consumer.RunOnPollThread(service.GetWorkerAssignments);
-        consumer.Revoke(InputPartition(0), InputPartition(2));
-        consumer.Assign(InputPartition(4), InputPartition(5));
-        var rebalanced = consumer.RunOnPollThread(service.GetWorkerAssignments);
-
-        await service.StartAsync(cancellationToken);
-        try
-        {
-            var before = await initial.WaitAsync(cancellationToken);
-            var after = await rebalanced.WaitAsync(cancellationToken);
-
-            // partitions 0 and 2 shared a worker, so both new ones must go to that one
-            before[InputPartition(0)].Should().Be(before[InputPartition(2)]);
-            after
-                .Keys.Should()
-                .BeEquivalentTo(
-                    new[]
-                    {
-                        InputPartition(1),
-                        InputPartition(3),
-                        InputPartition(4),
-                        InputPartition(5),
-                    }
-                );
-            after[InputPartition(4)].Should().Be(before[InputPartition(0)]);
-            after[InputPartition(5)].Should().Be(before[InputPartition(0)]);
-        }
-        finally
-        {
-            await service.StopAsync(cancellationToken);
-        }
-    }
+    private static TransientPseudonymizationException BackendUnavailable() =>
+        new("backend unavailable", new InvalidOperationException());
 
     [Fact]
     public async Task OffsetsAreOnlyStoredOnceTheMessageAndAllItsPredecessorsWereAcknowledged()
@@ -181,7 +108,7 @@ public class KafkaConsumerServiceTests
         var consumer = new ScriptedConsumer();
         var producer = new RecordingProducer { DeliverImmediately = false };
         var service = CreateService(
-            consumer,
+            ScriptedConsumer.Factory(consumer),
             producer,
             CreateAnonymizer(),
             new KafkaConfig { WorkerCount = 1 }
@@ -196,6 +123,7 @@ public class KafkaConsumerServiceTests
             await WaitUntilAsync(() => producer.Produced.Count == 3, cancellationToken);
             var produced = producer.Produced.ToArray();
 
+            // e.g. because they went to different output partitions
             produced[1].Acknowledge();
             await consumer.RunOnPollThread(() => true).WaitAsync(cancellationToken);
             await consumer.RunOnPollThread(() => true).WaitAsync(cancellationToken);
@@ -218,124 +146,25 @@ public class KafkaConsumerServiceTests
     }
 
     [Fact]
-    public async Task AWorkerThatIsBusyButKeepsUp_DoesNotGetItsPartitionPaused()
-    {
-        var cancellationToken = TestContext.Current.CancellationToken;
-        var consumer = new ScriptedConsumer();
-        var producer = new RecordingProducer();
-        var service = CreateService(
-            consumer,
-            producer,
-            CreateAnonymizer(_ => Task.Delay(20, cancellationToken)),
-            new KafkaConfig
-            {
-                WorkerCount = 1,
-                WorkerChannelCapacity = 1,
-                WorkerBusyTimeoutMs = 10_000,
-            }
-        );
-
-        consumer.Assign(InputPartition(0));
-        consumer.Deliver([.. Enumerable.Range(0, 5).Select(offset => Message(0, offset))]);
-
-        await service.StartAsync(cancellationToken);
-        try
-        {
-            await WaitUntilAsync(() => producer.Produced.Count == 5, cancellationToken);
-        }
-        finally
-        {
-            await service.StopAsync(cancellationToken);
-        }
-
-        consumer.PausedPartitions.Should().BeEmpty();
-        producer
-            .Produced.Select(p => p.Key)
-            .Should()
-            .Equal("p0-o0", "p0-o1", "p0-o2", "p0-o3", "p0-o4");
-    }
-
-    [Fact]
-    public async Task AWorkerThatStopsAcceptingMessages_GetsItsPartitionPausedUntilItCatchesUp()
+    public async Task EachConsumerProcessesItsPartitionsIndependently_SoAStuckOneDoesNotHoldUpTheOthers()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var release = new TaskCompletionSource();
-        var consumer = new ScriptedConsumer();
+        var consumers = new[] { new ScriptedConsumer(), new ScriptedConsumer() };
         var producer = new RecordingProducer();
         var service = CreateService(
-            consumer,
+            ScriptedConsumer.Factory(consumers),
             producer,
             CreateAnonymizer(resource =>
                 resource.Id == "p0-o0" ? release.Task : Task.CompletedTask
             ),
-            new KafkaConfig
-            {
-                WorkerCount = 1,
-                WorkerChannelCapacity = 1,
-                WorkerBusyTimeoutMs = 50,
-            }
+            new KafkaConfig { WorkerCount = 2 }
         );
 
-        // the first message blocks the only worker, the second fills its queue, and the third
-        // can't be handed over
-        consumer.Assign(InputPartition(0));
-        consumer.Deliver(Message(0, 0), Message(0, 1), Message(0, 2));
-
-        await service.StartAsync(cancellationToken);
-        try
-        {
-            await WaitUntilAsync(
-                () => consumer.PausedPartitions.Contains(InputPartition(0)),
-                cancellationToken
-            );
-
-            release.TrySetResult();
-
-            await WaitUntilAsync(() => producer.Produced.Count == 3, cancellationToken);
-            await WaitUntilAsync(
-                () => consumer.ResumedPartitions.Contains(InputPartition(0)),
-                cancellationToken
-            );
-            await WaitUntilAsync(
-                () => consumer.StoredOffsets.LastOrDefault()?.Offset.Value == 3,
-                cancellationToken
-            );
-        }
-        finally
-        {
-            release.TrySetResult();
-            await service.StopAsync(cancellationToken);
-        }
-
-        producer.Produced.Select(p => p.Key).Should().Equal("p0-o0", "p0-o1", "p0-o2");
-    }
-
-    [Fact]
-    public async Task WhileOneWorkerIsStuck_PartitionsOfOtherWorkersKeepBeingProcessed()
-    {
-        var cancellationToken = TestContext.Current.CancellationToken;
-        var release = new TaskCompletionSource();
-        var consumer = new ScriptedConsumer();
-        var producer = new RecordingProducer();
-        var service = CreateService(
-            consumer,
-            producer,
-            CreateAnonymizer(resource =>
-                resource.Id.StartsWith("p0-", StringComparison.Ordinal)
-                    ? release.Task
-                    : Task.CompletedTask
-            ),
-            new KafkaConfig
-            {
-                WorkerCount = 2,
-                WorkerChannelCapacity = 1,
-                WorkerBusyTimeoutMs = 50,
-            }
-        );
-
-        consumer.Assign(InputPartition(0), InputPartition(1));
-        consumer.Deliver(Message(0, 0), Message(0, 1), Message(0, 2), Message(0, 3));
-        consumer.Deliver(Message(1, 0), Message(1, 1), Message(1, 2));
+        consumers[0].Assign(InputPartition(0));
+        consumers[0].Deliver(Message(0, 0), Message(0, 1), Message(0, 2));
+        consumers[1].Assign(InputPartition(1));
+        consumers[1].Deliver(Message(1, 0), Message(1, 1), Message(1, 2));
 
         await service.StartAsync(cancellationToken);
         try
@@ -346,15 +175,12 @@ public class KafkaConsumerServiceTests
                     == 3,
                 cancellationToken
             );
-
             producer
                 .Produced.Should()
                 .NotContain(p => p.Key.StartsWith("p0-", StringComparison.Ordinal));
-            consumer.PausedPartitions.Should().Equal(InputPartition(0));
 
             release.TrySetResult();
-
-            await WaitUntilAsync(() => producer.Produced.Count == 7, cancellationToken);
+            await WaitUntilAsync(() => producer.Produced.Count == 6, cancellationToken);
         }
         finally
         {
@@ -366,24 +192,72 @@ public class KafkaConsumerServiceTests
             .Produced.Where(p => p.Key.StartsWith("p0-", StringComparison.Ordinal))
             .Select(p => p.Key)
             .Should()
-            .Equal("p0-o0", "p0-o1", "p0-o2", "p0-o3");
+            .Equal("p0-o0", "p0-o1", "p0-o2");
+        consumers.Should().AllSatisfy(consumer => consumer.PausedPartitions.Should().BeEmpty());
     }
 
     [Fact]
-    public async Task AMessageThatCanNeitherBeProducedNorDeadLettered_StopsTheServiceWithoutStoringItsOffset()
+    public async Task ATransientBackendFailure_PausesThePartitionUntilTheMessageIsRetried_WhileTheConsumersOtherPartitionsCarryOn()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
+        var attempts = 0;
         var consumer = new ScriptedConsumer();
-        var producer = new RecordingProducer { FailDeliveryOf = key => key == "p0-o0" };
+        var producer = new RecordingProducer();
         var service = CreateService(
-            consumer,
+            ScriptedConsumer.Factory(consumer),
             producer,
-            CreateAnonymizer(),
-            new KafkaConfig { WorkerCount = 1 }
+            CreateAnonymizer(resource =>
+                resource.Id == "p0-o0" && Interlocked.Increment(ref attempts) < 3
+                    ? throw BackendUnavailable()
+                    : Task.CompletedTask
+            ),
+            new KafkaConfig { WorkerCount = 1 },
+            retryDelay: TimeSpan.FromMilliseconds(50)
         );
 
-        consumer.Assign(InputPartition(0));
-        consumer.Deliver(Message(0, 0), Message(0, 1));
+        consumer.Assign(InputPartition(0), InputPartition(1));
+        // librdkafka stops handing out a paused partition's messages, this fake doesn't:
+        // p0-o1 has to wait until p0-o0 went through
+        consumer.Deliver(Message(0, 0), Message(0, 1), Message(1, 0));
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await WaitUntilAsync(() => producer.Produced.Count == 3, cancellationToken);
+            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 2, cancellationToken);
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+
+        attempts.Should().Be(3);
+        producer.Produced.Select(p => p.Key).Should().Equal("p1-o0", "p0-o0", "p0-o1");
+        consumer.PausedPartitions.Should().Equal(InputPartition(0));
+        consumer.ResumedPartitions.Should().Equal(InputPartition(0));
+        consumer
+            .StoredOffsets.Should()
+            .BeEquivalentTo([
+                new TopicPartitionOffset(InputPartition(1), 1),
+                new TopicPartitionOffset(InputPartition(0), 2),
+            ]);
+    }
+
+    [Fact]
+    public async Task AMessageThatCanNeitherBeProducedNorDeadLettered_StopsAllConsumersWithoutStoringItsOffset()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var consumers = new[] { new ScriptedConsumer(), new ScriptedConsumer() };
+        var producer = new RecordingProducer { FailDeliveryOf = key => key == "p0-o0" };
+        var service = CreateService(
+            ScriptedConsumer.Factory(consumers),
+            producer,
+            CreateAnonymizer(),
+            new KafkaConfig { WorkerCount = 2 }
+        );
+
+        consumers[0].Assign(InputPartition(0));
+        consumers[0].Deliver(Message(0, 0), Message(0, 1));
 
         await service.StartAsync(cancellationToken);
         try
@@ -400,13 +274,17 @@ public class KafkaConsumerServiceTests
         }
 
         // the later message was produced fine, but storing its offset would skip the failed one
-        producer.Produced.Should().Contain(p => p.Key == "p0-o1" && p.Topic == OutputTopic);
-        consumer.StoredOffsets.Should().BeEmpty();
-        A.CallTo(() => consumer.Consumer.Close()).MustHaveHappenedOnceExactly();
+        producer.Produced.Should().Contain(p => p.Key == "p0-o1");
+        consumers[0].StoredOffsets.Should().BeEmpty();
+        consumers
+            .Should()
+            .AllSatisfy(consumer =>
+                A.CallTo(() => consumer.Consumer.Close()).MustHaveHappenedOnceExactly()
+            );
     }
 
     [Fact]
-    public async Task RevokingAPartition_LetsItsMessageInProgressFinishAndStoresItsOffsetBeforeHandingItOver()
+    public async Task StoppingTheService_LetsTheMessageInProgressFinishAndStoresItsOffset_ButProcessesNoMore()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var processingStarted = new TaskCompletionSource();
@@ -414,7 +292,7 @@ public class KafkaConsumerServiceTests
         var consumer = new ScriptedConsumer();
         var producer = new RecordingProducer();
         var service = CreateService(
-            consumer,
+            ScriptedConsumer.Factory(consumer),
             producer,
             CreateAnonymizer(resource =>
             {
@@ -429,29 +307,18 @@ public class KafkaConsumerServiceTests
             new KafkaConfig { WorkerCount = 1 }
         );
 
-        consumer.Assign(InputPartition(0), InputPartition(1));
-        consumer.Deliver(Message(0, 0), Message(0, 1), Message(0, 2));
+        consumer.Assign(InputPartition(0));
+        consumer.Deliver([.. Enumerable.Range(0, 5).Select(offset => Message(0, offset))]);
 
         await service.StartAsync(cancellationToken);
         try
         {
             await processingStarted.Task.WaitAsync(cancellationToken);
 
-            consumer.Revoke(InputPartition(0));
-            var storedOnceRevoked = consumer.RunOnPollThread(() => consumer.StoredOffsets);
-
-            // the revocation waits for the message being processed
-            await Task.Delay(100, cancellationToken);
-            storedOnceRevoked.IsCompleted.Should().BeFalse();
+            // cancels the service's stopping token right away, then waits for the consumer
+            var stopping = service.StopAsync(cancellationToken);
             release.TrySetResult();
-
-            (await storedOnceRevoked.WaitAsync(cancellationToken))
-                .Should()
-                .Equal(new TopicPartitionOffset(InputPartition(0), 1));
-
-            // queued behind the revoked partition's skipped messages on the only worker
-            consumer.Deliver(Message(1, 0));
-            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 2, cancellationToken);
+            await stopping;
         }
         finally
         {
@@ -459,24 +326,77 @@ public class KafkaConsumerServiceTests
             await service.StopAsync(cancellationToken);
         }
 
-        producer.Produced.Select(p => p.Key).Should().Equal("p0-o0", "p1-o0");
+        // the rest are reprocessed after a restart, from the stored offset on
+        producer.Produced.Select(p => p.Key).Should().Equal("p0-o0");
+        consumer.StoredOffsets.Should().Equal(new TopicPartitionOffset(InputPartition(0), 1));
+        A.CallTo(() => consumer.Consumer.Close()).MustHaveHappenedOnceExactly();
+        // e.g. for the Provenance messages produced along with the pseudonymized ones
+        A.CallTo(() => producer.Producer.Flush(A<TimeSpan>._)).MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task RevokingAPartition_WaitsForItsProducedMessagesToBeAcknowledgedAndStoresTheirOffsetsBeforeHandingItOver()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var consumer = new ScriptedConsumer();
+        var producer = new RecordingProducer { DeliverImmediately = false };
+        var service = CreateService(
+            ScriptedConsumer.Factory(consumer),
+            producer,
+            CreateAnonymizer(),
+            new KafkaConfig { WorkerCount = 1 }
+        );
+
+        consumer.Assign(InputPartition(0), InputPartition(1));
+        consumer.Deliver(Message(0, 0), Message(0, 1));
+
+        await service.StartAsync(cancellationToken);
+        try
+        {
+            await WaitUntilAsync(() => producer.Produced.Count == 2, cancellationToken);
+
+            consumer.Revoke(InputPartition(0));
+            var storedOnceRevoked = consumer.RunOnPollThread(() => consumer.StoredOffsets);
+
+            // the revocation waits for the produced messages to be acknowledged
+            await Task.Delay(100, cancellationToken);
+            storedOnceRevoked.IsCompleted.Should().BeFalse();
+            foreach (var produced in producer.Produced)
+            {
+                produced.Acknowledge();
+            }
+
+            (await storedOnceRevoked.WaitAsync(cancellationToken))
+                .Should()
+                .Equal(new TopicPartitionOffset(InputPartition(0), 2));
+
+            consumer.Deliver(Message(1, 0));
+            await WaitUntilAsync(() => producer.Produced.Count == 3, cancellationToken);
+            producer.Produced.Last().Acknowledge();
+            await WaitUntilAsync(() => consumer.StoredOffsets.Count == 2, cancellationToken);
+        }
+        finally
+        {
+            await service.StopAsync(cancellationToken);
+        }
+
         consumer
             .StoredOffsets.Should()
             .Equal(
-                new TopicPartitionOffset(InputPartition(0), 1),
+                new TopicPartitionOffset(InputPartition(0), 2),
                 new TopicPartitionOffset(InputPartition(1), 1)
             );
     }
 
     [Fact]
-    public async Task RevokingAPartition_AbandonsItsMessageStuckRetryingATransientFailureRightAway()
+    public async Task RevokingAPartition_DropsItsMessageWaitingToBeRetriedRightAway()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         var firstAttempt = new TaskCompletionSource();
         var consumer = new ScriptedConsumer();
         var producer = new RecordingProducer();
         var service = CreateService(
-            consumer,
+            ScriptedConsumer.Factory(consumer),
             producer,
             CreateAnonymizer(resource =>
             {
@@ -486,10 +406,7 @@ public class KafkaConsumerServiceTests
                 }
 
                 firstAttempt.TrySetResult();
-                throw new TransientPseudonymizationException(
-                    "backend unavailable",
-                    new InvalidOperationException()
-                );
+                throw BackendUnavailable();
             }),
             new KafkaConfig { WorkerCount = 1 }
         );
@@ -517,6 +434,8 @@ public class KafkaConsumerServiceTests
 
         producer.Produced.Select(p => p.Key).Should().Equal("p1-o0");
         consumer.StoredOffsets.Should().Equal(new TopicPartitionOffset(InputPartition(1), 1));
+        // not left paused, in case it is assigned to this consumer again
+        consumer.ResumedPartitions.Should().Equal(InputPartition(0));
     }
 
     private static async Task WaitUntilAsync(
@@ -540,8 +459,8 @@ public class KafkaConsumerServiceTests
 
     /// <summary>
     ///     A fake consumer that plays back a script of rebalances, messages, and arbitrary actions,
-    ///     one step per call to Consume - so each of them runs on the service's poll thread, just
-    ///     like librdkafka invokes rebalance callbacks from within Consume.
+    ///     one step per call to Consume - so each of them runs on the consumer's thread, just like
+    ///     librdkafka invokes rebalance callbacks from within Consume.
     /// </summary>
     private sealed class ScriptedConsumer
     {
@@ -565,14 +484,6 @@ public class KafkaConsumerServiceTests
         }
 
         public IConsumer<byte[], string> Consumer { get; } = A.Fake<IConsumer<byte[], string>>();
-
-        public KafkaConsumerFactory Factory =>
-            (onAssigned, onRevoked, _) =>
-            {
-                onPartitionsAssigned = onAssigned;
-                onPartitionsRevoked = onRevoked;
-                return Consumer;
-            };
 
         public List<TopicPartitionOffset> StoredOffsets =>
             [
@@ -598,6 +509,16 @@ public class KafkaConsumerServiceTests
 
         public List<TopicPartition> ResumedPartitions =>
             CallsTo(nameof(IConsumer<byte[], string>.Resume));
+
+        /// <summary>Hands out the given consumers, one per index.</summary>
+        public static KafkaConsumerFactory Factory(params ScriptedConsumer[] consumers) =>
+            (index, onAssigned, onRevoked, _) =>
+            {
+                var consumer = consumers[index];
+                consumer.onPartitionsAssigned = onAssigned;
+                consumer.onPartitionsRevoked = onRevoked;
+                return consumer.Consumer;
+            };
 
         public void Assign(params TopicPartition[] partitions) =>
             script.Enqueue(() =>

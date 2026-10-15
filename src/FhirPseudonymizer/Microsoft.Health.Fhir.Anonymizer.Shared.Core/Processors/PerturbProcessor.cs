@@ -5,6 +5,7 @@ using MathNet.Numerics.Distributions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 {
@@ -26,7 +27,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
         };
 
         public Task<ProcessResult> ProcessAsync(
-            ElementNode node,
+            PocoNode node,
             ProcessContext context = null,
             Dictionary<string, object> settings = null
         )
@@ -37,10 +38,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
 
             var result = new ProcessResult();
 
-            ElementNode valueNode = null;
+            PocoNode valueNode = null;
             if (
                 s_primitiveValueTypeNames.Contains(
-                    node.InstanceType,
+                    node.GetInstanceType(),
                     StringComparer.InvariantCultureIgnoreCase
                 )
             )
@@ -49,18 +50,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             }
             else if (
                 s_quantityTypeNames.Contains(
-                    node.InstanceType,
+                    node.GetInstanceType(),
                     StringComparer.InvariantCultureIgnoreCase
                 )
             )
             {
-                valueNode = node.Children(Constants.ValueNodeName)
-                    .CastElementNodes()
-                    .FirstOrDefault();
+                valueNode = node.ChildrenByName(Constants.ValueNodeName).FirstOrDefault();
             }
 
             // Perturb will not happen if value node is empty or visited.
-            if (valueNode?.Value == null || context.VisitedNodes.Contains(valueNode))
+            if (valueNode?.GetValue() == null || context.VisitedNodes.Contains(valueNode))
             {
                 return System.Threading.Tasks.Task.FromResult(result);
             }
@@ -68,16 +67,16 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             var perturbSetting = PerturbSetting.CreateFromRuleSettings(settings);
 
             AddNoise(valueNode, perturbSetting);
-            context.VisitedNodes.UnionWith(node.Descendants().CastElementNodes());
+            context.VisitedNodes.UnionWith(((ITypedElement)node).Descendants().CastPocoNodes());
             result.AddProcessRecord(AnonymizationOperations.Perturb, node);
             return System.Threading.Tasks.Task.FromResult(result);
         }
 
-        private void AddNoise(ElementNode node, PerturbSetting perturbSetting)
+        private void AddNoise(PocoNode node, PerturbSetting perturbSetting)
         {
             if (
                 s_integerValueTypeNames.Contains(
-                    node.InstanceType,
+                    node.GetInstanceType(),
                     StringComparer.InvariantCultureIgnoreCase
                 )
             )
@@ -85,7 +84,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 perturbSetting.RoundTo = 0;
             }
 
-            var originValue = decimal.Parse(node.Value.ToString());
+            var originValue = decimal.Parse(node.GetValue().ToString());
             var span = perturbSetting.Span;
             if (perturbSetting.RangeType == PerturbRangeType.Proportional)
             {
@@ -98,7 +97,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 perturbedValue <= 0
                 && string.Equals(
                     FHIRAllTypes.PositiveInt.ToString(),
-                    node.InstanceType,
+                    node.GetInstanceType(),
                     StringComparison.InvariantCultureIgnoreCase
                 )
             )
@@ -110,7 +109,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 perturbedValue < 0
                 && string.Equals(
                     FHIRAllTypes.UnsignedInt.ToString(),
-                    node.InstanceType,
+                    node.GetInstanceType(),
                     StringComparison.InvariantCultureIgnoreCase
                 )
             )
@@ -118,7 +117,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 perturbedValue = 0;
             }
 
-            node.Value = perturbedValue;
+            node.SetPrimitiveValue(perturbedValue);
         }
     }
 }

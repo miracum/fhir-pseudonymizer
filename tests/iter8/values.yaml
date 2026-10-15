@@ -6,12 +6,12 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-pseudonymizationService: Vfps
-
+# vfps is installed via ../prerequisites, see .github/workflows/ci.yaml and docs/development.md.
 # the namespaces are created by the iter8 test.
 # see ./experiment.yaml
-vfps:
-  enabled: true
+extraEnvDict:
+  PseudonymizationService: Vfps
+  Vfps__Address: dns:///vfps-headless:8081
 
 anonymizationConfig: |
   ---
@@ -28,9 +28,8 @@ anonymizationConfig: |
   parameters:
     dateShiftKey: ""
     dateShiftScope: resource
-    cryptoHashKey: fhir-pseudonymizer
-    # must be of a valid AES key length; here the key is padded to 192 bits
-    encryptKey: fhir-pseudonymizer000000
+    cryptoHashKey: ""
+    encryptKey: ""
     enablePartialAgesForRedact: true
     enablePartialDatesForRedact: true
     enablePartialZipCodesForRedact: true

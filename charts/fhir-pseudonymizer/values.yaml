@@ -1,0 +1,323 @@
+# -- metadata.annotations to apply to the deployment
+deploymentAnnotations: {}
+
+# -- String to partially override fullname template (will maintain the release name)
+nameOverride: ""
+
+# -- String to fully override fullname template
+fullnameOverride: ""
+
+image:
+  # -- container image registry
+  registry: ghcr.io
+  # -- container image repository
+  repository: miracum/fhir-pseudonymizer
+  # -- container image tag. The chart's publish workflow pins it to the digest of the image built for the release.
+  tag: v2.38.0 # x-release-please-version
+  # -- container image pull policy
+  pullPolicy: IfNotPresent
+
+metrics:
+  serviceMonitor:
+    # -- if enabled, creates a ServiceMonitor instance for Prometheus Operator-based monitoring
+    enabled: false
+    # -- additional labels for the ServiceMonitor resource, e.g. `release: prometheus`
+    additionalLabels: {}
+    # namespace: monitoring
+    # interval: 30s
+    # scrapeTimeout: 10s
+
+# -- number of replicas. This components can also be easily scaled horizontally if necessary.
+replicaCount: 1
+
+# -- image pull secrets
+imagePullSecrets: []
+
+# -- pod annotations
+podAnnotations: {}
+
+# -- the pod security context
+podSecurityContext: {}
+# fsGroup: 2000
+
+# -- the container security context
+# @ignored
+securityContext:
+  allowPrivilegeEscalation: false
+  privileged: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+service:
+  # -- the type of the Service exposing the fhir-pseudonymizer
+  type: ClusterIP
+  # -- port to expose the HTTP API at
+  port: 8080
+  # -- port to expose metrics at under the `/metrics` path
+  metricsPort: 8081
+
+# -- (string or object) configure the anonymization rules, see <https://github.com/miracum/fhir-pseudonymizer/blob/HEAD/src/FhirPseudonymizer/anonymization.yaml> for an example.
+# Either a YAML string (a block scalar, `|`) or a regular YAML object, which is rendered to `anonymization.yaml` as-is.
+# Strings are not evaluated as templates. A `files/anonymization.yaml` inside the chart takes precedence over both.
+# Can't be combined with `existingAnonymizationConfigMap`.
+# Also see [README.md](README.md#anonymization-and-pseudonymization) for configuring it within this values.yaml
+anonymizationConfig: null
+
+# -- name of an existing ConfigMap containing the anonymization config, instead of having the chart create one from
+# `anonymizationConfig`. Evaluated as a template. It is mounted into the container, so changes to it are picked up
+# after a pod restart, which the chart does not trigger.
+existingAnonymizationConfigMap: ""
+
+# -- name of the key inside `existingAnonymizationConfigMap` holding the anonymization config
+existingAnonymizationConfigMapKey: "anonymization.yaml"
+
+# -- set container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if `resources` is set (`resources` is recommended for production).
+# More information: <https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15>
+resourcesPreset: "small"
+
+# -- configure the resource requests and limits
+resources: {}
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+ingress:
+  # -- create an Ingress for the application
+  enabled: false
+  # -- ingressClassName to use
+  className: ""
+  # -- extra annotations to apply to the Ingress resource
+  annotations: {}
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  # -- list of ingress hosts
+  hosts:
+    - host: fhir-pseudonymizer.127.0.0.1.nip.io
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+          portName: http
+  # -- TLS configuration
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# -- node labels for pods assignment
+# see: <https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/>
+nodeSelector: {}
+
+# -- tolerations for pods assignment
+# see: <https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/>
+tolerations: []
+
+# -- affinity for pods assignment
+# see: <https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity>
+affinity: {}
+
+# -- readiness probe
+# @ignored
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /ready
+    port: http
+  failureThreshold: 3
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 5
+
+# -- liveness probe
+# @ignored
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /live
+    port: http
+  failureThreshold: 3
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 5
+
+# -- startup probe
+# @ignored
+startupProbe:
+  enabled: false
+  httpGet:
+    path: /ready
+    port: http
+  failureThreshold: 30
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 5
+
+# -- extra environment variables to apply to the container, as a map of variable name to value.
+# This is the simplest way to configure the application, including the pseudonymization service
+# and its authentication; see the [configuration reference](https://miracum.github.io/fhir-pseudonymizer/docs/configuration/)
+# for the available variables. Values are always passed as strings. Use `extraEnv` instead if a
+# variable needs `valueFrom`, e.g. to read a credential from a secret. If a variable is set in both,
+# the one from `extraEnv` wins.
+extraEnvDict: {}
+# PseudonymizationService: Vfps
+# Vfps__Address: dns:///vfps-headless.vfps.svc.cluster.local:8081
+
+# -- extra environment variables to apply to the container, in Kubernetes' `name`/`value`/`valueFrom` syntax.
+extraEnv: []
+# - name: Vfps__Auth__Basic__Password
+#   valueFrom:
+#     secretKeyRef:
+#       name: vfps-credentials
+#       key: password
+
+# -- extra volumeMounts for the main fhir-pseudonymizer container
+extraVolumeMounts: []
+
+# -- extra volumes
+extraVolumes: []
+
+# -- pod topology spread configuration
+# see: <https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#api>
+topologySpreadConstraints: []
+# - maxSkew: 1
+#   topologyKey: topology.kubernetes.io/zone
+#   whenUnsatisfiable: ScheduleAnyway
+#   labelSelector:
+#     matchLabels:
+#       app.kubernetes.io/name: fhir-pseudonymizer
+#       app.kubernetes.io/instance: fhir-pseudonymizer
+
+podDisruptionBudget:
+  # -- create a PodDisruptionBudget resource
+  enabled: false
+  # -- Minimum available instances; ignored if there is no PodDisruptionBudget
+  minAvailable: 1
+  # -- Maximum unavailable instances; ignored if there is no PodDisruptionBudget
+  maxUnavailable: ""
+
+autoscaling:
+  # -- enable horizontal pod autoscaling
+  enabled: false
+  # -- minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down.
+  # It defaults to 1 pod. minReplicas is allowed to be 0 if the alpha feature gate HPAScaleToZero is
+  # enabled and at least one Object or External metric is configured.
+  # Scaling is active as long as at least one metric value is available.
+  minReplicas: 1
+  # -- upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than `minReplicas`.
+  maxReplicas: 5
+  # -- target average CPU utilization (represented as a percentage of requested CPU)
+  # over all the pods; if not specified the default autoscaling policy will be used.
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: false
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  # -- whether to automount the SA token
+  automountServiceAccountToken: false
+
+# -- image used by the Helm test pods
+# @ignored
+curl:
+  image:
+    registry: docker.io
+    repository: curlimages/curl
+    tag: 8.23.0@sha256:a134550be58ab783810e613ae96fd253c38f7bdd16d9bf9be350700c7a29ac06
+
+# -- container security context applied to init containers and the Helm test pods
+# @ignored
+restrictedContainerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  privileged: false
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+  seccompProfile:
+    type: RuntimeDefault
+
+# configure reading FHIR resources directly from Kafka, in addition to the HTTP API.
+# See <https://miracum.github.io/fhir-pseudonymizer/docs/kafka/> and
+# [README.md](README.md#reading-from-kafka) for details.
+kafka:
+  # -- master switch for all Kafka integration: consuming from `kafka.topics` and publishing
+  # provenance bundles to `kafka.provenanceTopic`. Requires `kafka.bootstrapServers` to be set, as well as the
+  # `Kafka__CryptoHashMessageKeys__Key` environment variable (or `Kafka__CryptoHashMessageKeys__Enabled=false`), see
+  # [README.md](README.md#reading-from-kafka).
+  enabled: false
+  # -- comma-separated list of `host:port` Kafka brokers to bootstrap from, e.g. `kafka:9092`
+  bootstrapServers: ""
+  # -- list of input topics to consume FHIR resources/bundles from, e.g. `["fhir.patient", "fhir.observation"]`.
+  # Each entry is evaluated as a template. Left empty, nothing is consumed from Kafka and only
+  # provenance for resources pseudonymized via the REST API is published, if `kafka.provenanceTopic` is set.
+  topics: []
+  # -- regular expression matched against each input topic's name to derive the output topic the
+  # pseudonymized resource is written to. Together with `kafka.outputTopicReplacement`, the
+  # default prepends `pseudonymized.` to every input topic, turning `fhir.test` into
+  # `pseudonymized.fhir.test`.
+  outputTopicPattern: "^"
+  # -- the string every match of `kafka.outputTopicPattern` is replaced with
+  outputTopicReplacement: "pseudonymized."
+  # -- if set, a Bundle containing a FHIR Provenance resource documenting the pseudonymization is
+  # published to this topic for every successfully pseudonymized resource - including those
+  # pseudonymized via the REST API. Evaluated as a template.
+  provenanceTopic: ""
+  # -- the number of workers anonymizing messages concurrently. Left empty, this defaults to the
+  # number of CPU cores visible to the container.
+  workerCount: ""
+  # -- the maximum number of messages buffered per worker before the consumer pauses fetching
+  # new ones (backpressure). Left empty, this defaults to 100.
+  workerChannelCapacity: ""
+  # -- settings shared by the consumer and the producer, set as `Kafka__Client__<key>` environment
+  # variables. Any property of `Confluent.Kafka.ClientConfig` can be set here, e.g.
+  # `securityProtocol: SaslSsl`, `saslMechanism: ScramSha512`, or `saslUsername: fhir-pseudonymizer`.
+  # Set the brokers via `kafka.bootstrapServers` instead of here. Since these end up in the pod
+  # spec in plaintext, set credentials via `extraEnv` with a `secretKeyRef` instead.
+  client: {}
+  consumer:
+    # -- the Kafka consumer group id. Evaluated as a template. Note that it is also part of the name
+    # of the dead letter topic failed messages are sent to: `error.<input-topic>.<group-id>`.
+    groupId: '{{ include "fhir-pseudonymizer.fullname" . }}'
+    # -- consumer-only settings layered on top of `kafka.client`, set as `Kafka__Consumer__<key>`
+    # environment variables. Any property of `Confluent.Kafka.ConsumerConfig` can be set here,
+    # e.g. `sessionTimeoutMs: "45000"`.
+    config: {}
+  producer:
+    # -- producer-only settings layered on top of `kafka.client`, set as `Kafka__Producer__<key>`
+    # environment variables. Any property of `Confluent.Kafka.ProducerConfig` can be set here,
+    # e.g. `lingerMs: "100"`.
+    config: {}
+
+tests:
+  # -- whether the Helm test pods automount the service account token
+  automountServiceAccountToken: false
+  # -- set container resources according to one common preset (allowed values: none, nano, micro, small, medium, large, xlarge, 2xlarge). This is ignored if `tests.resources` is set.
+  # More information: <https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl#L15>
+  resourcesPreset: "nano"
+  # -- configure the test pods resource requests and limits
+  resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi

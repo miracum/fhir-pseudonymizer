@@ -22,6 +22,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
         {
             _validator.Validate(configuration);
 
+            string keyDerivationContext = null;
             if (anonymizationConfig is not null)
             {
                 configuration.Parameters ??= new ParameterConfiguration();
@@ -40,32 +41,41 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
 
                 // YAML `parameters.keyDerivationContext` wins if set, otherwise falls back to the
                 // static Anonymization__KeyDerivationContext app setting.
-                var keyDerivationContext = string.IsNullOrWhiteSpace(
+                keyDerivationContext = string.IsNullOrWhiteSpace(
                     configuration.Parameters.KeyDerivationContext
                 )
                     ? anonymizationConfig.KeyDerivationContext
                     : configuration.Parameters.KeyDerivationContext;
-                if (!string.IsNullOrWhiteSpace(keyDerivationContext))
-                {
-                    // Each key derives from its own resolved value as its own master key - not
-                    // from one another - so CryptoHashKey and EncryptKey stay independent
-                    // secrets even when both are being stretched via the same context.
-                    if (!string.IsNullOrWhiteSpace(configuration.Parameters.CryptoHashKey))
-                    {
-                        configuration.Parameters.CryptoHashKey = KeyDerivation.DeriveCryptoHashKey(
-                            configuration.Parameters.CryptoHashKey,
-                            keyDerivationContext
-                        );
-                    }
+            }
 
-                    if (!string.IsNullOrWhiteSpace(configuration.Parameters.EncryptKey))
-                    {
-                        _derivedEncryptKey = KeyDerivation.DeriveEncryptKey(
-                            configuration.Parameters.EncryptKey,
-                            keyDerivationContext
-                        );
-                    }
+            _validator.ValidateKeyLengths(configuration.Parameters);
+
+            if (!string.IsNullOrWhiteSpace(keyDerivationContext))
+            {
+                // Each key derives from its own resolved value as its own master key - not
+                // from one another - so CryptoHashKey and EncryptKey stay independent
+                // secrets even when both are being stretched via the same context.
+                if (!string.IsNullOrWhiteSpace(configuration.Parameters.CryptoHashKey))
+                {
+                    configuration.Parameters.CryptoHashKey = KeyDerivation.DeriveCryptoHashKey(
+                        configuration.Parameters.CryptoHashKey,
+                        keyDerivationContext
+                    );
                 }
+
+                if (!string.IsNullOrWhiteSpace(configuration.Parameters.EncryptKey))
+                {
+                    _derivedEncryptKey = KeyDerivation.DeriveEncryptKey(
+                        configuration.Parameters.EncryptKey,
+                        keyDerivationContext
+                    );
+                }
+            }
+            else
+            {
+                // Only a key used as-is has to be a valid AES key size - a master key can be any
+                // length, since the derived key always is one.
+                _validator.ValidateStaticEncryptKeySize(configuration.Parameters?.EncryptKey);
             }
 
             configuration.GenerateDefaultParametersIfNotConfigured();

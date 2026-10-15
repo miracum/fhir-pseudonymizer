@@ -1,20 +1,16 @@
-using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.Model;
-using Hl7.Fhir.Specification;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
 using Microsoft.Health.Fhir.Anonymizer.Core.Visitors;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 {
-    public static class ElementNodeOperationExtensions
+    public static class PocoNodeOperationExtensions
     {
-        private static readonly PocoStructureDefinitionSummaryProvider s_provider =
-            new PocoStructureDefinitionSummaryProvider();
-
-        public static async Task<ElementNode> AnonymizeAsync(
-            this ElementNode node,
+        public static async Task<PocoNode> AnonymizeAsync(
+            this PocoNode node,
             AnonymizationFhirPathRule[] rules,
             Dictionary<string, IAnonymizerProcessor> processors,
             AnonymizerSettings settings = null,
@@ -29,24 +25,30 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
         }
 
         // Remove null children of current node, and return true => current node is null
-        public static bool RemoveNullChildren(this ElementNode node)
+        public static bool RemoveNullChildren(this PocoNode node)
         {
             if (node == null)
             {
                 return true;
             }
 
-            var children = node.Children().CastElementNodes().ToList();
+            var children = new List<PocoNode>();
+            node.AddChildren(children);
+
+            var removedChildren = 0;
             foreach (var child in children)
             {
                 // Remove child if it is null => return true
                 if (RemoveNullChildren(child))
                 {
-                    node.Remove(child);
+                    node.RemoveChild(child);
+                    removedChildren++;
                 }
             }
 
-            var currentNodeIsEmpty = !node.Children().Any() && node.Value == null;
+            // Counted rather than enumerating the children again, which allocates a new node
+            // wrapper and enumerators for each of them.
+            var currentNodeIsEmpty = removedChildren == children.Count && node.GetValue() == null;
             var currentNodeIsFhirResource = node.IsFhirResource();
             if (currentNodeIsEmpty && !currentNodeIsFhirResource)
             {
@@ -56,7 +58,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
             return false;
         }
 
-        public static void AddSecurityTag(this ElementNode node, ProcessResult result)
+        public static void AddSecurityTag(this PocoNode node, ProcessResult result)
         {
             if (node == null)
             {
@@ -68,8 +70,11 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
                 return;
             }
 
-            var metaNode = node.GetMeta();
-            var meta = metaNode?.ToPoco<Meta>() ?? new Meta();
+            // node is always a resource here (guarded by the AnonymizationVisitor caller), so its
+            // live Poco can be edited directly via the strongly-typed Meta property instead of
+            // splicing a synthetic node into the tree.
+            var resource = (Resource)node.Poco;
+            var meta = resource.Meta ?? new Meta();
 
             if (
                 result.IsRedacted
@@ -197,15 +202,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
                 meta.Security.Add(SecurityLabels.REDACT);
             }
 
-            var newMetaNode = ElementNode.FromElement(meta.ToTypedElement());
-            if (metaNode == null)
-            {
-                node.Add(s_provider, newMetaNode);
-            }
-            else
-            {
-                node.Replace(s_provider, metaNode, newMetaNode);
-            }
+            resource.Meta = meta;
         }
     }
 }

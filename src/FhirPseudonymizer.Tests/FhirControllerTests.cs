@@ -17,6 +17,19 @@ public class FhirControllerTests
     private static IMemoryCache CreateAnonymizerConfigCache() =>
         new MemoryCache(new MemoryCacheOptions());
 
+    private static FhirController CreateController(IAnonymizerEngine anonymizer) =>
+        new(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            anonymizer,
+            A.Fake<IDePseudonymizerEngine>(),
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
+        );
+
     [Fact]
     public async Task DeIdentify_ParsesDynamicSettings()
     {
@@ -57,6 +70,59 @@ public class FhirControllerTests
         await controller.DeIdentify(parameters, TestContext.Current.CancellationToken);
 
         ruleSettings.Should().ContainKey(domainPrefix).WhoseValue.Should().Be(domainPrefixValue);
+    }
+
+    [Fact]
+    public async Task ReIdentify_ParsesDynamicSettingsAndDoesNotAddSecurityTags()
+    {
+        const string domainPrefix = "domain-prefix";
+        var domainPrefixValue = new FhirString("test-");
+        var patient = new Patient { Id = "inner" };
+        Resource reIdentifiedResource = null;
+        AnonymizerSettings settings = null;
+
+        var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
+        A.CallTo(() =>
+                dePseudonymizer.DePseudonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Invokes(
+                (Resource r, AnonymizerSettings s, CancellationToken _) =>
+                {
+                    reIdentifiedResource = r;
+                    settings = s;
+                }
+            )
+            .Returns(patient);
+
+        var controller = new FhirController(
+            A.Fake<AnonymizationConfig>(),
+            A.Fake<ILogger<FhirController>>(),
+            A.Fake<IAnonymizerEngine>(),
+            dePseudonymizer,
+            A.Fake<IProvenancePublisher>(),
+            A.Fake<IPseudonymServiceClient>(),
+            new FeatureManagement(),
+            CreateAnonymizerConfigCache(),
+            new MemoryCacheEntryOptions()
+        );
+
+        var parameters = new Parameters()
+            .Add("settings", new[] { Tuple.Create<string, Base>(domainPrefix, domainPrefixValue) })
+            .Add("resource", patient);
+
+        await controller.ReIdentify(parameters, TestContext.Current.CancellationToken);
+
+        reIdentifiedResource.Should().BeSameAs(patient);
+        settings.ShouldAddSecurityTag.Should().BeFalse();
+        settings
+            .DynamicRuleSettings.Should()
+            .ContainKey(domainPrefix)
+            .WhoseValue.Should()
+            .Be(domainPrefixValue);
     }
 
     [Fact]
@@ -137,6 +203,71 @@ public class FhirControllerTests
     }
 
     [Fact]
+    public async Task DeIdentify_WhenThePseudonymizationServiceRejectsAValue_ShouldReturnUnprocessableEntity()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(
+                new PseudonymizationRejectedException(
+                    "Vfps rejected the pseudonymization request with status InvalidArgument: doesn't match the required pattern",
+                    new InvalidOperationException()
+                )
+            );
+
+        var controller = CreateController(anonymizer);
+
+        var response = await controller.DeIdentify(
+            new Bundle(),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        var issue = response.Value.Should().BeOfType<OperationOutcome>().Which.Issue.Single();
+        issue.Code.Should().Be(OperationOutcome.IssueType.Processing);
+        issue.Diagnostics.Should().Contain("doesn't match the required pattern");
+    }
+
+    [Fact]
+    public async Task DeIdentify_WhenThePseudonymizationServiceIsUnavailable_ShouldReturnServiceUnavailable()
+    {
+        var anonymizer = A.Fake<IAnonymizerEngine>();
+        A.CallTo(() =>
+                anonymizer.AnonymizeResourceAsync(
+                    A<Resource>._,
+                    A<AnonymizerSettings>._,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(
+                new TransientPseudonymizationException(
+                    "Vfps pseudonymization call failed with status Unavailable.",
+                    new InvalidOperationException()
+                )
+            );
+
+        var controller = CreateController(anonymizer);
+
+        var response = await controller.DeIdentify(
+            new Bundle(),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        response
+            .Value.Should()
+            .BeOfType<OperationOutcome>()
+            .Which.Issue.Single()
+            .Code.Should()
+            .Be(OperationOutcome.IssueType.Transient);
+    }
+
+    [Fact]
     public async Task DeIdentify_WithParametersCarryingNoResource_ShouldReturnBadRequest()
     {
         var controller = new FhirController(
@@ -195,11 +326,18 @@ public class FhirControllerTests
 
         response.StatusCode.Should().Be(StatusCodes.Status499ClientClosedRequest);
         response.Value.Should().BeOfType<OperationOutcome>();
-        A.CallTo(provenancePublisher).MustNotHaveHappened();
+        A.CallTo(() =>
+                provenancePublisher.Publish(
+                    A<Resource>._,
+                    A<Resource>._,
+                    A<Confluent.Kafka.Headers>._
+                )
+            )
+            .MustNotHaveHappened();
     }
 
     [Fact]
-    public async Task DePseudonymize_WhenCancelled_ReturnsClientClosedRequest()
+    public async Task ReIdentify_WhenCancelled_ReturnsClientClosedRequest()
     {
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
@@ -226,7 +364,7 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        var response = await controller.DePseudonymize(new Bundle(), cts.Token);
+        var response = await controller.ReIdentify(new Bundle(), cts.Token);
 
         response.StatusCode.Should().Be(StatusCodes.Status499ClientClosedRequest);
         response.Value.Should().BeOfType<OperationOutcome>();
@@ -248,6 +386,9 @@ public class FhirControllerTests
             .Returns(anonymized);
 
         var provenancePublisher = A.Fake<IProvenancePublisher>();
+        // Mirror KafkaProvenancePublisher: snapshot the resource before the anonymizer gets it.
+        var preImage = new Patient { Id = "123" };
+        A.CallTo(() => provenancePublisher.CapturePreImage(original)).Returns(preImage);
 
         var controller = new FhirController(
             A.Fake<AnonymizationConfig>(),
@@ -263,12 +404,12 @@ public class FhirControllerTests
 
         await controller.DeIdentify(original, TestContext.Current.CancellationToken);
 
-        A.CallTo(() => provenancePublisher.Publish(original, anonymized, null))
+        A.CallTo(() => provenancePublisher.Publish(preImage, anonymized, null))
             .MustHaveHappenedOnceExactly();
     }
 
     [Fact]
-    public async Task DePseudonymize_DoesNotPublishProvenance()
+    public async Task ReIdentify_DoesNotPublishProvenance()
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
         A.CallTo(() =>
@@ -294,7 +435,7 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        await controller.DePseudonymize(
+        await controller.ReIdentify(
             new Patient { Id = "123" },
             TestContext.Current.CancellationToken
         );
@@ -310,7 +451,7 @@ public class FhirControllerTests
     }
 
     [Fact]
-    public async Task DePseudonymize_WithExceptionThrownInDePseudonymizer_ShouldReturnInternalError()
+    public async Task ReIdentify_WithExceptionThrownInDePseudonymizer_ShouldReturnInternalError()
     {
         var dePseudonymizer = A.Fake<IDePseudonymizerEngine>();
         A.CallTo(() =>
@@ -334,7 +475,7 @@ public class FhirControllerTests
             new MemoryCacheEntryOptions()
         );
 
-        var response = await controller.DePseudonymize(
+        var response = await controller.ReIdentify(
             new Bundle(),
             TestContext.Current.CancellationToken
         );

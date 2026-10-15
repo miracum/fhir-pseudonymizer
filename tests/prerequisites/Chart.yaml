@@ -1,0 +1,14 @@
+apiVersion: v2
+name: chaos-test-prerequisites
+description: Backing services for the chaos and iter8 tests, i.e. everything besides fhir-pseudonymizer itself. Versions are kept up-to-date by Renovate.
+type: application
+version: 0.0.0
+dependencies:
+  - name: vfps
+    repository: oci://ghcr.io/miracum/vfps/charts
+    version: 1.23.2
+  - name: argo-workflows
+    repository: oci://ghcr.io/argoproj/argo-helm
+    version: 2.0.13
+    # only needed by the chaos test, disable using --set argo-workflows.enabled=false
+    condition: argo-workflows.enabled

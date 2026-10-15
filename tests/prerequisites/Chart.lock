@@ -1,0 +1,9 @@
+dependencies:
+- name: vfps
+  repository: oci://ghcr.io/miracum/vfps/charts
+  version: 1.23.2
+- name: argo-workflows
+  repository: oci://ghcr.io/argoproj/argo-helm
+  version: 2.0.13
+digest: sha256:2a80f7ac31b2e995aeb9126657bf85c23896fcd9c2468c356a4ab173bb2a7ea3
+generated: "2026-10-15T22:02:29.652084511+02:00"

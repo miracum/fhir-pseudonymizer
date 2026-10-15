@@ -95,7 +95,7 @@ public static class GPasExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(gPasConfig.RequestRetryCount));
+            .AddPolicyHandler(GetRetryPolicy(gPasConfig.Retry.Count));
 
         services.AddTransient<GPasFhirClient>();
         services.AddTransient<IPseudonymServiceClient>(

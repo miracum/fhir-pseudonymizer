@@ -151,4 +151,228 @@ public class KafkaProvenancePublisherTests
 
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public async Task PublishAsync_ReportsSuccessOnlyOnceTheBrokerAcknowledgedTheProvenance()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        Action<DeliveryReport<byte[], string>> deliveryHandler = null;
+        A.CallTo(() =>
+                producer.Produce(
+                    "provenance-topic",
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Invokes(
+                (
+                    string _,
+                    Message<byte[], string> _,
+                    Action<DeliveryReport<byte[], string>> handler
+                ) => deliveryHandler = handler
+            );
+        var reported = new List<ProvenancePublishingException>();
+
+        await CreatePublisher(producer)
+            .PublishAsync(
+                new Patient { Id = "456" },
+                new Patient { Id = "hashed-456" },
+                null,
+                reported.Add,
+                TestContext.Current.CancellationToken
+            );
+
+        reported.Should().BeEmpty();
+
+        deliveryHandler(
+            new DeliveryReport<byte[], string> { Error = new Error(ErrorCode.NoError) }
+        );
+
+        reported.Should().ContainSingle().Which.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task PublishAsync_WhenTheBrokerRejectsTheProvenance_ReportsTheFailure()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Invokes(
+                (
+                    string _,
+                    Message<byte[], string> _,
+                    Action<DeliveryReport<byte[], string>> handler
+                ) =>
+                    handler(
+                        new DeliveryReport<byte[], string>
+                        {
+                            Error = new Error(ErrorCode.TopicAuthorizationFailed),
+                        }
+                    )
+            );
+        var reported = new List<ProvenancePublishingException>();
+
+        await CreatePublisher(producer)
+            .PublishAsync(
+                new Patient { Id = "456" },
+                new Patient { Id = "hashed-456" },
+                null,
+                reported.Add,
+                TestContext.Current.CancellationToken
+            );
+
+        reported
+            .Should()
+            .ContainSingle()
+            .Which.InnerException.Should()
+            .BeOfType<ProduceException<byte[], string>>();
+    }
+
+    [Fact]
+    public async Task PublishAsync_WhenProducingThrows_ReportsTheFailureInsteadOfThrowing()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Throws(new KafkaException(ErrorCode.MsgSizeTooLarge));
+        var reported = new List<ProvenancePublishingException>();
+
+        await CreatePublisher(producer)
+            .PublishAsync(
+                new Patient { Id = "456" },
+                new Patient { Id = "hashed-456" },
+                null,
+                reported.Add,
+                TestContext.Current.CancellationToken
+            );
+
+        reported.Should().ContainSingle().Which.InnerException.Should().BeOfType<KafkaException>();
+    }
+
+    [Fact]
+    public async Task PublishAsync_WhenTheProducerQueueIsFull_WaitsForRoomInsteadOfGivingUp()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .Throws(new KafkaException(ErrorCode.Local_QueueFull))
+            .Once()
+            .Then.Invokes(
+                (
+                    string _,
+                    Message<byte[], string> _,
+                    Action<DeliveryReport<byte[], string>> handler
+                ) =>
+                    handler(
+                        new DeliveryReport<byte[], string> { Error = new Error(ErrorCode.NoError) }
+                    )
+            );
+        var reported = new List<ProvenancePublishingException>();
+
+        await CreatePublisher(producer)
+            .PublishAsync(
+                new Patient { Id = "456" },
+                new Patient { Id = "hashed-456" },
+                null,
+                reported.Add,
+                TestContext.Current.CancellationToken
+            );
+
+        reported.Should().ContainSingle().Which.Should().BeNull();
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .MustHaveHappenedTwiceExactly();
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithNothingToDocument_ReportsSuccessRightAwayWithoutProducing()
+    {
+        var producer = A.Fake<IProducer<byte[], string>>();
+        var reported = new List<ProvenancePublishingException>();
+
+        await CreatePublisher(producer)
+            .PublishAsync(
+                null,
+                new Patient(),
+                null,
+                reported.Add,
+                TestContext.Current.CancellationToken
+            );
+
+        reported.Should().ContainSingle().Which.Should().BeNull();
+        A.CallTo(() =>
+                producer.Produce(
+                    A<string>._,
+                    A<Message<byte[], string>>._,
+                    A<Action<DeliveryReport<byte[], string>>>._
+                )
+            )
+            .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithoutProvenanceConfigured_ReportsSuccessRightAway()
+    {
+        var reported = new List<ProvenancePublishingException>();
+
+        await new NoopProvenancePublisher().PublishAsync(
+            null,
+            new Patient { Id = "hashed-456" },
+            null,
+            reported.Add,
+            TestContext.Current.CancellationToken
+        );
+
+        reported.Should().ContainSingle().Which.Should().BeNull();
+    }
+
+    /// <summary>
+    ///     The anonymizer mutates the resource it is handed in place and returns that same
+    ///     instance, so the pre-image has to be snapshotted before anonymizing. This asserts the
+    ///     snapshot really is detached, since a shallow hand-back would leave
+    ///     entity[role=source] pointing at the pseudonymized resource.
+    /// </summary>
+    [Fact]
+    public void CapturePreImage_ReturnsSnapshotUnaffectedByLaterInPlaceMutation()
+    {
+        var publisher = CreatePublisher(A.Fake<IProducer<byte[], string>>());
+        var resource = new Patient { Id = "original-id" };
+
+        var preImage = publisher.CapturePreImage(resource);
+
+        // stand in for what the anonymizer does to the caller's instance
+        resource.Id = "pseudonymized-id";
+
+        preImage.Should().NotBeSameAs(resource);
+        preImage.Id.Should().Be("original-id");
+    }
+
+    [Fact]
+    public void CapturePreImage_WithoutProvenanceConfigured_DoesNotPayForACopy()
+    {
+        new NoopProvenancePublisher()
+            .CapturePreImage(new Patient { Id = "original-id" })
+            .Should()
+            .BeNull();
+    }
 }

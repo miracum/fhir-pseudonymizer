@@ -1,2 +1,3 @@
 src/FhirPseudonymizer.Tests/Snapshots/*
 packages.lock.json
+charts/*/templates/

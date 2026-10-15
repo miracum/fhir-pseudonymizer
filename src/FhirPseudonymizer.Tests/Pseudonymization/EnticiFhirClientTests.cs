@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Entici;
+using Hl7.Fhir.Rest;
 using Microsoft.Extensions.Logging;
 
 namespace FhirPseudonymizer.Tests.Pseudonymization;
@@ -163,12 +164,17 @@ public class EnticiFhirClientTests
         await act.Should().ThrowAsync<TransientPseudonymizationException>();
     }
 
-    [Fact]
-    public async Task GetOrCreatePseudonymFor_WhenEnticiRejectsTheInput_ThrowsTheOriginalException()
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.UnprocessableEntity)]
+    public async Task GetOrCreatePseudonymFor_WhenEnticiRejectsTheInput_ThrowsPseudonymizationRejectedException(
+        HttpStatusCode statusCode
+    )
     {
         var client = new EnticiFhirClient(
             A.Fake<ILogger<EnticiFhirClient>>(),
-            CreateHttpClientFactory(CreateFailingHttpMessageHandler(HttpStatusCode.BadRequest))
+            CreateHttpClientFactory(CreateFailingHttpMessageHandler(statusCode))
         );
 
         var settings = new Dictionary<string, object>
@@ -184,9 +190,9 @@ public class EnticiFhirClientTests
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
-        await act.Should()
-            .ThrowAsync<Exception>()
-            .Where(exc => exc.GetType() != typeof(TransientPseudonymizationException));
+        (
+            await act.Should().ThrowAsync<PseudonymizationRejectedException>()
+        ).WithInnerException<FhirOperationException>();
     }
 
     private static HttpMessageHandler CreateFailingHttpMessageHandler(HttpStatusCode statusCode)

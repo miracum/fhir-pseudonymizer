@@ -6,7 +6,7 @@ on:
   release:
     types: [created]
   pull_request:
-    branches: [master]
+    branches: [master, beta]
   merge_group:
     types:
       - checks_requested
@@ -16,14 +16,12 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@869881c224354c744e09f1d9bba9d47b5c698b44 # v1.26.0
+    uses: miracum/.github/.github/workflows/standard-build.yaml@074c1a65db6f09850cd80f38efe230036febb44e # v1.29.2
     permissions:
       contents: write
       id-token: write
       packages: write
       pull-requests: write
-      actions: read
-      security-events: write
       attestations: write
       artifact-metadata: write
     with:
@@ -32,8 +30,78 @@ jobs:
       platforms: |
         linux/amd64
         linux/arm64
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ct install (inside standard-chart-publish.yaml's install job) only runs on PRs that change
+  # something under the chart's own directory - it's gated by `ct list-changed`, a plain git diff
+  # scoped to the chart directory that has no idea `chart.helm-extra-set-args` below even exists.
+  # Without this, a PR that only touches src/ or the Dockerfile would build and push a new image
+  # but never actually deploy it via the chart, silently skipping the one check that would catch
+  # an image that fails its readiness/liveness probes or otherwise can't come up under Helm.
+  detect-app-changes:
+    name: detect changes affecting chart deployability
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check for changes under src/ or the Dockerfile since the PR's base
+        id: check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # only meaningful for pull_request events. push/release/merge_group already get a full
+          # ct install regardless (list-changed's own base-branch diff has nothing to compare
+          # against on those), so there's nothing for this job to add there.
+          if [ "${EVENT_NAME}" != "pull_request" ] ||
+            git diff --quiet "${BASE_SHA}" -- src/ Dockerfile charts/fhir-pseudonymizer/; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+  chart:
+    needs:
+      - build
+      - detect-app-changes
+    uses: miracum/.github/.github/workflows/standard-chart-publish.yaml@43926b6aa69b5a63e15378200f698ce8cfeefc88 # v1.29.3
+    permissions:
+      contents: read
+      packages: write # to push the chart and its signature/attestation to ghcr.io
+      id-token: write # for keyless chart signing and OIDC-based attestations
+      attestations: write # to publish build provenance attestations
+      artifact-metadata: write # required by actions/attest-build-provenance
+    with:
+      chart-path: charts/fhir-pseudonymizer
+      # published as ghcr.io/miracum/fhir-pseudonymizer/charts/fhir-pseudonymizer rather than the
+      # default ghcr.io/miracum/fhir-pseudonymizer/fhir-pseudonymizer, matching the
+      # .../charts/<name> layout used elsewhere in the org (e.g. vfps).
+      registry: ghcr.io/${{ github.repository }}/charts
+      # stable per PR (no commit sha), so every push to the same PR overwrites this one OCI tag
+      # instead of piling up a new prerelease version per commit. Empty on every other event,
+      # which falls back to the workflow's own default: release events use the release tag,
+      # everything else uses Chart.yaml's version.
+      version: ${{ github.event_name == 'pull_request' && format('0.0.0-pr{0}', github.event.pull_request.number) || '' }}
+      lint-config: .github/ct/ct.yaml
+      # force ct install to run even when the PR doesn't touch charts/fhir-pseudonymizer/ itself,
+      # as long as it changed something that could affect whether the chart still deploys (see
+      # detect-app-changes above).
+      install-all: ${{ needs.detect-app-changes.outputs.changed == 'true' }}
+      # test ct install against the image this PR just built instead of the tag baked into
+      # values.yaml, so a PR can't pass chart testing against a stale/unrelated release image.
+      # Restricted to same-repo PRs: forked PRs never get their image pushed to ghcr.io (see
+      # standard-build.yaml), so kind wouldn't be able to pull it - falls back to the chart's
+      # default tag there.
+      helm-extra-set-args: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) && format('--set=image.tag={0}', needs.build.outputs.image-version) || '' }}
+      image-digest: ${{ needs.build.outputs.image-digest }}
+      image-tag-path: .image.tag
 
   test:
     runs-on: ubuntu-24.04
@@ -161,8 +229,12 @@ jobs:
         env:
           IMAGE: ${{ fromJson(needs.build.outputs.image-meta-json).tags[0] }}
         run: |
+          # there is no default anonymization config. Use the same rules the k6 script sends as the
+          # dynamic config so both scenarios apply identical rules.
           docker run -d --name=fhir-pseudonymizer -p 8080:8080 \
             -e PseudonymizationService=None \
+            -e AnonymizationEngineConfigPath=/etc/anonymization.yaml \
+            -v "${PWD}/src/FhirPseudonymizer/anonymization.yaml:/etc/anonymization.yaml:ro" \
             "${IMAGE}"
 
       - name: Wait for container to become ready
@@ -271,17 +343,28 @@ jobs:
       - name: List images in cluster
         run: docker exec kind-control-plane crictl images
 
+      - name: Install "vfps"
+        run: |
+          helm dependency update tests/prerequisites
+          helm install \
+            --set="argo-workflows.enabled=false" \
+            --wait \
+            --timeout=10m \
+            prerequisites \
+            tests/prerequisites
+
       - name: Install "fhir-pseudonymizer"
         env:
           IMAGE_TAG: ${{ needs.build.outputs.image-version }}
         run: |
+          helm dependency update charts/fhir-pseudonymizer
           helm install \
             --set="image.tag=${IMAGE_TAG}" \
             -f tests/iter8/values.yaml \
             --wait \
             --timeout=10m \
             fhir-pseudonymizer \
-            oci://ghcr.io/miracum/charts/fhir-pseudonymizer
+            charts/fhir-pseudonymizer
 
       - name: Launch iter8 experiment
         run: kubectl apply -f tests/iter8/experiment.yaml
@@ -340,7 +423,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@869881c224354c744e09f1d9bba9d47b5c698b44 # v1.26.0
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@074c1a65db6f09850cd80f38efe230036febb44e # v1.29.2
     permissions:
       contents: read
       pull-requests: write
@@ -351,10 +434,34 @@ jobs:
       enable-validate-gradle-wrapper: false
       codeql-languages: '["csharp"]'
       enable-codeql: true
-      enable-verify-base-image-signature: false
       dotnet-version: "10.0.x"
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  docs:
+    runs-on: ubuntu-24.04
+    name: docs
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          # the built site is published from this workflow, so it must not restore anything a
+          # pull request run could have written
+          enable-cache: false
+
+      # --strict fails the build on broken links between pages.
+      - name: Build site
+        run: uv run --locked zensical build --strict
+
+      - name: Upload docs site artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docs-site
+          path: site/
+          if-no-files-found: error
 
   playground:
     runs-on: ubuntu-24.04
@@ -465,10 +572,11 @@ jobs:
 
   deploy-pages:
     name: deploy pages
-    # the playground and microbenchmarks jobs build independently of each other and of the
+    # the docs, playground and microbenchmarks jobs build independently of each other and of the
     # container `build` job; this is the only job that combines and publishes their output.
     if: ${{ github.ref == 'refs/heads/master' }}
     needs:
+      - docs
       - playground
       - microbenchmarks
     runs-on: ubuntu-24.04
@@ -479,6 +587,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Download docs site artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: docs-site
+          path: pages-root/docs
+
       - name: Download playground site artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -490,6 +604,24 @@ jobs:
         with:
           name: benchmarks-dashboard
           path: pages-root/benchmarks
+
+      # nothing else lives at the site root, so send visitors on to the documentation
+      - name: Add root redirect to the documentation
+        run: |
+          cat > pages-root/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>FHIR Pseudonymizer</title>
+              <meta http-equiv="refresh" content="0; url=docs/" />
+              <link rel="canonical" href="https://miracum.github.io/fhir-pseudonymizer/docs/" />
+            </head>
+            <body>
+              <p>Redirecting to the <a href="docs/">FHIR Pseudonymizer documentation</a>.</p>
+            </body>
+          </html>
+          EOF
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

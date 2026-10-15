@@ -1,8 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
+using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
 using Microsoft.Health.Fhir.Anonymizer.Core.Processors;
+using Task = System.Threading.Tasks.Task;
 
 namespace FhirPseudonymizer.Playground;
 
@@ -14,24 +16,24 @@ namespace FhirPseudonymizer.Playground;
 public class MockPseudonymizationProcessor : IAnonymizerProcessor
 {
     public Task<ProcessResult> ProcessAsync(
-        ElementNode node,
+        PocoNode node,
         ProcessContext context = null,
         Dictionary<string, object> settings = null
     )
     {
         var processResult = new ProcessResult();
-        if (string.IsNullOrEmpty(node?.Value?.ToString()))
+        if (string.IsNullOrEmpty(node?.GetValue()?.ToString()))
         {
             return Task.FromResult(processResult);
         }
 
-        var input = node.Value.ToString();
+        var input = node.GetValue().ToString();
         var domain =
             settings?.GetValueOrDefault("domain", null)?.ToString()
             ?? settings?.GetValueOrDefault("namespace", null)?.ToString()
             ?? "default";
 
-        node.Value = $"mock-psn-{ShortHash(domain + ":" + input)}";
+        node.SetPrimitiveValue($"mock-psn-{ShortHash(domain + ":" + input)}");
 
         processResult.AddProcessRecord(AnonymizationOperations.Pseudonymize, node);
         return Task.FromResult(processResult);

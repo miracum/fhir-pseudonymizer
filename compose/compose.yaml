@@ -13,7 +13,6 @@ services:
       DOTNET_EnableDiagnostics: "0"
       PseudonymizationService: "None"
       AnonymizationEngineConfigPath: "/opt/fhir-pseudonymizer/anonymization-hipaa.yaml"
-      UseSystemTextJsonFhirSerializer: "true"
     volumes:
       - "./anonymization-hipaa.yaml:/opt/fhir-pseudonymizer/anonymization-hipaa.yaml:ro"
     ports:

@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Hl7.FhirPath;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
@@ -59,9 +59,9 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
         ///     call, which takes a lock each time - serializing all concurrent anonymizations (e.g.
         ///     the Kafka consumer's workers) on every rule applied to every resource.
         /// </summary>
-        public IEnumerable<ITypedElement> Evaluate(ITypedElement node)
+        public IEnumerable<PocoNode> Evaluate(PocoNode node)
         {
-            return _compiledExpression.Value(node.ToScopedNode(), new EvaluationContext());
+            return _compiledExpression.Value(node, new EvaluationContext());
         }
 
         public static AnonymizationFhirPathRule CreateAnonymizationFhirPathRule(

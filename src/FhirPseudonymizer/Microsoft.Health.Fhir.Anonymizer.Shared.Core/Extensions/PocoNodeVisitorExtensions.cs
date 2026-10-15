@@ -1,20 +1,21 @@
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.Visitors;
+using Task = System.Threading.Tasks.Task;
 
 namespace Microsoft.Health.Fhir.Anonymizer.Core.Extensions
 {
-    public static class ElementNodeVisitorExtensions
+    public static class PocoNodeVisitorExtensions
     {
-        public static async Task AcceptAsync(
-            this ElementNode node,
-            AbstractElementNodeVisitor visitor
-        )
+        public static async Task AcceptAsync(this PocoNode node, AbstractPocoNodeVisitor visitor)
         {
             var shouldVisitChild = await visitor.VisitAsync(node);
 
             if (shouldVisitChild)
             {
-                foreach (var child in node.Children().CastElementNodes())
+                var children = new List<PocoNode>();
+                node.AddChildren(children);
+
+                foreach (var child in children)
                 {
                     await child.AcceptAsync(visitor);
                 }

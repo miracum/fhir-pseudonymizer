@@ -138,13 +138,7 @@ code {
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family:
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   margin: 1rem 1.5rem;
 }
 

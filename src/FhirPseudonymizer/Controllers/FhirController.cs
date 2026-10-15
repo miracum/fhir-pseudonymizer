@@ -44,6 +44,8 @@ namespace FhirPseudonymizer.Controllers
                 description: "Histogram of received bundle sizes."
             );
 
+        private static int hasLoggedDePseudonymizeDeprecation;
+
         private readonly IAnonymizerEngine anonymizer;
         private readonly AnonymizationConfig config;
         private readonly IDePseudonymizerEngine dePseudonymizer;
@@ -109,12 +111,16 @@ namespace FhirPseudonymizer.Controllers
         /// </param>
         /// <returns>The de-identified resource.</returns>
         /// <response code="200">Returns the de-identified resource</response>
+        /// <response code="422">The request is well-formed, but its content can't be processed, e.g. it contains a value the pseudonymization service rejects - caused by the request itself, so retrying it won't help</response>
         /// <response code="499">The caller aborted the request before it was processed</response>
+        /// <response code="503">A service the request depends on, e.g. the pseudonymization service, is temporarily unavailable - not caused by the request, so it may be retried later</response>
         [HttpPost("$de-identify")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status422UnprocessableEntity)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status503ServiceUnavailable)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
         public async Task<ObjectResult> DeIdentify(
             [FromBody] Resource resource,
@@ -133,92 +139,126 @@ namespace FhirPseudonymizer.Controllers
                 resource.Id
             );
 
+            var input = ParseOperationInput(resource);
+            if (input is null)
+            {
+                logger.LogWarning(
+                    "Bad Request: received Parameters carry no 'resource' parameter."
+                );
+                return BadRequest(BadRequestOutcome);
+            }
+
+            IAnonymizerEngine engine = anonymizer;
+            if (input.Config is not null)
+            {
+                try
+                {
+                    engine = await GetOrCreateDynamicEngine(
+                        input.Config,
+                        nameof(DeIdentify),
+                        configurationManager =>
+                            AnonymizerEngineExtensions.CreateAnonymizerEngine(
+                                configurationManager,
+                                psnClient,
+                                features
+                            )
+                    );
+                }
+                catch (Exception exc)
+                {
+                    return ConfigAttachmentBadRequest(exc);
+                }
+            }
+
             var settings = new AnonymizerSettings()
             {
                 ShouldAddSecurityTag = config.ShouldAddSecurityTag,
+                DynamicRuleSettings = input.DynamicRuleSettings,
             };
 
-            if (resource is Parameters param)
-            {
-                // parse dynamic rule settings. Parts without a name are ignored (there is no
-                // setting to apply them to) and duplicate names keep the last occurrence's value,
-                // matching the "last one wins" precedence already used when merging these into a
-                // rule's own settings (see AnonymizationVisitor.MergeSettings) - both are needed
-                // since a caller fully controls this list and either would otherwise throw
-                // (ToDictionary rejects null and duplicate keys alike).
-                var dynamicSettings = param.GetSingle("settings")?.Part;
-                if (dynamicSettings?.Count > 0)
-                {
-                    settings.DynamicRuleSettings = dynamicSettings
-                        .Where(p => !string.IsNullOrEmpty(p.Name))
-                        .GroupBy(p => p.Name)
-                        .ToDictionary(g => g.Key, g => g.Last().Value as object);
-                }
-
-                var innerResource = param.GetSingle("resource")?.Resource;
-                if (innerResource is null)
-                {
-                    logger.LogWarning(
-                        "Bad Request: received Parameters carry no 'resource' parameter."
-                    );
-                    return BadRequest(BadRequestOutcome);
-                }
-
-                IAnonymizerEngine engine = anonymizer;
-                if (param.GetSingle("config")?.Value is Attachment configAttachment)
-                {
-                    try
-                    {
-                        engine = await GetOrCreateDynamicEngine(configAttachment);
-                    }
-                    catch (Exception exc)
-                    {
-                        logger.LogWarning(
-                            exc,
-                            "Bad Request: failed to parse the received config attachment."
-                        );
-                        return BadRequest(
-                            CreateBadRequestOutcome(
-                                $"Failed to parse the received config attachment: {exc.Message}"
-                            )
-                        );
-                    }
-                }
-
-                return await Anonymize(innerResource, settings, engine, cancellationToken);
-            }
-
-            return await Anonymize(resource, settings, anonymizer, cancellationToken);
+            return await Anonymize(input.Resource, settings, engine, cancellationToken);
         }
 
         /// <summary>
-        ///     Builds (or retrieves from cache) an <see cref="IAnonymizerEngine" /> configured from the given
-        ///     YAML config attachment, keyed by the SHA-256 hash of its raw bytes so repeated requests using the
-        ///     same config reuse the same parsed engine instead of re-parsing the YAML every time.
+        ///     Unwraps a request body shared by <c>$de-identify</c> and <c>$re-identify</c>: either the
+        ///     resource itself, or a 'Parameters' resource carrying it in a 'resource' parameter,
+        ///     optionally alongside 'settings' and 'config' parameters.
         /// </summary>
-        private async Task<IAnonymizerEngine> GetOrCreateDynamicEngine(Attachment configAttachment)
+        /// <returns><c>null</c> if the body is a 'Parameters' resource without a 'resource' parameter.</returns>
+        private static OperationInput ParseOperationInput(Resource body)
+        {
+            if (body is not Parameters param)
+            {
+                return new OperationInput(body, null, null);
+            }
+
+            // parse dynamic rule settings. Parts without a name are ignored (there is no
+            // setting to apply them to) and duplicate names keep the last occurrence's value,
+            // matching the "last one wins" precedence already used when merging these into a
+            // rule's own settings (see AnonymizationVisitor.MergeSettings) - both are needed
+            // since a caller fully controls this list and either would otherwise throw
+            // (ToDictionary rejects null and duplicate keys alike).
+            Dictionary<string, object> dynamicRuleSettings = null;
+            var settingsParts = param.GetSingle("settings")?.Part;
+            if (settingsParts?.Count > 0)
+            {
+                dynamicRuleSettings = settingsParts
+                    .Where(p => !string.IsNullOrEmpty(p.Name))
+                    .GroupBy(p => p.Name)
+                    .ToDictionary(g => g.Key, g => g.Last().Value as object);
+            }
+
+            var innerResource = param.GetSingle("resource")?.Resource;
+            if (innerResource is null)
+            {
+                return null;
+            }
+
+            return new OperationInput(
+                innerResource,
+                dynamicRuleSettings,
+                param.GetSingle("config")?.Value as Attachment
+            );
+        }
+
+        /// <summary>
+        ///     Builds (or retrieves from cache) an engine configured from the given YAML config attachment,
+        ///     keyed by the SHA-256 hash of its raw bytes so repeated requests using the same config reuse the
+        ///     same parsed engine instead of re-parsing the YAML every time. The operation is part of the key
+        ///     as well, since <c>$de-identify</c> and <c>$re-identify</c> build different engines from the
+        ///     same config.
+        /// </summary>
+        private async Task<TEngine> GetOrCreateDynamicEngine<TEngine>(
+            Attachment configAttachment,
+            string operation,
+            Func<AnonymizerConfigurationManager, TEngine> createEngine
+        )
         {
             var configBytes = configAttachment.Data ?? [];
-            var yamlConfig = Encoding.UTF8.GetString(configBytes);
-            var configCacheKey = Convert.ToHexString(SHA256.HashData(configBytes));
+            var configCacheKey = $"{operation}:{Convert.ToHexString(SHA256.HashData(configBytes))}";
 
             return await anonymizerConfigCache.GetOrCreateAsync(
                 configCacheKey,
                 entry =>
-                {
-                    var configurationManager =
-                        AnonymizerConfigurationManager.CreateFromYamlConfigString(
-                            yamlConfig,
-                            config
-                        );
-                    var engine = new AnonymizerEngine(configurationManager);
-                    engine.AddProcessor(
-                        "pseudonymize",
-                        new PseudonymizationProcessor(psnClient, features)
-                    );
-                    return System.Threading.Tasks.Task.FromResult<IAnonymizerEngine>(engine);
-                },
+                    System.Threading.Tasks.Task.FromResult(
+                        createEngine(
+                            AnonymizerConfigurationManager.CreateFromYamlConfigString(
+                                Encoding.UTF8.GetString(configBytes),
+                                config
+                            )
+                        )
+                    ),
                 anonymizerConfigCacheEntryOptions
+            );
+        }
+
+        private BadRequestObjectResult ConfigAttachmentBadRequest(Exception exc)
+        {
+            logger.LogWarning(exc, "Bad Request: failed to parse the received config attachment.");
+            return BadRequest(
+                CreateBadRequestOutcome(
+                    $"Failed to parse the received config attachment: {exc.Message}"
+                )
             );
         }
 
@@ -244,12 +284,22 @@ namespace FhirPseudonymizer.Controllers
 
             try
             {
-                var anonymized = await engine.AnonymizeResourceAsync(
+                // Snapshot before anonymizing: the engine mutates `resource` in place and
+                // returns that same instance, so `resource` is no longer the pre-image afterwards.
+                var preImage = provenancePublisher.CapturePreImage(resource);
+                var anonymized = await AnonymizationMetrics.MeasureAsync(
+                    AnonymizationMetrics.OperationDeIdentify,
+                    AnonymizationMetrics.SourceRest,
                     resource,
-                    anonymizerSettings,
+                    () =>
+                        engine.AnonymizeResourceAsync(
+                            resource,
+                            anonymizerSettings,
+                            cancellationToken
+                        ),
                     cancellationToken
                 );
-                provenancePublisher.Publish(resource, anonymized);
+                provenancePublisher.Publish(preImage, anonymized);
                 return Ok(anonymized);
             }
             // Caught ahead of the catch-all below so an aborted request is not logged and
@@ -262,6 +312,31 @@ namespace FhirPseudonymizer.Controllers
                 return StatusCode(
                     StatusCodes.Status499ClientClosedRequest,
                     CreateCancelledOutcome()
+                );
+            }
+            // Told apart from the catch-all below so a caller can decide whether to retry: a 503
+            // is worth retrying once the backend is back, a 422 never is - e.g. a Kafka consumer
+            // in front of this would retry the former, but dead-letter the latter.
+            catch (TransientPseudonymizationException exc)
+            {
+                logger.LogWarning(
+                    exc,
+                    "Anonymize failed since the pseudonymization service is unavailable"
+                );
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    CreateOutcome(OperationOutcome.IssueType.Transient, exc.Message)
+                );
+            }
+            catch (PseudonymizationRejectedException exc)
+            {
+                logger.LogWarning(
+                    exc,
+                    "Anonymize failed since the pseudonymization service rejected a value"
+                );
+                return StatusCode(
+                    StatusCodes.Status422UnprocessableEntity,
+                    CreateOutcome(OperationOutcome.IssueType.Processing, exc.Message)
                 );
             }
             catch (Exception exc)
@@ -277,21 +352,28 @@ namespace FhirPseudonymizer.Controllers
         /// <summary>
         ///     Revert any reversible de-identification methods previously applied to the given FHIR resource.
         /// </summary>
-        /// <param name="resource">The FHIR resource containing pseudonymized fields that are to be de-pseudonymized.</param>
+        /// <param name="resource">
+        ///     The FHIR resource containing pseudonymized or encrypted fields that are to be re-identified. Accepts
+        ///     the same 'Parameters' wrapper as $de-identify: its 'settings' (e.g. a 'domain-prefix') and 'config'
+        ///     have to match the ones the resource was de-identified with, so the same domains and rules are used
+        ///     to revert it.
+        /// </param>
         /// <param name="cancellationToken">
-        ///     Bound to the request's abort token. If the caller disconnects, de-pseudonymization
+        ///     Bound to the request's abort token. If the caller disconnects, re-identification
         ///     stops instead of running the remaining lookups to completion.
         /// </param>
         /// <returns>The modified FHIR resource with the pseudonymized fields replaced with the original value.</returns>
-        /// <response code="200">Returns the de-pseudonymized resource</response>
+        /// <response code="200">Returns the re-identified resource</response>
+        /// <response code="403">The caller is authenticated, but lacks the required scope or role</response>
         /// <response code="499">The caller aborted the request before it was processed</response>
-        [HttpPost("$de-pseudonymize")]
-        [Authorize]
+        [HttpPost("$re-identify")]
+        [Authorize(Policy = AuthExtensions.ReIdentifyPolicy)]
         [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
-        public async Task<ObjectResult> DePseudonymize(
+        public async Task<ObjectResult> ReIdentify(
             [FromBody] Resource resource,
             CancellationToken cancellationToken
         )
@@ -303,31 +385,80 @@ namespace FhirPseudonymizer.Controllers
             }
 
             logger.LogDebug(
-                "De-Pseudonymizing resource {resourceType}/{resourceId}",
+                "Re-identifying resource {resourceType}/{resourceId}",
                 resource.TypeName,
                 resource.Id
             );
 
-            if (resource is Bundle bundle)
+            var input = ParseOperationInput(resource);
+            if (input is null)
+            {
+                logger.LogWarning(
+                    "Bad Request: received Parameters carry no 'resource' parameter."
+                );
+                return BadRequest(BadRequestOutcome);
+            }
+
+            var engine = dePseudonymizer;
+            if (input.Config is not null)
+            {
+                try
+                {
+                    engine = await GetOrCreateDynamicEngine(
+                        input.Config,
+                        nameof(ReIdentify),
+                        configurationManager =>
+                            AnonymizerEngineExtensions.CreateDePseudonymizerEngine(
+                                configurationManager,
+                                psnClient,
+                                features
+                            )
+                    );
+                }
+                catch (Exception exc)
+                {
+                    return ConfigAttachmentBadRequest(exc);
+                }
+            }
+
+            var settings = new AnonymizerSettings
+            {
+                // Reverting a value mustn't label the resource as de-identified. Labels it
+                // already carries from $de-identify are kept, though: there's no telling whether
+                // every value was actually reverted, e.g. a failed gPAS lookup leaves the
+                // pseudonym in place.
+                ShouldAddSecurityTag = false,
+                DynamicRuleSettings = input.DynamicRuleSettings,
+            };
+
+            if (input.Resource is Bundle bundle)
             {
                 BundleSizeHistogram.Record(
                     bundle.Entry.Count,
-                    new TagList { { "operation", nameof(DePseudonymize) } }
+                    new TagList { { "operation", nameof(ReIdentify) } }
                 );
             }
 
             try
             {
                 return Ok(
-                    await dePseudonymizer.DePseudonymizeResourceAsync(
-                        resource,
-                        cancellationToken: cancellationToken
+                    await AnonymizationMetrics.MeasureAsync(
+                        AnonymizationMetrics.OperationReIdentify,
+                        AnonymizationMetrics.SourceRest,
+                        input.Resource,
+                        () =>
+                            engine.DePseudonymizeResourceAsync(
+                                input.Resource,
+                                settings,
+                                cancellationToken
+                            ),
+                        cancellationToken
                     )
                 );
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                logger.LogInformation("DePseudonymize cancelled by the caller");
+                logger.LogInformation("ReIdentify cancelled by the caller");
                 return StatusCode(
                     StatusCodes.Status499ClientClosedRequest,
                     CreateCancelledOutcome()
@@ -335,12 +466,46 @@ namespace FhirPseudonymizer.Controllers
             }
             catch (Exception exc)
             {
-                logger.LogError(exc, "DePseudonymize failed");
+                logger.LogError(exc, "ReIdentify failed");
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     GetInternalErrorOutcome(exc)
                 );
             }
+        }
+
+        /// <summary>
+        ///     Deprecated: use <c>$re-identify</c> instead, which this is an alias of.
+        /// </summary>
+        /// <param name="resource">The FHIR resource containing pseudonymized or encrypted fields that are to be re-identified.</param>
+        /// <param name="cancellationToken">Bound to the request's abort token.</param>
+        /// <returns>The modified FHIR resource with the pseudonymized fields replaced with the original value.</returns>
+        /// <response code="200">Returns the re-identified resource</response>
+        /// <response code="403">The caller is authenticated, but lacks the required scope or role</response>
+        /// <response code="499">The caller aborted the request before it was processed</response>
+        [HttpPost("$de-pseudonymize")]
+        [Authorize(Policy = AuthExtensions.ReIdentifyPolicy)]
+        [Obsolete("Use $re-identify instead.")]
+        [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(OperationOutcome), StatusCodes.Status499ClientClosedRequest)]
+        public Task<ObjectResult> DePseudonymize(
+            [FromBody] Resource resource,
+            CancellationToken cancellationToken
+        )
+        {
+            // Once per process, so callers still on the old name show up in the logs without
+            // flooding them.
+            if (Interlocked.Exchange(ref hasLoggedDePseudonymizeDeprecation, 1) == 0)
+            {
+                logger.LogWarning(
+                    "$de-pseudonymize is deprecated and will be removed in a future release. Use $re-identify instead."
+                );
+            }
+
+            return ReIdentify(resource, cancellationToken);
         }
 
         /// <summary>
@@ -366,14 +531,20 @@ namespace FhirPseudonymizer.Controllers
             };
         }
 
-        private static OperationOutcome CreateBadRequestOutcome(string diagnostics)
+        private static OperationOutcome CreateBadRequestOutcome(string diagnostics) =>
+            CreateOutcome(OperationOutcome.IssueType.Processing, diagnostics);
+
+        private static OperationOutcome CreateOutcome(
+            OperationOutcome.IssueType code,
+            string diagnostics
+        )
         {
             var outcome = new OperationOutcome();
             outcome.Issue.Add(
                 new OperationOutcome.IssueComponent
                 {
                     Severity = OperationOutcome.IssueSeverity.Error,
-                    Code = OperationOutcome.IssueType.Processing,
+                    Code = code,
                     Diagnostics = diagnostics,
                 }
             );
@@ -408,5 +579,11 @@ namespace FhirPseudonymizer.Controllers
             );
             return outcome;
         }
+
+        private sealed record OperationInput(
+            Resource Resource,
+            Dictionary<string, object> DynamicRuleSettings,
+            Attachment Config
+        );
     }
 }

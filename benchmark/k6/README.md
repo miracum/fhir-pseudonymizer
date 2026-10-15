@@ -6,8 +6,8 @@ A [k6](https://k6.io/) script that compares latency and throughput between:
   anonymization rules (`AnonymizationEngineConfigPath`/`AnonymizationEngineConfigInline`).
 - `/fhir/$de-identify` with a `Parameters` body carrying a `config` part - applies rules sent
   per-request as a base64-encoded YAML `Attachment` alongside the resource, both wrapped in a
-  `Parameters` resource (see [Dynamic config](../../README.md#dynamic-config) in the main
-  README).
+  `Parameters` resource (see [Dynamic config](https://miracum.github.io/fhir-pseudonymizer/docs/dynamic-config/#dynamic-config) in the
+  documentation).
 
 Both scenarios de-identify the same [`../observation.json`](../observation.json) resource using
 the same rules (the server's own [`anonymization.yaml`](../../src/FhirPseudonymizer/anonymization.yaml)),
@@ -17,10 +17,21 @@ differences in the rules applied.
 ## Prerequisites
 
 - [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
-- A running instance of the server, started with the default configuration:
+- A running instance of the server using the repository's `anonymization.yaml` (the Development
+  environment's default, which is also what the dynamic-config scenario sends):
 
   ```sh
   dotnet run -c Release --project=src/FhirPseudonymizer
+  ```
+
+  When running the container image instead, there is no default config, so mount the file and
+  point `AnonymizationEngineConfigPath` at it:
+
+  ```sh
+  docker run --rm -p 5000:8080 \
+    -e AnonymizationEngineConfigPath=/etc/anonymization.yaml \
+    -v "$PWD/src/FhirPseudonymizer/anonymization.yaml:/etc/anonymization.yaml:ro" \
+    ghcr.io/miracum/fhir-pseudonymizer:local-build
   ```
 
 ## Run

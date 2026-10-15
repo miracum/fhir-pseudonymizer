@@ -39,6 +39,48 @@ public class KafkaExtensionsTests
     }
 
     [Fact]
+    public void CreateConsumerConfig_GivesEveryConsumerItsOwnClientIdAndGroupInstanceId()
+    {
+        var kafkaConfig = new KafkaConfig
+        {
+            Consumer = new ConsumerConfig { ClientId = "pseudonymizer", GroupInstanceId = "pod-a" },
+        };
+
+        var first = KafkaExtensions.CreateConsumerConfig(kafkaConfig, 0);
+        var second = KafkaExtensions.CreateConsumerConfig(kafkaConfig, 1);
+
+        first.ClientId.Should().Be("pseudonymizer-0");
+        second.ClientId.Should().Be("pseudonymizer-1");
+        first.GroupInstanceId.Should().Be("pod-a-0");
+        second.GroupInstanceId.Should().Be("pod-a-1");
+    }
+
+    [Fact]
+    public void CreateConsumerConfig_WithoutClientIdOrGroupInstanceId_DerivesOnlyTheClientId()
+    {
+        var consumerConfig = KafkaExtensions.CreateConsumerConfig(new KafkaConfig(), 3);
+
+        consumerConfig.ClientId.Should().Be("fhir-pseudonymizer-3");
+        consumerConfig.GroupInstanceId.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateConsumerConfig_LimitsPrefetchingPerConsumerUnlessConfigured()
+    {
+        KafkaExtensions
+            .CreateConsumerConfig(new KafkaConfig())
+            .QueuedMaxMessagesKbytes.Should()
+            .Be(16 * 1024);
+
+        KafkaExtensions
+            .CreateConsumerConfig(
+                new KafkaConfig { Consumer = new ConsumerConfig { QueuedMaxMessagesKbytes = 4096 } }
+            )
+            .QueuedMaxMessagesKbytes.Should()
+            .Be(4096);
+    }
+
+    [Fact]
     public void CreateConsumerConfig_AllowsOverridingDefaultsViaConsumerSection()
     {
         var kafkaConfig = new KafkaConfig
@@ -150,6 +192,30 @@ public class KafkaExtensionsTests
         consumerConfig.GroupId.Should().Be("my-group");
     }
 
+    [Fact]
+    public void KafkaConfig_CryptoHashesMessageKeysByDefault()
+    {
+        new KafkaConfig().CryptoHashMessageKeys.Enabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void KafkaConfig_BindsCryptoHashMessageKeysSettingsFromConfiguration()
+    {
+        var settings = new Dictionary<string, string>
+        {
+            ["Kafka:CryptoHashMessageKeys:Enabled"] = "false",
+            ["Kafka:CryptoHashMessageKeys:Key"] = TestKeys.CryptoHashKey,
+        };
+
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+
+        var appConfig = new AppConfig();
+        configuration.Bind(appConfig);
+
+        appConfig.Kafka.CryptoHashMessageKeys.Enabled.Should().BeFalse();
+        appConfig.Kafka.CryptoHashMessageKeys.Key.Should().Be(TestKeys.CryptoHashKey);
+    }
+
     [Theory]
     [InlineData("topic-a,topic-b", new[] { "topic-a", "topic-b" })]
     [InlineData("topic-a, topic-b ,topic-c", new[] { "topic-a", "topic-b", "topic-c" })]
@@ -212,6 +278,7 @@ public class KafkaExtensionsTests
         var kafkaConfig = new KafkaConfig
         {
             Topics = ["input-topic"],
+            CryptoHashMessageKeys = new() { Key = TestKeys.CryptoHashKey },
             Client = new ClientConfig { BootstrapServers = "localhost:9092" },
         };
         var services = new ServiceCollection()
@@ -233,6 +300,7 @@ public class KafkaExtensionsTests
             .ContainSingle(service => service is KafkaConsumerService);
 
         using var consumer = serviceProvider.GetRequiredService<KafkaConsumerFactory>()(
+            0,
             _ => { },
             _ => { },
             _ => { }

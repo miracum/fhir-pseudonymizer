@@ -1,0 +1,156 @@
+{{- include "fhir-pseudonymizer.kafka.validateValues" . }}
+{{- include "fhir-pseudonymizer.anonymizationConfig.validateValues" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fhir-pseudonymizer.fullname" . }}
+  labels:
+    {{- include "fhir-pseudonymizer.labels" . | nindent 4 }}
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "fhir-pseudonymizer.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/anonymization-cm.yaml") . | sha256sum | quote }}
+        {{- with .Values.podAnnotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "fhir-pseudonymizer.matchLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "fhir-pseudonymizer.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: fhir-pseudonymizer
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: DOTNET_EnableDiagnostics
+              value: "0"
+            {{- if include "fhir-pseudonymizer.hasAnonymizationConfig" . }}
+            - name: ANONYMIZATIONENGINECONFIGPATH
+              value: /etc/fhir-pseudonymizer/{{ include "fhir-pseudonymizer.anonymizationConfigKey" . }}
+            {{- end }}
+            {{- if .Values.kafka.enabled }}
+            - name: Kafka__Enabled
+              value: "true"
+            - name: Kafka__Client__BootstrapServers
+              value: {{ .Values.kafka.bootstrapServers | quote }}
+            {{- range $index, $topic := .Values.kafka.topics }}
+            - name: Kafka__Topics__{{ $index }}
+              value: {{ include "common.tplvalues.render" (dict "value" $topic "context" $) | quote }}
+            {{- end }}
+            - name: Kafka__OutputTopicPattern
+              value: {{ .Values.kafka.outputTopicPattern | quote }}
+            - name: Kafka__OutputTopicReplacement
+              value: {{ .Values.kafka.outputTopicReplacement | quote }}
+            {{- with .Values.kafka.provenanceTopic }}
+            - name: Kafka__ProvenanceTopic
+              value: {{ include "common.tplvalues.render" (dict "value" . "context" $) | quote }}
+            {{- end }}
+            {{- with .Values.kafka.workerCount }}
+            - name: Kafka__WorkerCount
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.kafka.workerChannelCapacity }}
+            - name: Kafka__WorkerChannelCapacity
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.kafka.consumer.groupId }}
+            - name: Kafka__Consumer__GroupId
+              value: {{ include "common.tplvalues.render" (dict "value" . "context" $) | quote }}
+            {{- end }}
+            {{- range $key, $value := .Values.kafka.client }}
+            - name: Kafka__Client__{{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $value := .Values.kafka.consumer.config }}
+            - name: Kafka__Consumer__{{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $value := .Values.kafka.producer.config }}
+            - name: Kafka__Producer__{{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- range $name, $value := .Values.extraEnvDict }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if .Values.extraEnv }}
+            {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: http-metrics
+              containerPort: 8081
+              protocol: TCP
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            {{- include "common.tplvalues.render" (dict "value" (omit .Values.readinessProbe "enabled") "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            {{- include "common.tplvalues.render" (dict "value" (omit .Values.livenessProbe "enabled") "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            {{- include "common.tplvalues.render" (dict "value" (omit .Values.startupProbe "enabled") "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- else if ne .Values.resourcesPreset "none" }}
+          resources: {{- include "common.resources.preset" (dict "type" .Values.resourcesPreset) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if include "fhir-pseudonymizer.hasAnonymizationConfig" . }}
+            - name: anonymization-config
+              mountPath: /etc/fhir-pseudonymizer
+            {{- end }}
+            {{- if .Values.extraVolumeMounts }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if include "fhir-pseudonymizer.hasAnonymizationConfig" . }}
+        - name: anonymization-config
+          configMap:
+            name: {{ include "fhir-pseudonymizer.anonymizationConfigMapName" . }}
+        {{- end }}
+        {{- if .Values.extraVolumes }}
+        {{- toYaml .Values.extraVolumes | nindent 8 }}
+        {{- end }}

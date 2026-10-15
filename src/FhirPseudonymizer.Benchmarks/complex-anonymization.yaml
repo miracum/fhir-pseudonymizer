@@ -400,8 +400,8 @@ fhirPathRules:
 parameters:
   dateShiftKey: "fhir-pseudonymizer"
   dateShiftScope: resource
-  cryptoHashKey: "fhir-pseudonymizer"
-  encryptKey: "fhir-pseudonymizer000000"
+  cryptoHashKey: ""
+  encryptKey: ""
   enablePartialAgesForRedact: true
   enablePartialDatesForRedact: true
   enablePartialZipCodesForRedact: true

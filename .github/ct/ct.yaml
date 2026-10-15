@@ -1,0 +1,8 @@
+# chart-testing config for the "lint" job in ci.yaml's standard-chart-publish.yaml call.
+lint-conf: .github/ct/lintconf.yaml
+validate-maintainers: false
+validate-chart-schema: true
+validate-yaml: true
+# versioning is done by release-please, so we don't have to check version bumps
+# on every PR (also implied by --all, which the reusable workflow passes by default).
+check-version-increment: false
