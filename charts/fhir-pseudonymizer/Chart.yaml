@@ -9,8 +9,8 @@ dependencies:
   - name: common
     repository: oci://ghcr.io/miracum/charts
     version: 0.1.1
-version: 2.38.0 # x-release-please-version
-appVersion: 2.38.0 # x-release-please-version
+version: 3.0.0 # x-release-please-version
+appVersion: 3.0.0 # x-release-please-version
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/containsSecurityUpdates: "false"
