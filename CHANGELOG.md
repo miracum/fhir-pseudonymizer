@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.1](https://github.com/miracum/fhir-pseudonymizer/compare/v3.0.0...v3.0.1) (2026-10-15)
+
+
+### Miscellaneous Chores
+
+* **deps:** update all digest updates ([#455](https://github.com/miracum/fhir-pseudonymizer/issues/455)) ([1df0698](https://github.com/miracum/fhir-pseudonymizer/commit/1df0698d0150caf7f9d14d05b010e842138e80f4))
+* **deps:** update all non-major dependencies ([#456](https://github.com/miracum/fhir-pseudonymizer/issues/456)) ([743dc66](https://github.com/miracum/fhir-pseudonymizer/commit/743dc66b94bca50a6c98582b2c956cf81a137903))
+* **deps:** update docker.io/mockserver/mockserver docker tag to v8 ([#454](https://github.com/miracum/fhir-pseudonymizer/issues/454)) ([60ac2cc](https://github.com/miracum/fhir-pseudonymizer/commit/60ac2cc214954d20956ad30d35e6d68c3b3de856))
+* **deps:** update github-actions ([#459](https://github.com/miracum/fhir-pseudonymizer/issues/459)) ([77778a9](https://github.com/miracum/fhir-pseudonymizer/commit/77778a9fc8a84ce51cc81f646a4c998637658dac))
+* set restrictive pod security context and fix markdown linting ([#458](https://github.com/miracum/fhir-pseudonymizer/issues/458)) ([b223f6b](https://github.com/miracum/fhir-pseudonymizer/commit/b223f6b88e96c504b7876c8eb2e62291a1d6bcbe))
+
 ## [3.0.0](https://github.com/miracum/fhir-pseudonymizer/compare/v2.38.0...v3.0.0) (2026-10-15)
 
 

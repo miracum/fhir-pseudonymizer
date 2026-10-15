@@ -13,7 +13,7 @@ image:
   # -- container image repository
   repository: miracum/fhir-pseudonymizer
   # -- container image tag. The chart's publish workflow pins it to the digest of the image built for the release.
-  tag: v3.0.0 # x-release-please-version
+  tag: v3.0.1 # x-release-please-version
   # -- container image pull policy
   pullPolicy: IfNotPresent
 
