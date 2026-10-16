@@ -32,8 +32,8 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
             StringComparison.Ordinal
         );
 
-        private static readonly List<Regex> _resourceReferenceRegexes = new()
-        {
+        private static readonly List<Regex> _resourceReferenceRegexes =
+        [
             // Regex for absolute or relative literal url reference, https://www.hl7.org/fhir/references.html#literal
             new Regex(
                 @"^(?<prefix>((http|https)://([A-Za-z0-9\\\/\.\:\%\$\-_~])*)?("
@@ -48,13 +48,13 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Utility
                     + @")\?)?identifier=((http|https)://([A-Za-z0-9\\\/\.\:\%\$\-])*\|)?)(?<id>[A-Za-z0-9\-\.]{1,64})$",
                 RegexOptions.Compiled
             ),
-        };
+        ];
 
-        private static readonly List<Regex> _urnReferenceRegexes = new()
-        {
+        private static readonly List<Regex> _urnReferenceRegexes =
+        [
             OidReferenceRegex(),
             UuidReferenceRegex(),
-        };
+        ];
 
         /// <summary>
         ///     Cheap necessary-condition check for the two resource-reference regexes. False means

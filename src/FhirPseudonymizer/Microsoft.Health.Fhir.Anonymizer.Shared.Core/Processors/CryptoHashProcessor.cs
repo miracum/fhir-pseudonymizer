@@ -64,9 +64,19 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 };
             }
 
+            var hashWholeUri =
+                settings?.TryGetValue(HashWholeUriSettingKey, out var hashWholeUriObject) == true
+                && Convert.ToBoolean(hashWholeUriObject, CultureInfo.InvariantCulture);
+
             var input = node.GetValue().ToString();
-            // Hash the id part for "reference" and "uri" nodes and hash whole input for other node types
-            if (node.IsReferenceStringNode() || node.IsReferenceUriNode(input))
+            // Hash the id part for "reference" and "uri" nodes and hash whole input for other node types.
+            // With hashWholeUri, "uri" nodes that merely look like a reference (e.g. an identifier
+            // system such as http://example.com/fhir/NamingSystem/test) are hashed as a whole, too.
+            // Reference.reference nodes are real references, so they keep getting only their id hashed.
+            if (
+                node.IsReferenceStringNode()
+                || (!hashWholeUri && node.IsReferenceUriNode(input))
+            )
             {
                 var newReference = ReferenceUtility.TransformReferenceId(input, cryptoHashFunction);
                 node.SetPrimitiveValue(newReference);
