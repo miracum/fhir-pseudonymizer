@@ -2,6 +2,7 @@ using Hl7.Fhir.Model;
 using Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations;
 using Microsoft.Health.Fhir.Anonymizer.Core.Extensions;
 using Microsoft.Health.Fhir.Anonymizer.Core.Models;
+using Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings;
 using Microsoft.Health.Fhir.Anonymizer.Core.Utility;
 using Task = System.Threading.Tasks.Task;
 
@@ -51,8 +52,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             var cryptoHashFunction = _cryptoHashFunction;
 
             if (
-                settings?.TryGetValue("truncateToMaxLength", out var truncateToMaxLengthObject)
-                == true
+                settings?.TryGetValue(
+                    RuleKeys.TruncateToMaxLength,
+                    out var truncateToMaxLengthObject
+                ) == true
             )
             {
                 var truncateToMaxLength = Convert.ToInt32(truncateToMaxLengthObject);
@@ -64,9 +67,17 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 };
             }
 
+            var transformWholeUri = settings.IsTransformWholeUriEnabled();
+
             var input = node.GetValue().ToString();
-            // Hash the id part for "reference" and "uri" nodes and hash whole input for other node types
-            if (node.IsReferenceStringNode() || node.IsReferenceUriNode(input))
+            // Hash the id part for "reference" and "uri" nodes and hash whole input for other node types.
+            // With transformWholeUri, "uri" nodes that merely look like a reference (e.g. an identifier
+            // system such as http://example.com/fhir/NamingSystem/test) are hashed as a whole, too.
+            // Reference.reference nodes are real references, so they keep getting only their id hashed.
+            if (
+                node.IsReferenceStringNode()
+                || (!transformWholeUri && node.IsReferenceUriNode(input))
+            )
             {
                 var newReference = ReferenceUtility.TransformReferenceId(input, cryptoHashFunction);
                 node.SetPrimitiveValue(newReference);

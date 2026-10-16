@@ -42,6 +42,44 @@ truncates the usually 64-character-long hash to the following:
 }
 ```
 
+## Hashing references and URIs
+
+For `Reference.reference` elements and for `uri` elements whose value looks like a FHIR resource
+URL (e.g. `Patient/123`, `http://example.com/fhir/Patient/123/_history/2` or
+`Patient?identifier=http://example.com/sid|123`), `cryptoHash` hashes only the id part and keeps the
+rest of the value:
+
+```json
+{ "system": "http://example.com/fhir/NamingSystem/test" }
+```
+
+becomes
+
+```json
+{ "system": "http://example.com/fhir/NamingSystem/b43a73c44e6d5b57644b63d89ee90cbf" }
+```
+
+This also happens for values that aren't actually references, like an identifier system whose URL
+happens to contain a resource name such as `NamingSystem`. To hash the _entire_ value of such `uri`
+elements instead, set `transformWholeUri`:
+
+```yaml
+fhirPathRules:
+  - path: nodesByType('Identifier').system
+    method: cryptoHash
+    transformWholeUri: true
+```
+
+```json
+{ "system": "b43a73c44e6d5b57644b63d89ee90cbfb43a73c44e6d5b57644b63d89ee90cbf" }
+```
+
+`transformWholeUri` only affects `uri` elements; `Reference.reference` elements
+keep having only their id hashed. It can be combined with `truncateToMaxLength`.
+The `pseudonymize` method supports the same setting: the whole `uri` value is then sent to the
+pseudonymization service instead of just its id. The `encrypt` method always encrypts the entire
+value and so needs no such setting.
+
 ## Key derivation
 
 Instead of using `cryptoHashKey`/`encryptKey` directly (whether set via the `anonymization.yaml`

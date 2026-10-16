@@ -79,6 +79,42 @@ public class GPasPseudonymizationProcessorTests
     }
 
     [Theory]
+    [InlineData(false, "test")]
+    [InlineData(true, "http://example.com/fhir/NamingSystem/test")]
+    public async Task Process_UriLookingLikeReference_PseudonymizesWholeUriOnlyWithTransformWholeUri(
+        bool transformWholeUri,
+        string expectedInput
+    )
+    {
+        var psnClient = A.Fake<IPseudonymServiceClient>();
+        var processor = new PseudonymizationProcessor(psnClient, new FeatureManagement());
+
+        var node = PocoNodeOrList.Root(new FhirUri("http://example.com/fhir/NamingSystem/test"));
+        while (node.GetValue() == null)
+        {
+            node = node.Children().CastPocoNodes().First();
+        }
+
+        var settings = new Dictionary<string, object>
+        {
+            { "domain", "bar" },
+            { "transformWholeUri", transformWholeUri },
+        };
+
+        await processor.ProcessAsync(node, null, settings);
+
+        A.CallTo(() =>
+                psnClient.GetOrCreatePseudonymFor(
+                    expectedInput,
+                    "bar",
+                    A<IReadOnlyDictionary<string, object>>._,
+                    A<CancellationToken>._
+                )
+            )
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Theory]
     [MemberData(nameof(GetProcessData))]
     public async Task Process_SupportsDomainPrefixSetting(
         string domainPrefix,
