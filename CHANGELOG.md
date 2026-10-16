@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/miracum/fhir-pseudonymizer/compare/v3.0.1...v3.1.0) (2026-10-16)
+
+
+### Features
+
+* added option to fully hash and pseudonymize FHIR-Server-URL-lookalikes instead of just their Id part ([#460](https://github.com/miracum/fhir-pseudonymizer/issues/460)) ([1189071](https://github.com/miracum/fhir-pseudonymizer/commit/118907164f5ea5cf571246c06670d44bb8fbff42)), closes [#444](https://github.com/miracum/fhir-pseudonymizer/issues/444)
+
 ## [3.0.1](https://github.com/miracum/fhir-pseudonymizer/compare/v3.0.0...v3.0.1) (2026-10-15)
 
 
