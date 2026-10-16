@@ -56,8 +56,12 @@ public partial class PseudonymizationProcessor : IAnonymizerProcessor
         var input = node.GetValue().ToString();
 
         // Pseudonymize the id part for "Reference.reference" node and
-        // pseudonymize whole input for other node types
-        if (node.IsReferenceStringNode() || node.IsReferenceUriNode(input))
+        // pseudonymize whole input for other node types. With transformWholeUri, "uri" nodes that
+        // look like a reference (e.g. an identifier system) are pseudonymized as a whole too
+        if (
+            node.IsReferenceStringNode()
+            || (!settings.IsTransformWholeUriEnabled() && node.IsReferenceUriNode(input))
+        )
         {
             // if the domain setting is not set,
             // create a domain from the reference, ie "Patient/123" -> "Patient"
