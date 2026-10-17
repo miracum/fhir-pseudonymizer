@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.1.1](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.0...v3.1.1) (2026-10-17)
+
+
+### Miscellaneous Chores
+
+* **deps:** update docker.io/library/postgres:18.6 docker digest to 74935e7 ([#462](https://github.com/miracum/fhir-pseudonymizer/issues/462)) ([a31d735](https://github.com/miracum/fhir-pseudonymizer/commit/a31d735d7bdbcadebd0386502916c29319661225))
+* **deps:** update docker.io/mockserver/mockserver docker tag to v9 ([#465](https://github.com/miracum/fhir-pseudonymizer/issues/465)) ([e995f52](https://github.com/miracum/fhir-pseudonymizer/commit/e995f5241802323ff5efaed665fb99cc0d27dd04))
+* **deps:** update github-actions ([#463](https://github.com/miracum/fhir-pseudonymizer/issues/463)) ([6db737f](https://github.com/miracum/fhir-pseudonymizer/commit/6db737f4a0aed606f9785ec74ddb2cffae7efd09))
+* ignore image tag changes in README generation ([#468](https://github.com/miracum/fhir-pseudonymizer/issues/468)) ([beb5150](https://github.com/miracum/fhir-pseudonymizer/commit/beb5150b5ced4f926a04580bda8989b5db8ebacd))
+* linted chart docs ([#467](https://github.com/miracum/fhir-pseudonymizer/issues/467)) ([13b493c](https://github.com/miracum/fhir-pseudonymizer/commit/13b493cdd6cac8b0ce6c7fae037f91380d12872e))
+
 ## [3.1.0](https://github.com/miracum/fhir-pseudonymizer/compare/v3.0.1...v3.1.0) (2026-10-16)
 
 
