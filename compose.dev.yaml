@@ -77,7 +77,7 @@ services:
       - "127.0.0.1:8081:8081"
 
   gpas-entici-mock:
-    image: docker.io/mockserver/mockserver:8.0.0@sha256:b8426e0b3c8089d65928531376147067002e8be4e9f437210b10a0395aeff6ce
+    image: docker.io/mockserver/mockserver:9.0.0@sha256:3b9e91077598e2278af1edd5c417813b344212bd267631bb77298193a49981f5
     ipc: none
     security_opt:
       - "no-new-privileges:true"
