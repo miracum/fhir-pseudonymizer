@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792150674591,
+  "lastUpdate": 1792242441029,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -5316,6 +5316,132 @@ window.BENCHMARK_DATA = {
             "value": 494582501.3333333,
             "unit": "ns",
             "range": "± 206119781.45381942"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": false,
+          "id": "6db737f4a0aed606f9785ec74ddb2cffae7efd09",
+          "message": "chore(deps): update github-actions (#463)\n\nThis PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n|\n[actions/download-artifact](https://redirect.github.com/actions/download-artifact)\n| action | patch | `v8.0.1` → `v8.0.2` |\n|\n[actions/upload-artifact](https://redirect.github.com/actions/upload-artifact)\n| action | patch | `v7.0.1` → `v7.0.2` |\n| [astral-sh/setup-uv](https://redirect.github.com/astral-sh/setup-uv) |\naction | minor | `v10.2.0` → `v10.3.0` |\n|\n[github/codeql-action](https://redirect.github.com/github/codeql-action)\n| action | minor | `v4.38.2` → `v4.39.0` |\n| [helm/kind-action](https://redirect.github.com/helm/kind-action) |\naction | patch | `v1.15.0` → `v1.15.1` |\n| [miracum/.github](https://redirect.github.com/miracum/.github) |\nworkflow | minor | `v1.29.2` → `v1.30.0` |\n| [miracum/.github](https://redirect.github.com/miracum/.github) |\nworkflow | minor | `v1.29.3` → `v1.30.0` |\n|\n[ossf/scorecard-action](https://redirect.github.com/ossf/scorecard-action)\n| action | minor | `v2.4.4` → `v2.5.0` |\n\n---\n\n### Release Notes\n\n<details>\n<summary>actions/download-artifact</summary>\n\n###\n[`v8.0.2`](https://redirect.github.com/actions/download-artifact/releases/tag/v8.0.2)\n\n[Compare\nSource](https://redirect.github.com/actions/download-artifact/compare/v8.0.1...v8.0.2)\n\n#### What's Changed\n\n- Update the readme by\n[@&#8203;danwkennedy](https://redirect.github.com/danwkennedy) in\n[#&#8203;473](https://redirect.github.com/actions/download-artifact/pull/473)\n- Improves artifact download retries when the service returns HTTP 429\n(rate limiting), including honoring valid Retry-After headers.\n- Update\n[@&#8203;actions/artifact](https://redirect.github.com/actions/artifact)\nto 6.3.1 by [@&#8203;tunc-d](https://redirect.github.com/tunc-d) in\n[#&#8203;492](https://redirect.github.com/actions/download-artifact/pull/492)\n- Prepare download-artifact v8.0.2 by\n[@&#8203;tunc-d](https://redirect.github.com/tunc-d) in\n[#&#8203;493](https://redirect.github.com/actions/download-artifact/pull/493)\n\n#### New Contributors\n\n- [@&#8203;tunc-d](https://redirect.github.com/tunc-d) made their first\ncontribution in\n[#&#8203;492](https://redirect.github.com/actions/download-artifact/pull/492)\n\n**Full Changelog**:\n<https://github.com/actions/download-artifact/compare/v8.0.1...v8.0.2>\n\n</details>\n\n<details>\n<summary>actions/upload-artifact</summary>\n\n###\n[`v7.0.2`](https://redirect.github.com/actions/upload-artifact/releases/tag/v7.0.2)\n\n[Compare\nSource](https://redirect.github.com/actions/upload-artifact/compare/v7.0.1...v7.0.2)\n\n#### What's Changed\n\n- Improves artifact download retries when the service returns HTTP 429\n(rate limiting), including honoring valid Retry-After headers.\n- Updates\n[@&#8203;actions/artifact](https://redirect.github.com/actions/artifact)\nto v6.3.1.\n\n#### New Contributors\n\n- [@&#8203;tunc-d](https://redirect.github.com/tunc-d) made their first\ncontribution in\n[#&#8203;821](https://redirect.github.com/actions/upload-artifact/pull/821)\n\n**Full Changelog**:\n<https://github.com/actions/upload-artifact/compare/v7.0.1...v7.0.2>\n\n</details>\n\n<details>\n<summary>astral-sh/setup-uv</summary>\n\n###\n[`v10.3.0`](https://redirect.github.com/astral-sh/setup-uv/releases/tag/v10.3.0):\n🌈 Add Python architecture selection\n\n[Compare\nSource](https://redirect.github.com/astral-sh/setup-uv/compare/v10.2.0...v10.3.0)\n\n##### Changes\n\nThis release adds the `python-arch` input to select a Python\narchitecture independently of the Python version. With `uv` 0.13.0 or\nlater, set `python-arch: x86_64` to use x64 Python on Windows ARM64\nrunners.\n\nIt also includes embedded checksums for `uv` releases through 0.13.0.\n\n- Use macOS 15 runners for tests\n[@&#8203;charliermarsh](https://redirect.github.com/charliermarsh)\n([#&#8203;1081](https://redirect.github.com/astral-sh/setup-uv/issues/1081))\n\n##### 🚀 Enhancements\n\n- Add `python-arch` support\n[@&#8203;zanieb](https://redirect.github.com/zanieb)\n([#&#8203;1079](https://redirect.github.com/astral-sh/setup-uv/issues/1079))\n\n##### 🧰 Maintenance\n\n- chore: update known checksums for 0.13.0\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1089](https://redirect.github.com/astral-sh/setup-uv/issues/1089))\n- chore: update known checksums for 0.12.24\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1084](https://redirect.github.com/astral-sh/setup-uv/issues/1084))\n- chore: update known checksums for 0.12.23\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1082](https://redirect.github.com/astral-sh/setup-uv/issues/1082))\n- chore: update known checksums for 0.12.22\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1080](https://redirect.github.com/astral-sh/setup-uv/issues/1080))\n- chore: update known checksums for 0.12.21\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1078](https://redirect.github.com/astral-sh/setup-uv/issues/1078))\n- chore: update known checksums for 0.12.20\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1076](https://redirect.github.com/astral-sh/setup-uv/issues/1076))\n- chore: update known checksums for 0.12.19\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1068](https://redirect.github.com/astral-sh/setup-uv/issues/1068))\n- chore: update known checksums for 0.12.18\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1065](https://redirect.github.com/astral-sh/setup-uv/issues/1065))\n\n##### ⬆️ Dependency updates\n\n- chore(deps): bump zizmorcore/zizmor-action from 0.6.2 to 0.6.3\n@&#8203;[dependabot\\[bot\\]](https://redirect.github.com/apps/dependabot)\n([#&#8203;1077](https://redirect.github.com/astral-sh/setup-uv/issues/1077))\n\n</details>\n\n<details>\n<summary>github/codeql-action</summary>\n\n###\n[`v4.39.0`](https://redirect.github.com/github/codeql-action/releases/tag/v4.39.0)\n\n[Compare\nSource](https://redirect.github.com/github/codeql-action/compare/v4.38.3...v4.39.0)\n\n- *Breaking change*: Bump the minimum required CodeQL bundle version to\n2.20.7.\n[#&#8203;4205](https://redirect.github.com/github/codeql-action/pull/4205)\n- The `codeql-action/analyze` step now validates that a correct argument\nfor the `checkout_path` input has been provided. The `checkout_path`\ninput must be set to the path where the repository that is being\nanalyzed is checked out at on the runner, if that path is something\nother than the workspace root. If the path does not point to a\nrepository checkout or is different from the path that was used by\n`codeql-action/init`, then the CodeQL Action now produces a warning.\n[#&#8203;4148](https://redirect.github.com/github/codeql-action/pull/4148)\n- Resolved an issue with third-party caching implementations that\nprevented caches from being restored correctly.\n[#&#8203;4206](https://redirect.github.com/github/codeql-action/pull/4206)\n- The `codeql-action/start-proxy` step that is used in Code Scanning\nDefault Setup now finds CodeQL releases using the same logic as\n`codeql-action/init`. This primarily benefits customers who are using\nGitHub instances other than `github.com` where the\n`codeql-action/start-proxy` step may previously have been unable to\nlocate recent releases and ended up using outdated versions of the\nprivate registry authentication proxy as a result.\n[#&#8203;4198](https://redirect.github.com/github/codeql-action/pull/4198)\n\n###\n[`v4.38.3`](https://redirect.github.com/github/codeql-action/releases/tag/v4.38.3)\n\n[Compare\nSource](https://redirect.github.com/github/codeql-action/compare/v4.38.2...v4.38.3)\n\n- *Upcoming breaking change*: CodeQL version 2.21.2 and earlier were\ndiscontinued on 24 September 2026 alongside GitHub Enterprise Server\n3.17, and will be unsupported by the next minor release of the CodeQL\nAction. Added a deprecation warning for customers using these versions\nof CodeQL.\n[#&#8203;4188](https://redirect.github.com/github/codeql-action/pull/4188)\n- Update default CodeQL bundle version to\n[2.27.2](https://redirect.github.com/github/codeql-action/releases/tag/codeql-bundle-v2.27.2).\n[#&#8203;4203](https://redirect.github.com/github/codeql-action/pull/4203)\n- Fixed a bug where the decision of whether to use a per-language bundle\ndid not account for custom configurations that reference queries outside\nof compiled CodeQL packs. This issue was caught during internal testing\nand did not affect any customer repositories. We will resume the roll\nout of per-language bundles in the coming weeks.\n[#&#8203;4184](https://redirect.github.com/github/codeql-action/pull/4184)\n\n</details>\n\n<details>\n<summary>helm/kind-action</summary>\n\n###\n[`v1.15.1`](https://redirect.github.com/helm/kind-action/releases/tag/v1.15.1)\n\n[Compare\nSource](https://redirect.github.com/helm/kind-action/compare/v1.15.0...v1.15.1)\n\n#### What's Changed\n\n- feat: add version_file input to read the kind version from a file by\n[@&#8203;somaz94](https://redirect.github.com/somaz94) in\n[#&#8203;162](https://redirect.github.com/helm/kind-action/pull/162)\n- chore: bump kubectl to v1.37.1 and cloud-provider-kind to v0.12.0 by\n[@&#8203;cpanato](https://redirect.github.com/cpanato) in\n[#&#8203;170](https://redirect.github.com/helm/kind-action/pull/170)\n\n#### New Contributors\n\n- [@&#8203;somaz94](https://redirect.github.com/somaz94) made their\nfirst contribution in\n[#&#8203;162](https://redirect.github.com/helm/kind-action/pull/162)\n\n**Full Changelog**:\n<https://github.com/helm/kind-action/compare/v1.15.0...v1.15.1>\n\n</details>\n\n<details>\n<summary>miracum/.github</summary>\n\n###\n[`v1.30.0`](https://redirect.github.com/miracum/.github/releases/tag/v1.30.0)\n\n[Compare\nSource](https://redirect.github.com/miracum/.github/compare/v1.29.3...v1.30.0)\n\n##### Features\n\n- added chart docs lint\n([#&#8203;224](https://redirect.github.com/miracum/.github/issues/224))\n([7040470](https://redirect.github.com/miracum/.github/commit/704047074ac99fc4c0990f8b8377086069323116))\n\n###\n[`v1.29.3`](https://redirect.github.com/miracum/.github/releases/tag/v1.29.3)\n\n[Compare\nSource](https://redirect.github.com/miracum/.github/compare/v1.29.2...v1.29.3)\n\n##### Bug Fixes\n\n- signing race condition\n([#&#8203;223](https://redirect.github.com/miracum/.github/issues/223))\n([43926b6](https://redirect.github.com/miracum/.github/commit/43926b6aa69b5a63e15378200f698ce8cfeefc88))\n\n</details>\n\n<details>\n<summary>ossf/scorecard-action</summary>\n\n###\n[`v2.5.0`](https://redirect.github.com/ossf/scorecard-action/releases/tag/v2.5.0)\n\n[Compare\nSource](https://redirect.github.com/ossf/scorecard-action/compare/v2.4.4...v2.5.0)\n\n#### What's Changed\n\nThis release moves the action to Scorecard v5.6.0, the first Scorecard\nrelease since its hosted\nservices moved to new infrastructure.\n\nFor changes to checks and results, and what the infrastructure move\nmeans for you, see the\n[Scorecard v5.6.0 release\nnotes](https://redirect.github.com/ossf/scorecard/releases/tag/v5.6.0).\n\n- The action's container image is built with Go 1.27.2 on a refreshed\ndistroless base. by\n[@&#8203;justaugustus](https://redirect.github.com/justaugustus) in\n[#&#8203;1716](https://redirect.github.com/ossf/scorecard-action/pull/1716)\n- The installer (`cmd/installer`) now creates\n`.github/workflows/scorecard.yml`, and still\nrecognizes existing `scorecards.yml` and `scorecards-analysis.yml`\nworkflows. by\n[@&#8203;justaugustus](https://redirect.github.com/justaugustus) in\n[#&#8203;1716](https://redirect.github.com/ossf/scorecard-action/pull/1716)\n- The Scorecard version in results now always matches the Scorecard\nrelease the action is built\nwith. by\n[@&#8203;justaugustus](https://redirect.github.com/justaugustus) in\n[#&#8203;1718](https://redirect.github.com/ossf/scorecard-action/pull/1718)\n- The action no longer prints the GitHub token variable while validating\nits options. by\n[@&#8203;arpitjain099](https://redirect.github.com/arpitjain099) in\n[#&#8203;1709](https://redirect.github.com/ossf/scorecard-action/pull/1709)\n- `results_format` accepts `intoto`, which wraps the JSON results in an\nin-toto attestation\nstatement. by [@&#8203;puerco](https://redirect.github.com/puerco) in\n[#&#8203;1702](https://redirect.github.com/ossf/scorecard-action/pull/1702)\n\n##### Other\n\n- Add a daily canary against Scorecard main by\n[@&#8203;justaugustus](https://redirect.github.com/justaugustus) in\n[#&#8203;1711](https://redirect.github.com/ossf/scorecard-action/pull/1711)\n- Bump Scorecard to the v5.6.0 candidate and fix the canary toolchain by\n[@&#8203;justaugustus](https://redirect.github.com/justaugustus) in\n[#&#8203;1714](https://redirect.github.com/ossf/scorecard-action/pull/1714)\n- Run Scorecard on every merge, add a zizmor presubmit, analyze\nworkflows with CodeQL, and update\nRELEASE.md by\n[@&#8203;justaugustus](https://redirect.github.com/justaugustus) in\n[#&#8203;1716](https://redirect.github.com/ossf/scorecard-action/pull/1716)\n- Bump Scorecard to v5.6.0 by\n[@&#8203;justaugustus](https://redirect.github.com/justaugustus) in\n[#&#8203;1719](https://redirect.github.com/ossf/scorecard-action/pull/1719)\n\n#### New Contributors\n\n- [@&#8203;arpitjain099](https://redirect.github.com/arpitjain099) made\ntheir first contribution in\n[#&#8203;1709](https://redirect.github.com/ossf/scorecard-action/pull/1709)\n- [@&#8203;puerco](https://redirect.github.com/puerco) made their first\ncontribution in\n[#&#8203;1702](https://redirect.github.com/ossf/scorecard-action/pull/1702)\n\n**Full Changelog**:\n<https://github.com/ossf/scorecard-action/compare/v2.4.4...v2.5.0>\n\n</details>\n\n---\n\n### Configuration\n\n📅 **Schedule**: (UTC)\n\n- Branch creation\n  - On day 1 of the month, every 3 months (`* * 1 */3 *`)\n- Automerge\n  - At any time (no schedule defined)\n\n🚦 **Automerge**: Enabled.\n\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\nrebase/retry checkbox.\n\n👻 **Immortal**: This PR will be recreated if closed unmerged. Get\n[config\nhelp](https://redirect.github.com/renovatebot/renovate/discussions) if\nthat's undesired.\n\n---\n\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\nthis box\n\n---\n\nThis PR was generated by [Mend Renovate](https://mend.io/renovate/).\nView the [repository job\nlog](https://developer.mend.io/github/miracum/fhir-pseudonymizer).\n\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiI0NC4xNjQuMSIsInVwZGF0ZWRJblZlciI6IjQ0LjE2NC4xIiwidGFyZ2V0QnJhbmNoIjoibWFzdGVyIiwibGFiZWxzIjpbXX0=-->\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-10-17T12:59:20Z",
+          "tree_id": "afdff40a05876008afed87a4c3be371b7a94b08a",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/6db737f4a0aed606f9785ec74ddb2cffae7efd09"
+        },
+        "date": 1792242440002,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 89354896.8028169,
+            "unit": "ns",
+            "range": "± 4354935.400248159"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1187137.6690848214,
+            "unit": "ns",
+            "range": "± 20588.606221654703"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 1409.84990134606,
+            "unit": "ns",
+            "range": "± 10.381055263412865"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 14924628.55859375,
+            "unit": "ns",
+            "range": "± 277593.8144741078"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 264.30161625146866,
+            "unit": "ns",
+            "range": "± 5.247423121523834"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 711766806.6666666,
+            "unit": "ns",
+            "range": "± 24002618.273612782"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 1745757454,
+            "unit": "ns",
+            "range": "± 29137027.935531054"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 746863271.3333334,
+            "unit": "ns",
+            "range": "± 27822092.860881068"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 1845136026.6666667,
+            "unit": "ns",
+            "range": "± 35547859.03240533"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 748655269.3333334,
+            "unit": "ns",
+            "range": "± 16080177.513728334"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 1313547361,
+            "unit": "ns",
+            "range": "± 40737984.71501948"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 342930519.6666667,
+            "unit": "ns",
+            "range": "± 32780491.919748705"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 516855628,
+            "unit": "ns",
+            "range": "± 138643985.1305515"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 325911422,
+            "unit": "ns",
+            "range": "± 47152399.272449404"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 604434104,
+            "unit": "ns",
+            "range": "± 259464142.99446434"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 289552110.3333333,
+            "unit": "ns",
+            "range": "± 85742536.49029157"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 560866496,
+            "unit": "ns",
+            "range": "± 166185428.70884618"
           }
         ]
       }
