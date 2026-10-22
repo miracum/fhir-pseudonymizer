@@ -4,9 +4,6 @@ using System.Text;
 using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
 using Microsoft.Extensions.Caching.Memory;
-using Polly;
-using Polly.Extensions.Http;
-using Polly.Retry;
 
 namespace FhirPseudonymizer.Pseudonymization.Mii;
 
@@ -89,7 +86,10 @@ public static class MiiExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(miiConfig.Retry.Count));
+            .AddPseudonymServiceRetries(
+                miiConfig.Retry.Count,
+                TimeSpan.FromSeconds(miiConfig.RequestTimeoutSeconds)
+            );
 
         services.AddTransient<MiiFhirClient>();
         services.AddTransient<IPseudonymServiceClient>(
@@ -101,15 +101,5 @@ public static class MiiExtensions
         );
 
         return services;
-    }
-
-    private static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy(int retryCount = 3)
-    {
-        return HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .WaitAndRetryAsync(
-                retryCount,
-                retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
-            );
     }
 }

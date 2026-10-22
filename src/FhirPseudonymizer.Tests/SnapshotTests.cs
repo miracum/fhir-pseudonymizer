@@ -42,7 +42,6 @@ public class SnapshotTests
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["AnonymizationEngineConfigPath"] = anonymizationConfigFilePath,
-                ["Metrics:Enabled"] = "false",
             },
         };
 

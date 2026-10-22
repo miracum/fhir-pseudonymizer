@@ -4,9 +4,6 @@ using System.Text;
 using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
 using Microsoft.Extensions.Caching.Memory;
-using Polly;
-using Polly.Extensions.Http;
-using Polly.Retry;
 
 namespace FhirPseudonymizer.Pseudonymization.Entici;
 
@@ -99,7 +96,10 @@ public static class EnticiExtensions
 
         clientBuilder
             .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(GetRetryPolicy(enticiConfig.Retry.Count));
+            .AddPseudonymServiceRetries(
+                enticiConfig.Retry.Count,
+                TimeSpan.FromSeconds(enticiConfig.RequestTimeoutSeconds)
+            );
 
         services.AddTransient<EnticiFhirClient>();
         services.AddTransient<IPseudonymServiceClient>(
@@ -111,15 +111,5 @@ public static class EnticiExtensions
         );
 
         return services;
-    }
-
-    private static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy(int retryCount = 3)
-    {
-        return HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .WaitAndRetryAsync(
-                retryCount,
-                retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
-            );
     }
 }

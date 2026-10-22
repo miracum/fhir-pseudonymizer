@@ -1,5 +1,6 @@
 using System.Net;
 using Hl7.Fhir.Rest;
+using Polly.Timeout;
 
 namespace FhirPseudonymizer.Pseudonymization;
 
@@ -28,6 +29,24 @@ public class TransientPseudonymizationException(string message, Exception innerE
         try
         {
             return await call();
+        }
+        // The last attempt timing out, as given by the per-attempt timeout strategy
+        catch (TimeoutRejectedException exc)
+        {
+            throw new TransientPseudonymizationException(
+                $"{backendName} pseudonymization call timed out.",
+                exc
+            );
+        }
+        // HttpClient.Timeout elapsing - for a client that sets one - surfaces as a
+        // TaskCanceledException wrapping a TimeoutException. A cancellation by the caller wraps
+        // none, and still propagates unchanged.
+        catch (OperationCanceledException exc) when (exc.InnerException is TimeoutException)
+        {
+            throw new TransientPseudonymizationException(
+                $"{backendName} pseudonymization call timed out.",
+                exc
+            );
         }
         catch (HttpRequestException exc) when (IsTransientHttpStatus(exc.StatusCode))
         {
