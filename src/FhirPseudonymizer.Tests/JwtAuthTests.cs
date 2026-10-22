@@ -190,7 +190,6 @@ public class JwtAuthTests
             {
                 ["Auth:Jwt:Authority"] = "",
                 ["Auth:Jwt:Audience"] = "",
-                ["Metrics:Enabled"] = "false",
             },
             TrustTestTokenIssuer = false,
         };
@@ -239,7 +238,6 @@ public class JwtAuthTests
             CustomInMemorySettings = new Dictionary<string, string>
             {
                 ["Auth:Jwt:Audience"] = "",
-                ["Metrics:Enabled"] = "false",
             },
         };
 
@@ -258,7 +256,6 @@ public class JwtAuthTests
             {
                 ["Auth:Jwt:RequiredScope"] = requiredScope,
                 ["Auth:Jwt:RequiredRole"] = requiredRole,
-                ["Metrics:Enabled"] = "false",
             },
         };
 

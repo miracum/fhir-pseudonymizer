@@ -6,10 +6,11 @@ Set `PseudonymizationService=Mii` to create pseudonyms using any backend that im
 reads the parameters `context`, `original` and `pseudonym` as `Identifier` values only. The
 `domain` of a rule becomes the value of the `context` identifier.
 
-| Environment Variable | Description                                                                                          | Default |
-| -------------------- | ---------------------------------------------------------------------------------------------------- | ------- |
-| `Mii__Url`           | The base URL of the MII pseudonymization service. Used if `PseudonymizationService` is set to `Mii`. | `""`    |
-| `Mii__Retry__Count`  | The number of times a failed request is retried, with exponential backoff.                           | `3`     |
+| Environment Variable         | Description                                                                                            | Default |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------ | ------- |
+| `Mii__Url`                   | The base URL of the MII pseudonymization service. Used if `PseudonymizationService` is set to `Mii`.   | `""`    |
+| `Mii__Retry__Count`          | The number of times a failed request is retried, with exponential backoff.                             | `3`     |
+| `Mii__RequestTimeoutSeconds` | How long a single request may take before it is cancelled and, if `Mii__Retry__Count` allows, retried. | `20`    |
 
 When using the Mii service as a pseudonymization backend, you can optionally set the identifier systems used in the requests for each rule that uses the `pseudonymize` method. These can be set under a `mii` section inside the anonymization config. If a system is not set, the corresponding identifier is sent with only a `value`:
 

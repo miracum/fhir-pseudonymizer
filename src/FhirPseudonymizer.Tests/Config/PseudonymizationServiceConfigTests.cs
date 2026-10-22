@@ -58,6 +58,27 @@ public class PseudonymizationServiceConfigTests
     }
 
     [Fact]
+    public void AppConfig_WithRequestTimeoutSetPerService_ShouldBindItToEachServicesConfig()
+    {
+        var appConfig = new AppConfig();
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string>
+                {
+                    ["gPAS:RequestTimeoutSeconds"] = "1",
+                    ["entici:RequestTimeoutSeconds"] = "2",
+                    ["Mii:RequestTimeoutSeconds"] = "3",
+                }
+            )
+            .Build()
+            .Bind(appConfig);
+
+        appConfig.GPas.RequestTimeoutSeconds.Should().Be(1);
+        appConfig.Entici.RequestTimeoutSeconds.Should().Be(2);
+        appConfig.Mii.RequestTimeoutSeconds.Should().Be(3);
+    }
+
+    [Fact]
     public void LogErrorIfPseudonymizationServiceIsMissing_WithPseudonymizeRuleAndNoService_ShouldLogError()
     {
         var logger = A.Fake<ILogger>();

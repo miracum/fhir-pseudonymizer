@@ -159,6 +159,13 @@ public record GPasConfig
 {
     public Uri Url { get; init; }
     public PseudonymServiceRetryConfig Retry { get; init; } = new();
+
+    /// <summary>
+    ///     How long a single request may take before it is given up on and, if
+    ///     <see cref="PseudonymServiceRetryConfig.Count" /> allows, retried.
+    /// </summary>
+    public int RequestTimeoutSeconds { get; init; } = 20;
+
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
 }
 
@@ -167,6 +174,12 @@ public record EnticiConfig
     public Uri Url { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
     public PseudonymServiceRetryConfig Retry { get; init; } = new();
+
+    /// <summary>
+    ///     How long a single request may take before it is given up on and, if
+    ///     <see cref="PseudonymServiceRetryConfig.Count" /> allows, retried.
+    /// </summary>
+    public int RequestTimeoutSeconds { get; init; } = 20;
 }
 
 public record VfpsConfig
@@ -205,6 +218,12 @@ public record MiiConfig
     public Uri Url { get; init; }
     public PseudonymServiceAuthConfig Auth { get; init; } = new();
     public PseudonymServiceRetryConfig Retry { get; init; } = new();
+
+    /// <summary>
+    ///     How long a single request may take before it is given up on and, if
+    ///     <see cref="PseudonymServiceRetryConfig.Count" /> allows, retried.
+    /// </summary>
+    public int RequestTimeoutSeconds { get; init; } = 20;
 }
 
 public record PseudonymServiceAuthConfig

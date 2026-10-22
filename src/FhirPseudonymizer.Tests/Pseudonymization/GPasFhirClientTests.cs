@@ -177,6 +177,41 @@ public class GPasFhirClientTests
         ).WithInnerException<FhirOperationException>();
     }
 
+    // An HttpClient timeout surfaces as a TaskCanceledException rather than an
+    // HttpRequestException, but is no more the input's fault than a 503 is
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WhenTheHttpClientTimeoutElapses_ThrowsTransientPseudonymizationException()
+    {
+        var handler = A.Fake<HttpMessageHandler>();
+        A.CallTo(handler)
+            .Where(_ => _.Method.Name == "SendAsync")
+            .WithReturnType<Task<HttpResponseMessage>>()
+            .ReturnsLazily(async call =>
+            {
+                await Task.Delay(Timeout.Infinite, call.GetArgument<CancellationToken>(1));
+                return null;
+            });
+        var client = new HttpClient(handler)
+        {
+            BaseAddress = testBaseAddress,
+            Timeout = TimeSpan.FromMilliseconds(100),
+        };
+        var factory = A.Fake<IHttpClientFactory>();
+        A.CallTo(() => factory.CreateClient(A<string>._)).Returns(client);
+        var gpasClient = new GPasFhirClient(A.Fake<ILogger<GPasFhirClient>>(), factory);
+
+        var act = async () =>
+            await gpasClient.GetOrCreatePseudonymFor(
+                "42",
+                "domain",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        (
+            await act.Should().ThrowAsync<TransientPseudonymizationException>()
+        ).WithInnerException<TaskCanceledException>();
+    }
+
     private static HttpMessageHandler CreateFailingHttpMessageHandler(HttpStatusCode statusCode)
     {
         var handler = A.Fake<HttpMessageHandler>();
