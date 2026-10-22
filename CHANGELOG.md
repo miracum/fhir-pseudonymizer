@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.2](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.1...v3.1.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* handle http client timeout transiently and fix metrics port clash ([#469](https://github.com/miracum/fhir-pseudonymizer/issues/469)) ([7f18534](https://github.com/miracum/fhir-pseudonymizer/commit/7f1853405659923f37c5211c7798903662f8bf33))
+
 ## [3.1.1](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.0...v3.1.1) (2026-10-17)
 
 
