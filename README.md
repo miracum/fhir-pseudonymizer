@@ -29,7 +29,7 @@ fhirPathRules:
 parameters:
   cryptoHashKey: "a-secret-key-with-at-least-32-characters"
 ' \
-  ghcr.io/miracum/fhir-pseudonymizer:v3.1.1
+  ghcr.io/miracum/fhir-pseudonymizer:v3.1.2
 
 curl -X POST -H "Content-Type:application/fhir+json" "http://localhost:8080/fhir/\$de-identify" \
   -d '{"resourceType": "Patient", "id": "example", "birthDate": "1985-10-14", "gender": "female"}'
