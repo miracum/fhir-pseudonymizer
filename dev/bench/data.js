@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792684275892,
+  "lastUpdate": 1792941399905,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -6198,6 +6198,132 @@ window.BENCHMARK_DATA = {
             "value": 430567595.6666667,
             "unit": "ns",
             "range": "± 211833004.30520323"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": false,
+          "id": "11b897b597ef0ce2bba67b20c499cefd54d2ca49",
+          "message": "chore(deps): update github-actions (#471)\n\nThis PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n| [astral-sh/setup-uv](https://redirect.github.com/astral-sh/setup-uv) |\naction | patch | `v10.3.0` → `v10.3.2` |\n|\n[github/codeql-action](https://redirect.github.com/github/codeql-action)\n| action | patch | `v4.39.0` → `v4.39.1` |\n| [miracum/.github](https://redirect.github.com/miracum/.github) |\nworkflow | minor | `v1.30.0` → `v1.31.2` |\n\n---\n\n### Release Notes\n\n<details>\n<summary>astral-sh/setup-uv</summary>\n\n###\n[`v10.3.2`](https://redirect.github.com/astral-sh/setup-uv/releases/tag/v10.3.2):\n🌈 update known checksums for 0.13.5\n\n[Compare\nSource](https://redirect.github.com/astral-sh/setup-uv/compare/v10.3.1...v10.3.2)\n\n#### Changes\n\n#### 🧰 Maintenance\n\n- chore: update known checksums for 0.13.5\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1103](https://redirect.github.com/astral-sh/setup-uv/issues/1103))\n\n#### 📚 Documentation\n\n- docs: update version references to v10.3.1\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1102](https://redirect.github.com/astral-sh/setup-uv/issues/1102))\n\n###\n[`v10.3.1`](https://redirect.github.com/astral-sh/setup-uv/releases/tag/v10.3.1):\n🌈 preserve cache error class names in save-cache bundle\n\n[Compare\nSource](https://redirect.github.com/astral-sh/setup-uv/compare/v10.3.0...v10.3.1)\n\n##### Changes\n\nThis release includes a fix so that multiple concurrent workflows trying\nto upload the same cache no longer warn\n\n`##[warning]Failed to save: Unable to reserve cache with key ...,\nanother job may be creating this cache.`\n\n##### 🐛 Bug fixes\n\n- fix: preserve cache error class names in save-cache bundle\n[@&#8203;dannyward630](https://redirect.github.com/dannyward630)\n([#&#8203;1093](https://redirect.github.com/astral-sh/setup-uv/issues/1093))\n\n##### 🧰 Maintenance\n\n- chore: update known checksums for 0.13.4\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1099](https://redirect.github.com/astral-sh/setup-uv/issues/1099))\n- chore: update known checksums for 0.13.2/0.13.3\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1098](https://redirect.github.com/astral-sh/setup-uv/issues/1098))\n- chore: update known checksums for 0.13.1\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1094](https://redirect.github.com/astral-sh/setup-uv/issues/1094))\n- Verify npm dependency signatures before builds\n[@&#8203;zaniebot](https://redirect.github.com/zaniebot)\n([#&#8203;1027](https://redirect.github.com/astral-sh/setup-uv/issues/1027))\n\n##### 📚 Documentation\n\n- docs: cache-dependency-glob matches relative to the working directory\n[@&#8203;flange-ipb](https://redirect.github.com/flange-ipb)\n([#&#8203;1092](https://redirect.github.com/astral-sh/setup-uv/issues/1092))\n- docs: update version references to v10.3.0\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1090](https://redirect.github.com/astral-sh/setup-uv/issues/1090))\n\n##### ⬆️ Dependency updates\n\n- chore(deps): roll up Dependabot updates\n[@&#8203;eifinger](https://redirect.github.com/eifinger)\n([#&#8203;1101](https://redirect.github.com/astral-sh/setup-uv/issues/1101))\n\n</details>\n\n<details>\n<summary>github/codeql-action</summary>\n\n###\n[`v4.39.1`](https://redirect.github.com/github/codeql-action/releases/tag/v4.39.1)\n\n[Compare\nSource](https://redirect.github.com/github/codeql-action/compare/v4.39.0...v4.39.1)\n\n- Update default CodeQL bundle version to\n[2.27.3](https://redirect.github.com/github/codeql-action/releases/tag/codeql-bundle-v2.27.3).\n[#&#8203;4256](https://redirect.github.com/github/codeql-action/pull/4256)\n\n</details>\n\n<details>\n<summary>miracum/.github</summary>\n\n###\n[`v1.31.2`](https://redirect.github.com/miracum/.github/releases/tag/v1.31.2)\n\n[Compare\nSource](https://redirect.github.com/miracum/.github/compare/v1.31.1...v1.31.2)\n\n##### Bug Fixes\n\n- duplicate digests on multiple tags being pushed\n([d9d87af](https://redirect.github.com/miracum/.github/commit/d9d87af182ffe0ef4958e61dd1e697c7fd83c52f))\n\n###\n[`v1.31.1`](https://redirect.github.com/miracum/.github/releases/tag/v1.31.1)\n\n[Compare\nSource](https://redirect.github.com/miracum/.github/compare/v1.31.0...v1.31.1)\n\n##### Bug Fixes\n\n- **build:** output the digest of the pushed image on pull requests\n([9b731cc](https://redirect.github.com/miracum/.github/commit/9b731cc069e92b534c819d2b6f250723b8f2d216))\n\n###\n[`v1.31.0`](https://redirect.github.com/miracum/.github/releases/tag/v1.31.0)\n\n[Compare\nSource](https://redirect.github.com/miracum/.github/compare/v1.30.1...v1.31.0)\n\n##### Features\n\n- allow digest-pinning multiple images\n([6611917](https://redirect.github.com/miracum/.github/commit/6611917e0cbce3777825e93e3f725c98a437c060))\n\n###\n[`v1.30.1`](https://redirect.github.com/miracum/.github/releases/tag/v1.30.1)\n\n[Compare\nSource](https://redirect.github.com/miracum/.github/compare/v1.30.0...v1.30.1)\n\n##### Bug Fixes\n\n- oom on cache export due to mismatched compression codecs\n([#&#8203;225](https://redirect.github.com/miracum/.github/issues/225))\n([217f042](https://redirect.github.com/miracum/.github/commit/217f0425b4039ca66596aeb30b6461e2511a0e09))\n\n</details>\n\n---\n\n### Configuration\n\n📅 **Schedule**: (UTC)\n\n- Branch creation\n  - On day 1 of the month, every 3 months (`* * 1 */3 *`)\n- Automerge\n  - At any time (no schedule defined)\n\n🚦 **Automerge**: Enabled.\n\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\nrebase/retry checkbox.\n\n👻 **Immortal**: This PR will be recreated if closed unmerged. Get\n[config\nhelp](https://redirect.github.com/renovatebot/renovate/discussions) if\nthat's undesired.\n\n---\n\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\nthis box\n\n---\n\nThis PR was generated by [Mend Renovate](https://mend.io/renovate/).\nView the [repository job\nlog](https://developer.mend.io/github/miracum/fhir-pseudonymizer).\n\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiI0NC4xODAuMCIsInVwZGF0ZWRJblZlciI6IjQ0LjE4MC4wIiwidGFyZ2V0QnJhbmNoIjoibWFzdGVyIiwibGFiZWxzIjpbXX0=-->\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-10-25T15:09:48Z",
+          "tree_id": "1a5104acbb8bd24998d81d3f458c4e09a8dffa5c",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/11b897b597ef0ce2bba67b20c499cefd54d2ca49"
+        },
+        "date": 1792941399490,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 120917512,
+            "unit": "ns",
+            "range": "± 2252543.9329806385"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1846272.9112723214,
+            "unit": "ns",
+            "range": "± 14126.97730639262"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 1705.628835405622,
+            "unit": "ns",
+            "range": "± 2.6446935132464633"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 23370321.1875,
+            "unit": "ns",
+            "range": "± 89894.76611883195"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 340.47390743664334,
+            "unit": "ns",
+            "range": "± 0.7264606800473039"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 825307577.6666666,
+            "unit": "ns",
+            "range": "± 2352320.030959719"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 1957732698.3333333,
+            "unit": "ns",
+            "range": "± 8434763.706165949"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 844041745.6666666,
+            "unit": "ns",
+            "range": "± 5338948.355358885"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 2009677105.3333333,
+            "unit": "ns",
+            "range": "± 36749585.89557638"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 786023597.3333334,
+            "unit": "ns",
+            "range": "± 1774261.585845879"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 1430853300.3333333,
+            "unit": "ns",
+            "range": "± 17827275.05017055"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 337214375,
+            "unit": "ns",
+            "range": "± 132993839.34193763"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 509667020.3333333,
+            "unit": "ns",
+            "range": "± 177995157.3095605"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 326765035.3333333,
+            "unit": "ns",
+            "range": "± 127195534.26364395"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 624118908.3333334,
+            "unit": "ns",
+            "range": "± 248017463.9549889"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 337034438.6666667,
+            "unit": "ns",
+            "range": "± 127359191.96153584"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 450629493.6666667,
+            "unit": "ns",
+            "range": "± 263404792.1986944"
           }
         ]
       }
