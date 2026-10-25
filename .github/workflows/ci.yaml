@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    uses: miracum/.github/.github/workflows/standard-build.yaml@704047074ac99fc4c0990f8b8377086069323116 # v1.30.0
+    uses: miracum/.github/.github/workflows/standard-build.yaml@d9d87af182ffe0ef4958e61dd1e697c7fd83c52f # v1.31.2
     permissions:
       contents: write
       id-token: write
@@ -71,7 +71,7 @@ jobs:
     needs:
       - build
       - detect-app-changes
-    uses: miracum/.github/.github/workflows/standard-chart-publish.yaml@704047074ac99fc4c0990f8b8377086069323116 # v1.30.0
+    uses: miracum/.github/.github/workflows/standard-chart-publish.yaml@d9d87af182ffe0ef4958e61dd1e697c7fd83c52f # v1.31.2
     permissions:
       contents: read
       packages: write # to push the chart and its signature/attestation to ghcr.io
@@ -423,7 +423,7 @@ jobs:
             kind-cluster-dump.txt
 
   lint:
-    uses: miracum/.github/.github/workflows/standard-lint.yaml@704047074ac99fc4c0990f8b8377086069323116 # v1.30.0
+    uses: miracum/.github/.github/workflows/standard-lint.yaml@d9d87af182ffe0ef4958e61dd1e697c7fd83c52f # v1.31.2
     permissions:
       contents: read
       pull-requests: write
@@ -446,7 +446,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           # the built site is published from this workflow, so it must not restore anything a
           # pull request run could have written
