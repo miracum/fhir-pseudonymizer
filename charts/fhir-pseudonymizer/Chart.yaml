@@ -8,7 +8,7 @@ home: https://github.com/miracum/fhir-pseudonymizer
 dependencies:
   - name: common
     repository: oci://ghcr.io/miracum/charts
-    version: 0.1.1
+    version: 0.2.0
 version: 3.1.1 # x-release-please-version
 appVersion: 3.1.1 # x-release-please-version
 annotations:
