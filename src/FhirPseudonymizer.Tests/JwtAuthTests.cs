@@ -235,10 +235,7 @@ public class JwtAuthTests
     {
         using var factory = new CustomWebApplicationFactory<Startup>
         {
-            CustomInMemorySettings = new Dictionary<string, string>
-            {
-                ["Auth:Jwt:Audience"] = "",
-            },
+            CustomInMemorySettings = new Dictionary<string, string> { ["Auth:Jwt:Audience"] = "" },
         };
 
         var act = () => factory.CreateClient();
