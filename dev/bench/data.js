@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792941672618,
+  "lastUpdate": 1792950095658,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -6702,6 +6702,132 @@ window.BENCHMARK_DATA = {
             "value": 297755746.3333333,
             "unit": "ns",
             "range": "± 6986281.259622628"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2bf903e5fcb38f7e3650fcec6760b4dfef3422fb",
+          "message": "chore(deps): update dependency verify.xunitv3 to v33 (#474)\n\nThis PR contains the following updates:\n\n| Package | Change |\n[Age](https://docs.renovatebot.com/merge-confidence/) |\n[Confidence](https://docs.renovatebot.com/merge-confidence/) |\n|---|---|---|---|\n| [Verify.XunitV3](https://redirect.github.com/VerifyTests/Verify) |\n`32.0.1` → `33.3.3` |\n![age](https://developer.mend.io/api/mc/badges/age/nuget/Verify.XunitV3/33.3.3?slim=true)\n|\n![confidence](https://developer.mend.io/api/mc/badges/confidence/nuget/Verify.XunitV3/32.0.1/33.3.3?slim=true)\n|\n\n---\n\n### Release Notes\n\n<details>\n<summary>VerifyTests/Verify (Verify.XunitV3)</summary>\n\n###\n[`v33.3.3`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.3.3)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.3.2...33.3.3)\n\n- [x]\n[#&#8203;1965](https://redirect.github.com/VerifyTests/Verify/pull/1965)\nBetter WSL support\n\n###\n[`v33.3.2`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.3.2)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.3.1...33.3.2)\n\n- [x]\n[#&#8203;1960](https://redirect.github.com/VerifyTests/Verify/issues/1960)\nReduce assembly size\n\n###\n[`v33.3.1`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.3.1)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.3.0...33.3.1)\n\n- [x]\n[#&#8203;1953](https://redirect.github.com/VerifyTests/Verify/pull/1953)\nUpdate to Argon 0.38.0\n\n###\n[`v33.3.0`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.3.0)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.2.0...33.3.0)\n\n- [x]\n[#&#8203;1951](https://redirect.github.com/VerifyTests/Verify/pull/1951)\nPaged documents: source and derived targets\n\n###\n[`v33.2.0`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.2.0)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.1.5...33.2.0)\n\n- [x]\n[#&#8203;1943](https://redirect.github.com/VerifyTests/Verify/pull/1943)\nUpdate NUnit to v5\n- [x]\n[#&#8203;1947](https://redirect.github.com/VerifyTests/Verify/pull/1947)\nShow a text diff in the exception message for a text mismatch\n\n###\n[`v33.1.5`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.1.5)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.1.4...33.1.5)\n\n- [x]\n[#&#8203;1942](https://redirect.github.com/VerifyTests/Verify/pull/1942)\nBump DiffEngine and TUnit packages\n\n###\n[`v33.1.4`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.1.4)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.1.3...33.1.4)\n\n- [x]\n[#&#8203;1940](https://redirect.github.com/VerifyTests/Verify/pull/1940)\nExclude TUnit CancellationToken parameters from snapshot naming\n\n###\n[`v33.1.3`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.1.3)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.1.2...33.1.3)\n\n- [x]\n[#&#8203;1938](https://redirect.github.com/VerifyTests/Verify/pull/1938)\nWithdraw a raised delete once its file is in use again\n\n###\n[`v33.1.2`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.1.2)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.1.1...33.1.2)\n\n- [x]\n[#&#8203;1933](https://redirect.github.com/VerifyTests/Verify/pull/1933)\ninline switch records fixes\n- [x]\n[#&#8203;1934](https://redirect.github.com/VerifyTests/Verify/pull/1934)\nBump SponsorCheck to 0.26.0\n- [x]\n[#&#8203;1936](https://redirect.github.com/VerifyTests/Verify/pull/1936)\nBump DiffEngine to 20.5.0\n- [x]\n[#&#8203;1937](https://redirect.github.com/VerifyTests/Verify/pull/1937)\nSettle by value\n\n###\n[`v33.1.1`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.1.1)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.1.0...33.1.1)\n\n- [x]\n[#&#8203;1931](https://redirect.github.com/VerifyTests/Verify/pull/1931)\nBump SponsorCheck to 0.25.0\n\n###\n[`v33.1.0`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.1.0)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.0.2...33.1.0)\n\n- [x]\n[#&#8203;1910](https://redirect.github.com/VerifyTests/Verify/pull/1910)\nAllow custom converters to override built-in converters\n- [x]\n[#&#8203;1930](https://redirect.github.com/VerifyTests/Verify/pull/1930)\nBetter Dangling snapshots detection\n\n###\n[`v33.0.2`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.0.2)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.0.1...33.0.2)\n\n- [x]\n[#&#8203;1919](https://redirect.github.com/VerifyTests/Verify/pull/1919)\nUpdate to SponsorCheck 0.24.0\n\n###\n[`v33.0.1`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.0.1)\n\n[Compare\nSource](https://redirect.github.com/VerifyTests/Verify/compare/33.0.0...33.0.1)\n\n- [x]\n[#&#8203;1918](https://redirect.github.com/VerifyTests/Verify/pull/1918)\nBump SponsorCheck to 0.23.0\n\n###\n[`v33.0.0`](https://redirect.github.com/VerifyTests/Verify/releases/tag/33.0.0)\n\n**The most impactful change in this release is the [adoption of the Open\nSource Maintenance\nFee](https://redirect.github.com/VerifyTests/Verify/blob/main/docs/maintenance-fee.md).\nSo a subset of consumers will be required to sponsor the project**\n\n- [x]\n[#&#8203;1848](https://redirect.github.com/VerifyTests/Verify/pull/1848)\nxunit3 v4\n- [x]\n[#&#8203;1882](https://redirect.github.com/VerifyTests/Verify/pull/1882)\nSponsor check\n- [x]\n[#&#8203;1883](https://redirect.github.com/VerifyTests/Verify/pull/1883)\nUpgrade Argon to 0.36.0\n- [x]\n[#&#8203;1884](https://redirect.github.com/VerifyTests/Verify/pull/1884)\nParse the built in ISO date format with the invariant culture\n- [x]\n[#&#8203;1885](https://redirect.github.com/VerifyTests/Verify/pull/1885)\nFix appended file reuse\n- [x]\n[#&#8203;1886](https://redirect.github.com/VerifyTests/Verify/pull/1886)\nRename the misnamed NUnit VerifyBase.ThrowsValueTask<T> overload\n- [x]\n[#&#8203;1887](https://redirect.github.com/VerifyTests/Verify/pull/1887)\nFix combination callbacks\n- [x]\n[#&#8203;1888](https://redirect.github.com/VerifyTests/Verify/pull/1888)\nTrack verified files nested under the indexed target namespace\n- [x]\n[#&#8203;1889](https://redirect.github.com/VerifyTests/Verify/pull/1889)\nOverlap the two reads when comparing binary snapshots\n- [x]\n[#&#8203;1890](https://redirect.github.com/VerifyTests/Verify/pull/1890)\nCache whether a type is a collection\n- [x]\n[#&#8203;1891](https://redirect.github.com/VerifyTests/Verify/pull/1891)\nRe-run WriteVerifyAttributes when the values change\n- [x]\n[#&#8203;1892](https://redirect.github.com/VerifyTests/Verify/pull/1892)\nRead VerifyResult.Text with the configured encoding\n- [x]\n[#&#8203;1893](https://redirect.github.com/VerifyTests/Verify/pull/1893)\nValidate UseTextForParameters as a file name\n- [x]\n[#&#8203;1894](https://redirect.github.com/VerifyTests/Verify/pull/1894)\nGuard TUnit parameter binding and null TestContext\n- [x]\n[#&#8203;1895](https://redirect.github.com/VerifyTests/Verify/pull/1895)\nStop copied settings sharing mutations of the source serialization\n- [x]\n[#&#8203;1896](https://redirect.github.com/VerifyTests/Verify/pull/1896)\nAllow a recording to be started again once consumed\n- [x]\n[#&#8203;1897](https://redirect.github.com/VerifyTests/Verify/pull/1897)\nFormat fallback parameter names with the invariant culture\n- [x]\n[#&#8203;1898](https://redirect.github.com/VerifyTests/Verify/pull/1898)\nRelease named recording state on dispose\n- [x]\n[#&#8203;1899](https://redirect.github.com/VerifyTests/Verify/pull/1899)\nCompile the MSTest generator against the Roslyn version it is packed for\n- [x]\n[#&#8203;1900](https://redirect.github.com/VerifyTests/Verify/pull/1900)\nResolve the OS platform on demand\n- [x]\n[#&#8203;1901](https://redirect.github.com/VerifyTests/Verify/pull/1901)\nDrop the null forgiving operator from generated TestContext getter\n- [x]\n[#&#8203;1902](https://redirect.github.com/VerifyTests/Verify/pull/1902)\nDescribe the real Fixie setup in the No State found error\n- [x]\n[#&#8203;1903](https://redirect.github.com/VerifyTests/Verify/pull/1903)\nRun before callbacks from the file level InnerVerifier constructor\n- [x]\n[#&#8203;1904](https://redirect.github.com/VerifyTests/Verify/pull/1904)\nNever report the current process as locking a file\n- [x]\n[#&#8203;1905](https://redirect.github.com/VerifyTests/Verify/pull/1905)\nAlways write an object for ClaimsPrincipal\n- [x]\n[#&#8203;1906](https://redirect.github.com/VerifyTests/Verify/pull/1906)\nKey the date scrubber caches on DateTimeFormat\n- [x]\n[#&#8203;1907](https://redirect.github.com/VerifyTests/Verify/pull/1907)\nDo not let a clipboard failure replace the snapshot diff\n- [x]\n[#&#8203;1908](https://redirect.github.com/VerifyTests/Verify/pull/1908)\nFormat UTC offsets with invariant culture\n- [x]\n[#&#8203;1909](https://redirect.github.com/VerifyTests/Verify/pull/1909)\nNest snapshots under razor parents and Content items\n- [x]\n[#&#8203;1916](https://redirect.github.com/VerifyTests/Verify/pull/1916)\nBump DiffEngine to 20.3.0\n\n</details>\n\n---\n\n### Configuration\n\n📅 **Schedule**: (UTC)\n\n- Branch creation\n  - On day 1 of the month, every 3 months (`* * 1 */3 *`)\n- Automerge\n  - At any time (no schedule defined)\n\n🚦 **Automerge**: Enabled.\n\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\nrebase/retry checkbox.\n\n🔕 **Ignore**: Close this PR and you won't be reminded about this update\nagain.\n\n---\n\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\nthis box\n\n---\n\nThis PR was generated by [Mend Renovate](https://mend.io/renovate/).\nView the [repository job\nlog](https://developer.mend.io/github/miracum/fhir-pseudonymizer).\n\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiI0NC4xODAuMCIsInVwZGF0ZWRJblZlciI6IjQ0LjE4MC4wIiwidGFyZ2V0QnJhbmNoIjoibWFzdGVyIiwibGFiZWxzIjpbXX0=-->\n\n---------\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>\nCo-authored-by: chgl <chgl@users.noreply.github.com>",
+          "timestamp": "2026-10-25T18:38:52+01:00",
+          "tree_id": "c531e582248a9c2c94c3a99f50307537552ea66e",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/2bf903e5fcb38f7e3650fcec6760b4dfef3422fb"
+        },
+        "date": 1792950094639,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 78330881.53846154,
+            "unit": "ns",
+            "range": "± 454589.04457421124"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1263123.3510044643,
+            "unit": "ns",
+            "range": "± 21831.94702023332"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 1056.1971476418632,
+            "unit": "ns",
+            "range": "± 4.171524226655437"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 15340473.754464285,
+            "unit": "ns",
+            "range": "± 164798.38285753812"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 243.88202748979842,
+            "unit": "ns",
+            "range": "± 0.4302921277449587"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 617465832.6666666,
+            "unit": "ns",
+            "range": "± 9471742.470946217"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 1386806266.6666667,
+            "unit": "ns",
+            "range": "± 4252863.867059976"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 614846649.3333334,
+            "unit": "ns",
+            "range": "± 8767484.975509588"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 1467272846.6666667,
+            "unit": "ns",
+            "range": "± 11131168.242786214"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 611156022,
+            "unit": "ns",
+            "range": "± 7089116.652652219"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 1076160893.3333333,
+            "unit": "ns",
+            "range": "± 31650125.730971266"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 291941273.6666667,
+            "unit": "ns",
+            "range": "± 24955014.144634146"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 501506385,
+            "unit": "ns",
+            "range": "± 323754385.4511741"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 280136621,
+            "unit": "ns",
+            "range": "± 32573291.859077107"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 527755408.6666667,
+            "unit": "ns",
+            "range": "± 242332848.98086414"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 269678888,
+            "unit": "ns",
+            "range": "± 25849001.92027203"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 481218614,
+            "unit": "ns",
+            "range": "± 104576343.85876423"
           }
         ]
       }
