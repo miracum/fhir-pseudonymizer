@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.1.2](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.1...v3.1.2) (2026-10-25)
+
+
+### Bug Fixes
+
+* handle http client timeout transiently and fix metrics port clash ([#469](https://github.com/miracum/fhir-pseudonymizer/issues/469)) ([7f18534](https://github.com/miracum/fhir-pseudonymizer/commit/7f1853405659923f37c5211c7798903662f8bf33))
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#475](https://github.com/miracum/fhir-pseudonymizer/issues/475)) ([fcad93c](https://github.com/miracum/fhir-pseudonymizer/commit/fcad93ce5d05bf91115c2d3d6cc9cfc261df0a57))
+* **deps:** update all non-major dependencies ([#472](https://github.com/miracum/fhir-pseudonymizer/issues/472)) ([2df37b6](https://github.com/miracum/fhir-pseudonymizer/commit/2df37b6a0bd3e23816a408c4fed10d9a567d36c7))
+* **deps:** update dependency ubuntu to v26 ([#473](https://github.com/miracum/fhir-pseudonymizer/issues/473)) ([e784084](https://github.com/miracum/fhir-pseudonymizer/commit/e784084e79b4ea94b1e79a147dbeb4b6d91fdde2))
+* **deps:** update dependency verify.xunitv3 to v33 ([#474](https://github.com/miracum/fhir-pseudonymizer/issues/474)) ([2bf903e](https://github.com/miracum/fhir-pseudonymizer/commit/2bf903e5fcb38f7e3650fcec6760b4dfef3422fb))
+* **deps:** update github-actions ([#471](https://github.com/miracum/fhir-pseudonymizer/issues/471)) ([11b897b](https://github.com/miracum/fhir-pseudonymizer/commit/11b897b597ef0ce2bba67b20c499cefd54d2ca49))
+
 ## [3.1.1](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.0...v3.1.1) (2026-10-17)
 
 
