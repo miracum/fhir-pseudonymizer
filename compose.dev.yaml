@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.25.0@sha256:99a66614dccc821e1c75fb440497ebf24ede3ac3ec2ad0ad8007e67fc73df583
+    image: ghcr.io/miracum/vfps:v1.26.0@sha256:ae94a47bb32649eef65905e3c46066f8580985532fe42c9789e287227be25862
     restart: unless-stopped
     deploy:
       resources:
