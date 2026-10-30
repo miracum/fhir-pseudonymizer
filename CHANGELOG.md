@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.3](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.2...v3.1.3) (2026-10-30)
+
+
+### Miscellaneous Chores
+
+* align playground UI styling with the docs page ([#476](https://github.com/miracum/fhir-pseudonymizer/issues/476)) ([2ad6baf](https://github.com/miracum/fhir-pseudonymizer/commit/2ad6baf8e9d5e4e4aef085f49724d01e6928a8ee))
+
 ## [3.1.2](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.1...v3.1.2) (2026-10-25)
 
 

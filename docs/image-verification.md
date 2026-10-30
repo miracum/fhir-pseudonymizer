@@ -13,7 +13,7 @@ Prerequisites:
 <!-- x-release-please-start-version -->
 
 ```sh
-IMAGE=ghcr.io/miracum/fhir-pseudonymizer:v3.1.2
+IMAGE=ghcr.io/miracum/fhir-pseudonymizer:v3.1.3
 DIGEST=$(crane digest "${IMAGE}")
 IMAGE_DIGEST_PINNED="ghcr.io/miracum/fhir-pseudonymizer@${DIGEST}"
 IMAGE_TAG="${IMAGE#*:}"
