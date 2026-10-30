@@ -10,56 +10,107 @@
 
 <PageTitle>FHIR Pseudonymizer Playground</PageTitle>
 
-<header>
-  <h1>FHIR Pseudonymizer Playground</h1>
-  <p>
-    Try out <code>anonymization.yaml</code> rules entirely in your browser - nothing is sent to a server.
-  </p>
-  <p>
-    ⚠️ The <code>encrypt</code> method is not supported in the playground.
-  </p>
+<header class="topbar">
+  <a class="topbar-brand" href="@DocsUrl">
+    <img src="logo.svg" alt="" />
+    <span>FHIR Pseudonymizer</span>
+  </a>
+  <nav class="topbar-actions">
+    <button class="icon-button" @onclick="ToggleTheme"
+      title="@(_theme == "dark" ? "Switch to light mode" : "Switch to dark mode")"
+      aria-label="@(_theme == "dark" ? "Switch to light mode" : "Switch to dark mode")">
+      @if (_theme == "dark")
+      {
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" /></svg>
+      }
+      else
+      {
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
+      }
+    </button>
+    <a class="topbar-link" href="@DocsUrl">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z" /></svg>
+      <span>Docs</span>
+    </a>
+    <a class="topbar-link" href="https://github.com/miracum/fhir-pseudonymizer" aria-label="GitHub repository">
+      <svg class="icon icon-filled" viewBox="0 0 512 512" aria-hidden="true"><path d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21" /></svg>
+      <span class="topbar-link-label">miracum/fhir-pseudonymizer</span>
+    </a>
+  </nav>
 </header>
 
-<div class="toolbar">
-  <button @onclick="RunAsync">Run</button>
-  <button @onclick="Share" disabled="@_sharing">@(_sharing ? "Copied!" : "Share")</button>
-  <button class="toolbar-theme" @onclick="ToggleTheme">@(_theme == "dark" ? "Light mode" : "Dark mode")</button>
-  <label><input type="checkbox" @bind="prettyOutput" /> Pretty-print output</label>
-</div>
-
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-  <pre class="error">@errorMessage</pre>
-}
-
-<div class="panes">
-  <section class="pane">
-    <h2>Rules (anonymization.yaml)</h2>
-    <div class="editor-container">
-      <StandaloneCodeEditor @ref="_rulesEditor" Id="rules-editor"
-        ConstructionOptions="RulesEditorOptions" />
+<main class="content">
+  <div class="intro">
+    <h1>Playground</h1>
+    <p>
+      Try out <code>anonymization.yaml</code> rules entirely in your browser - nothing is sent to a server.
+    </p>
+    <div class="callout callout-warning">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4M12 17h.01" /></svg>
+      <span>The <code>encrypt</code> method is not supported in the playground.</span>
     </div>
-  </section>
-
-  <section class="pane">
-    <h2>Input resource (JSON)</h2>
-    <div class="editor-container">
-      <StandaloneCodeEditor @ref="_inputEditor" Id="input-editor"
-        ConstructionOptions="InputEditorOptions" />
-    </div>
-  </section>
-</div>
-
-<section class="pane-diff">
-  <h2>Diff (input → anonymized)</h2>
-  <div class="editor-container editor-container-diff">
-    <StandaloneDiffEditor @ref="_diffEditor" Id="diff-editor"
-      ConstructionOptions="DiffEditorOptions"
-      OnDidInit="DiffEditorOnDidInit" />
   </div>
-</section>
+
+  <div class="toolbar">
+    <button class="button button-primary" @onclick="RunAsync">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" /></svg>
+      Run
+    </button>
+    <button class="button" @onclick="Share" disabled="@_sharing">
+      @if (_sharing)
+      {
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+        <span>Link copied</span>
+      }
+      else
+      {
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+        <span>Share</span>
+      }
+    </button>
+    <label class="checkbox"><input type="checkbox" @bind="prettyOutput" /> Pretty-print output</label>
+  </div>
+
+  @if (!string.IsNullOrEmpty(errorMessage))
+  {
+    <div class="callout callout-error" role="alert">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6M9 9l6 6" /></svg>
+      <pre>@errorMessage</pre>
+    </div>
+  }
+
+  <div class="panes">
+    <section class="pane">
+      <h2>Rules <code>anonymization.yaml</code></h2>
+      <div class="editor-container">
+        <StandaloneCodeEditor @ref="_rulesEditor" Id="rules-editor"
+          ConstructionOptions="RulesEditorOptions" />
+      </div>
+    </section>
+
+    <section class="pane">
+      <h2>Input resource <code>JSON</code></h2>
+      <div class="editor-container">
+        <StandaloneCodeEditor @ref="_inputEditor" Id="input-editor"
+          ConstructionOptions="InputEditorOptions" />
+      </div>
+    </section>
+  </div>
+
+  <section class="pane">
+    <h2>Diff <span class="pane-hint">input → anonymized</span></h2>
+    <div class="editor-container editor-container-diff">
+      <StandaloneDiffEditor @ref="_diffEditor" Id="diff-editor"
+        ConstructionOptions="DiffEditorOptions"
+        OnDidInit="DiffEditorOnDidInit" />
+    </div>
+  </section>
+</main>
 
 @code {
+  private const string DocsUrl = "https://miracum.github.io/fhir-pseudonymizer/docs/";
+  private const string EditorFontFamily = "'JetBrains Mono', ui-monospace, monospace";
+
   private string rulesYaml = DefaultRulesYaml;
   private string inputJson = DefaultInputJson;
   private string outputJson = string.Empty;
@@ -127,8 +178,10 @@
   {
     await JS.InvokeVoidAsync("playground.setTheme", _theme);
     if (_diffEditorInitialized)
-      await BlazorMonaco.Editor.Global.SetTheme(JS, _theme == "dark" ? "vs-dark" : "vs");
+      await BlazorMonaco.Editor.Global.SetTheme(JS, EditorTheme);
   }
+
+  private string EditorTheme => _theme == "dark" ? "fp-dark" : "fp-light";
 
   private void ComputeOutput()
   {
@@ -177,7 +230,8 @@
     Value = rulesYaml,
     Minimap = new EditorMinimapOptions { Enabled = false },
     ScrollBeyondLastLine = false,
-    Theme = _theme == "dark" ? "vs-dark" : "vs",
+    Theme = EditorTheme,
+    FontFamily = EditorFontFamily,
   };
 
   private StandaloneEditorConstructionOptions InputEditorOptions(StandaloneCodeEditor _) => new()
@@ -187,7 +241,8 @@
     Value = inputJson,
     Minimap = new EditorMinimapOptions { Enabled = false },
     ScrollBeyondLastLine = false,
-    Theme = _theme == "dark" ? "vs-dark" : "vs",
+    Theme = EditorTheme,
+    FontFamily = EditorFontFamily,
   };
 
   private StandaloneDiffEditorConstructionOptions DiffEditorOptions(StandaloneDiffEditor _) => new()
@@ -195,7 +250,8 @@
     AutomaticLayout = true,
     OriginalEditable = false,
     ReadOnly = true,
-    Theme = _theme == "dark" ? "vs-dark" : "vs",
+    Theme = EditorTheme,
+    FontFamily = EditorFontFamily,
   };
 
   private async Task DiffEditorOnDidInit()
