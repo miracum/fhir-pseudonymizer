@@ -54,3 +54,19 @@
 .fp-hero .md-button {
   margin: 0.25rem;
 }
+
+/* The playground button is filled in teal (the theme accent, darkened for contrast with white text)
+   so it stands out next to the primary "Get started" button. */
+.md-typeset .md-button.fp-button-playground {
+  background-color: #00796b;
+  color: #fff;
+}
+
+.md-typeset .md-button.fp-button-playground:is(:hover, :focus) {
+  background-color: #00695c;
+  color: #fff;
+}
+
+.md-typeset .md-button.fp-button-playground .twemoji {
+  margin-left: 0.15em;
+}

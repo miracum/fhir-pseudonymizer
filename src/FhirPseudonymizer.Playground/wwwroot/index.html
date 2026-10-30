@@ -10,7 +10,14 @@
     />
     <title>FHIR Pseudonymizer Playground</title>
     <base href="./" />
+    <link rel="icon" href="logo.svg" />
     <link rel="preload" id="webassembly" />
+    <!-- same fonts as the documentation site -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Inter:400,500,700%7CJetBrains+Mono:400,700&display=fallback"
+    />
     <link rel="stylesheet" href="css/app.css" />
     <script type="importmap"></script>
   </head>
@@ -61,6 +68,31 @@
       /* Start Blazor only after Monaco has fully loaded to avoid the race condition
          where Blazor renders and calls monaco APIs before window.monaco is defined. */
       require(["vs/editor/editor.main"], async function () {
+        /* Editor themes matching the documentation site's code blocks */
+        monaco.editor.defineTheme("fp-light", {
+          base: "vs",
+          inherit: true,
+          rules: [],
+          colors: {
+            "editor.background": "#ffffff",
+            "editorGutter.background": "#ffffff",
+            "editor.lineHighlightBackground": "#0000000a",
+          },
+        });
+        monaco.editor.defineTheme("fp-dark", {
+          base: "vs-dark",
+          inherit: true,
+          rules: [],
+          colors: {
+            "editor.background": "#14171f",
+            "editorGutter.background": "#14171f",
+            "editor.lineHighlightBackground": "#ffffff0a",
+          },
+        });
+        /* Monaco caches glyph widths, so re-measure whenever a web font has arrived */
+        document.fonts.addEventListener("loadingdone", () =>
+          monaco.editor.remeasureFonts(),
+        );
         await Blazor.start();
       });
     </script>

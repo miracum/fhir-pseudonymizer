@@ -55,14 +55,14 @@
 
 .loading-progress circle {
   fill: none;
-  stroke: #e0e0e0;
+  stroke: var(--border);
   stroke-width: 0.6rem;
   transform-origin: 50% 50%;
   transform: rotate(-90deg);
 }
 
 .loading-progress circle:last-child {
-  stroke: #1b6ec2;
+  stroke: var(--primary);
   stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
   transition: stroke-dasharray 0.05s ease-in-out;
 }
@@ -78,104 +78,297 @@
   content: var(--blazor-load-percentage-text, "Loading");
 }
 
-/* ── Theme tokens ────────────────────────────────── */
+/* ── Theme tokens ────────────────────────────────── *
+ * Mirrors the documentation site's palette (zensical "modern" theme, blue-grey primary, teal accent). */
 :root {
   color-scheme: light;
 
+  --primary: #546d78;
+  --primary-dark: #455a63;
+  --accent: #00bda4;
+  --brand: #e4572e;
   --bg: #fff;
-  --fg: #1a1a1a;
-  --muted: #555;
-  --border: #d0d0d0;
-  --error-bg: #fdecea;
-  --error-fg: #611a15;
-  --error-border: #f5c6cb;
-  --code-fg: #c02d76;
+  --fg: #000000de;
+  --muted: #0000008c;
+  --border: #0000001a;
+  --subtle: #0000000d;
+  --header-bg: #ffffffb3;
+  --surface: #fff;
+  --code-bg: #f5f5f5;
+  --code-fg: #36464e;
+  --warning: #ff9100;
+  --warning-bg: #ff91001a;
+  --error: #ff1744;
+  --error-bg: #ff17441a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --bg: #1e1e1e;
-    --fg: #d4d4d4;
-    --muted: #9d9d9d;
-    --border: #3e3e3e;
-    --error-bg: #2d1515;
-    --error-fg: #f87171;
-    --error-border: #7f2020;
-    --code-fg: #f472b6;
+    --bg: hsl(225deg 15% 5%);
+    --fg: hsl(225deg 15% 90% / 82%);
+    --muted: hsl(225deg 15% 90% / 56%);
+    --border: hsl(225deg 15% 90% / 12%);
+    --subtle: hsl(225deg 15% 90% / 7%);
+    --header-bg: hsl(225deg 15% 5% / 54%);
+    --surface: #14171f;
+    --code-bg: hsl(225deg 20% 10%);
+    --code-fg: hsl(225deg 20% 80%);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #1e1e1e;
-  --fg: #d4d4d4;
-  --muted: #9d9d9d;
-  --border: #3e3e3e;
-  --error-bg: #2d1515;
-  --error-fg: #f87171;
-  --error-border: #7f2020;
-  --code-fg: #f472b6;
+  --bg: hsl(225deg 15% 5%);
+  --fg: hsl(225deg 15% 90% / 82%);
+  --muted: hsl(225deg 15% 90% / 56%);
+  --border: hsl(225deg 15% 90% / 12%);
+  --subtle: hsl(225deg 15% 90% / 7%);
+  --header-bg: hsl(225deg 15% 5% / 54%);
+  --surface: #14171f;
+  --code-bg: hsl(225deg 20% 10%);
+  --code-fg: hsl(225deg 20% 80%);
 }
 
-code {
-  color: var(--code-fg);
-}
-
-.form-floating > .form-control-plaintext::placeholder,
-.form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder,
-.form-floating > .form-control:focus::placeholder {
-  text-align: start;
-}
-
+/* ── Base ────────────────────────────────────────── */
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  margin: 1rem 1.5rem;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    Helvetica,
+    Arial,
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
-header h1 {
-  margin-bottom: 0.25rem;
+code,
+pre {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
 }
 
-header p {
-  color: var(--muted);
-  max-width: 60em;
+code {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border-radius: 4px;
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
 }
 
-.toolbar {
+h1:focus {
+  outline: none;
+}
+
+.icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-filled {
+  fill: currentcolor;
+  stroke: none;
+}
+
+/* ── Header (like the docs site's) ───────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin: 1rem 0;
+  height: 48px;
+  padding: 0 1.5rem;
+  background: var(--header-bg);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 0 var(--border);
 }
 
-.toolbar button {
-  padding: 0.4rem 1rem;
-  cursor: pointer;
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.toolbar-theme {
+.topbar-brand img {
+  height: 24px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   margin-left: auto;
 }
 
-.error {
-  background: var(--error-bg);
-  color: var(--error-fg);
-  border: 1px solid var(--error-border);
-  padding: 0.75rem 1rem;
-  white-space: pre-wrap;
-  border-radius: 4px;
+.icon-button,
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
 }
 
+.icon-button:hover,
+.topbar-link:hover {
+  background: var(--subtle);
+}
+
+.icon-button .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* ── Page content ────────────────────────────────── */
+.content {
+  padding: 1.5rem;
+}
+
+.intro h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+}
+
+.intro p {
+  color: var(--muted);
+  margin: 0 0 1rem;
+  max-width: 60em;
+}
+
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  max-width: 60em;
+}
+
+.callout > .icon {
+  margin-top: 0.2em;
+}
+
+.callout-warning {
+  background: var(--warning-bg);
+}
+
+.callout-warning > .icon {
+  color: var(--warning);
+}
+
+.callout-error {
+  background: var(--error-bg);
+  margin-bottom: 1rem;
+  max-width: none;
+}
+
+.callout-error > .icon {
+  color: var(--error);
+}
+
+.callout-error pre {
+  margin: 0;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+/* ── Toolbar ─────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+/* pill buttons like the docs site's .md-button */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--subtle);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 125ms,
+    color 125ms;
+}
+
+.button:disabled {
+  cursor: default;
+}
+
+.button:focus-visible,
+.icon-button:focus-visible,
+.topbar-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--fg);
+}
+
+.button-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.button-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  color: #fff;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.25rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.checkbox input {
+  accent-color: var(--primary);
+}
+
+/* ── Editor panes ────────────────────────────────── */
 .panes {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -187,16 +380,29 @@ header p {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
 }
 
-.pane h2,
-.pane-diff h2 {
-  font-size: 1rem;
-  margin: 0 0 0.4rem;
+.pane h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.pane-hint {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .editor-container {
-  border: 1px solid var(--border);
   height: 40vh;
   min-height: 120px;
   resize: vertical;
@@ -205,7 +411,6 @@ header p {
 
 .editor-container-diff {
   height: 55vh;
-  min-height: 120px;
 }
 
 #rules-editor,
@@ -214,12 +419,32 @@ header p {
   height: 100%;
 }
 
-.pane-diff {
-  margin-bottom: 1rem;
-}
-
 @media (width <= 900px) {
   .panes {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 600px) {
+  .topbar,
+  .content {
+    padding-inline: 1rem;
+  }
+
+  .topbar {
+    gap: 0.5rem;
+  }
+
+  .topbar-actions {
+    gap: 0;
+  }
+
+  .icon-button,
+  .topbar-link {
+    padding-inline: 0.4rem;
+  }
+
+  .topbar-link-label {
+    display: none;
   }
 }

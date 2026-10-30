@@ -39,4 +39,14 @@
     <!-- AnonymizerConfigurationManager (linked above) calls KeyDerivation.DeriveCryptoHashKey/DeriveEncryptKey -->
     <Compile Include="..\FhirPseudonymizer\Config\KeyDerivation.cs" LinkBase="Engine\Config" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- serve the logo from the documentation site instead of keeping a copy. Without ContentRoot the
+         dev server resolves linked files against wwwroot/ and responds with an empty body. -->
+    <Content
+      Include="..\..\docs\img\logo.svg"
+      Link="wwwroot\logo.svg"
+      ContentRoot="$(MSBuildProjectDirectory)\..\..\docs\img\"
+    />
+  </ItemGroup>
 </Project>

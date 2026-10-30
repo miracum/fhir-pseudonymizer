@@ -16,7 +16,7 @@ hide:
 <p class="fp-tagline">A REST and Kafka service for de-identifying FHIR® resources.</p>
 
 [Get started](getting-started.md){ .md-button .md-button--primary }
-[Try it in your browser](https://miracum.github.io/fhir-pseudonymizer/playground/){ .md-button }
+[Try it in your browser :lucide-external-link:](https://miracum.github.io/fhir-pseudonymizer/playground/){ .md-button .fp-button-playground }
 
 </div>
 
