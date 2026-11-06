@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793957920966,
+  "lastUpdate": 1793958016511,
   "repoUrl": "https://github.com/miracum/fhir-pseudonymizer",
   "entries": {
     "Benchmark": [
@@ -7332,6 +7332,132 @@ window.BENCHMARK_DATA = {
             "value": 513981767.3333333,
             "unit": "ns",
             "range": "± 151792560.0186871"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": false,
+          "id": "b073ff31ae11a919faef3e2906ddc93af25e816b",
+          "message": "chore(deps): update github-actions (#481)\n\nThis PR contains the following updates:\n\n| Package | Type | Update | Change |\n|---|---|---|---|\n|\n[actions/setup-dotnet](https://redirect.github.com/actions/setup-dotnet)\n| action | minor | `v6.0.0` → `v6.1.0` |\n|\n[amannn/action-semantic-pull-request](https://redirect.github.com/amannn/action-semantic-pull-request)\n([changelog](https://redirect.github.com/amannn/action-semantic-pull-request/compare/48f256284bd46cdaab1048c3721360e808335d50..2252a14e810aa9b85c2d560bd7070c802206ecf6))\n| action | digest | `48f2562` → `2252a14` |\n| [astral-sh/setup-uv](https://redirect.github.com/astral-sh/setup-uv) |\naction | patch | `v10.3.2` → `v10.3.3` |\n|\n[github/codeql-action](https://redirect.github.com/github/codeql-action)\n| action | patch | `v4.39.1` → `v4.39.3` |\n| [helm/kind-action](https://redirect.github.com/helm/kind-action) |\naction | patch | `v1.15.1` → `v1.15.2` |\n| [miracum/.github](https://redirect.github.com/miracum/.github) |\nworkflow | minor | `v1.31.2` → `v1.32.1` |\n\n---\n\n### Release Notes\n\n<details>\n<summary>actions/setup-dotnet</summary>\n\n###\n[`v6.1.0`](https://redirect.github.com/actions/setup-dotnet/releases/tag/v6.1.0)\n\n[Compare\nSource](https://redirect.github.com/actions/setup-dotnet/compare/v6.0.0...v6.1.0)\n\n##### What's Changed\n\n##### Enhancements\n\n- Add check-latest input to reuse a locally installed .NET SDK and skip\nnetwork calls by\n[@&#8203;v-mahabaleshwars](https://redirect.github.com/v-mahabaleshwars)\nin\n[#&#8203;774](https://redirect.github.com/actions/setup-dotnet/pull/774)\n- Add skip-lts-prepass input to optimize .NET SDK installation process\nby\n[@&#8203;v-chiranjib-swain](https://redirect.github.com/v-chiranjib-swain)\nin\n[#&#8203;791](https://redirect.github.com/actions/setup-dotnet/pull/791)\n- Add fallback install directory when default is not writable by\n[@&#8203;v-priyagupta108](https://redirect.github.com/v-priyagupta108)\nin\n[#&#8203;785](https://redirect.github.com/actions/setup-dotnet/pull/785)\n\n##### Documentation\n\n- Document sdk.version validation for rollForward in global.json by\n[@&#8203;v-priyagupta108](https://redirect.github.com/v-priyagupta108)\nin\n[#&#8203;763](https://redirect.github.com/actions/setup-dotnet/pull/763)\n- Docs: Add Microsoft docs link for dotnet-quality options by\n[@&#8203;v-priyagupta108](https://redirect.github.com/v-priyagupta108)\nin\n[#&#8203;773](https://redirect.github.com/actions/setup-dotnet/pull/773)\n- Docs: Updating Documentation in README by\n[@&#8203;v-lmvysakh](https://redirect.github.com/v-lmvysakh) in\n[#&#8203;776](https://redirect.github.com/actions/setup-dotnet/pull/776)\n- Clarify dotnet-quality behavior for multiple SDK versions by\n[@&#8203;v-mahabaleshwars](https://redirect.github.com/v-mahabaleshwars)\nin\n[#&#8203;780](https://redirect.github.com/actions/setup-dotnet/pull/780)\n\n##### Dependency Updates\n\n- Fix security vulnerabilities by\n[@&#8203;v-HarithaVattikuti](https://redirect.github.com/v-HarithaVattikuti)\nin\n[#&#8203;767](https://redirect.github.com/actions/setup-dotnet/pull/767)\n- ci: make validation caches read-only by\n[@&#8203;philip-gai](https://redirect.github.com/philip-gai) in\n[#&#8203;777](https://redirect.github.com/actions/setup-dotnet/pull/777)\n- Bump actions/checkout from 7.0.0 to 7.0.1 by\n[@&#8203;dependabot](https://redirect.github.com/dependabot) in\n[#&#8203;764](https://redirect.github.com/actions/setup-dotnet/pull/764)\n- Bump browserslist from 4.28.2 to 4.28.8 by\n[@&#8203;dependabot](https://redirect.github.com/dependabot) in\n[#&#8203;781](https://redirect.github.com/actions/setup-dotnet/pull/781)\n- Bump eslint from 10.5.0 to 10.11.0 by\n[@&#8203;dependabot](https://redirect.github.com/dependabot) in\n[#&#8203;772](https://redirect.github.com/actions/setup-dotnet/pull/772)\n- Bump eslint-plugin-jest from 29.15.2 to 29.16.6 by\n[@&#8203;dependabot](https://redirect.github.com/dependabot) in\n[#&#8203;771](https://redirect.github.com/actions/setup-dotnet/pull/771)\n- Bump undici from 6.28.0 to 6.29.1 by\n[@&#8203;dependabot](https://redirect.github.com/dependabot) in\n[#&#8203;784](https://redirect.github.com/actions/setup-dotnet/pull/784)\n- Bump actions/checkout from 7.0.0 to 7.0.1 by\n[@&#8203;dependabot](https://redirect.github.com/dependabot) in\n[#&#8203;788](https://redirect.github.com/actions/setup-dotnet/pull/788)\n- Bump handlebars from 4.7.9 to 4.7.10 by\n[@&#8203;dependabot](https://redirect.github.com/dependabot) in\n[#&#8203;792](https://redirect.github.com/actions/setup-dotnet/pull/792)\n- Bump brace-expansion by\n[@&#8203;dependabot](https://redirect.github.com/dependabot) in\n[#&#8203;790](https://redirect.github.com/actions/setup-dotnet/pull/790)\n- Prepare v6.1.0 release with updated cache dependency by\n[@&#8203;v-HarithaVattikuti](https://redirect.github.com/v-HarithaVattikuti)\nin\n[#&#8203;798](https://redirect.github.com/actions/setup-dotnet/pull/798)\n\n##### New Contributors\n\n- [@&#8203;v-lmvysakh](https://redirect.github.com/v-lmvysakh) made\ntheir first contribution in\n[#&#8203;776](https://redirect.github.com/actions/setup-dotnet/pull/776)\n-\n[@&#8203;v-chiranjib-swain](https://redirect.github.com/v-chiranjib-swain)\nmade their first contribution in\n[#&#8203;791](https://redirect.github.com/actions/setup-dotnet/pull/791)\n\n**Full Changelog**:\n<https://github.com/actions/setup-dotnet/compare/v6.0.0...v6.1.0>\n\n</details>\n\n<details>\n<summary>astral-sh/setup-uv</summary>\n\n###\n[`v10.3.3`](https://redirect.github.com/astral-sh/setup-uv/releases/tag/v10.3.3):\n🌈 Use Astral mirror for version manifests with GitHub fallback\n\n[Compare\nSource](https://redirect.github.com/astral-sh/setup-uv/compare/v10.3.2...v10.3.3)\n\n##### Changes\n\nThis release contains something that should have been included a very\nlong time ago. Sorry for sleeping on that.\n\nThis action now retrieves the release manifest that contains the\navailable versions, their download links and checksums from the Astral\nmirror, rather than trying GitHub first. This should present much more\nstable.\n(Known checksums are still checked, so the security impact does not\nchange)\n\nAlso a big thank you to\n[@&#8203;soujasK](https://redirect.github.com/soujasK) for a set of\nbugfixes 👏\n\n##### 🐛 Bug fixes\n\n- Use Astral mirror for version manifests with GitHub fallback\n[@&#8203;eifinger](https://redirect.github.com/eifinger)\n([#&#8203;1119](https://redirect.github.com/astral-sh/setup-uv/issues/1119))\n- fix: allow whitespace in uv requirement specifiers\n[@&#8203;soujasK](https://redirect.github.com/soujasK)\n([#&#8203;1112](https://redirect.github.com/astral-sh/setup-uv/issues/1112))\n- fix: resolve \\~= specifiers with PEP 440 semantics\n[@&#8203;soujasK](https://redirect.github.com/soujasK)\n([#&#8203;1111](https://redirect.github.com/astral-sh/setup-uv/issues/1111))\n- fix: only report a saved cache when saving succeeded\n[@&#8203;soujasK](https://redirect.github.com/soujasK)\n([#&#8203;1110](https://redirect.github.com/astral-sh/setup-uv/issues/1110))\n\n##### 🧰 Maintenance\n\n- chore: update known checksums for 0.13.6\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1117](https://redirect.github.com/astral-sh/setup-uv/issues/1117))\n\n##### 📚 Documentation\n\n- docs: use JSDoc for compatible release specifier comment\n[@&#8203;eifinger](https://redirect.github.com/eifinger)\n([#&#8203;1113](https://redirect.github.com/astral-sh/setup-uv/issues/1113))\n- docs: update version references to v10.3.2\n@&#8203;[github-actions\\[bot\\]](https://redirect.github.com/apps/github-actions)\n([#&#8203;1104](https://redirect.github.com/astral-sh/setup-uv/issues/1104))\n\n</details>\n\n<details>\n<summary>github/codeql-action</summary>\n\n###\n[`v4.39.3`](https://redirect.github.com/github/codeql-action/releases/tag/v4.39.3)\n\n[Compare\nSource](https://redirect.github.com/github/codeql-action/compare/v4.39.2...v4.39.3)\n\n- Fixed diff-informed alert filtering incorrectly removing alerts in\nchanged files whose paths contain spaces, special characters, or\nnon-ASCII characters.\n[#&#8203;4283](https://redirect.github.com/github/codeql-action/pull/4283)\n\n###\n[`v4.39.2`](https://redirect.github.com/github/codeql-action/releases/tag/v4.39.2)\n\n[Compare\nSource](https://redirect.github.com/github/codeql-action/compare/v4.39.1...v4.39.2)\n\n- Update default CodeQL bundle version to\n[2.27.4](https://redirect.github.com/github/codeql-action/releases/tag/codeql-bundle-v2.27.4).\n[#&#8203;4284](https://redirect.github.com/github/codeql-action/pull/4284)\n- *Upcoming breaking change*: CodeQL version 2.22.3 and earlier were\ndiscontinued on 16 October 2026 alongside GitHub Enterprise Server 3.18,\nand will be unsupported by the next minor release of the CodeQL Action.\nAdded a deprecation warning for customers using these versions of\nCodeQL.\n[#&#8203;4266](https://redirect.github.com/github/codeql-action/pull/4266)\n- Starting with macOS 27 and Xcode 27, traced analyses are unsupported.\nSee [this blog post for more\ninformation](https://github.blog/changelog/2026-10-19-codeql-changes-for-macos-27-xcode-27-and-swift-6-4/).\nThe CodeQL Action will now try to identify if a workflow is about to\nperform a traced analysis on version 27 or above of macOS or Xcode. If\nso, the CodeQL Action will emit a corresponding warning that will also\nbe visible on the [Tool Status\nPage](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/manage-your-configuration/use-the-tools-status-page-for-code-scanning).\nThis check will be rolled out following this release of the CodeQL\nAction.\n[#&#8203;4221](https://redirect.github.com/github/codeql-action/pull/4221)\n- The undocumented TRAP cache cleanup feature that could be enabled\nusing the `CODEQL_ACTION_CLEANUP_TRAP_CACHES` environment variable has\nbeen removed, as announced in the release notes for CodeQL Action\n4.35.2. The `analyze` Action now warns if this environment variable is\nset. If you used TRAP cache cleanup to limit Actions cache usage, we\nrecommend disabling TRAP caching by passing the `trap-caching: false`\ninput to the `init` Action.\n[#&#8203;4243](https://redirect.github.com/github/codeql-action/pull/4243)\n\n</details>\n\n<details>\n<summary>helm/kind-action</summary>\n\n###\n[`v1.15.2`](https://redirect.github.com/helm/kind-action/releases/tag/v1.15.2)\n\n[Compare\nSource](https://redirect.github.com/helm/kind-action/compare/v1.15.1...v1.15.2)\n\n#### What's Changed\n\n-\nfeat([#&#8203;38](https://redirect.github.com/helm/kind-action/issues/38)):\nadd support for windows and mac os runners by\n[@&#8203;Jeff-Tian](https://redirect.github.com/Jeff-Tian) in\n[#&#8203;159](https://redirect.github.com/helm/kind-action/pull/159)\n- docs: explain kind networking in job containers by\n[@&#8203;cpanato](https://redirect.github.com/cpanato) in\n[#&#8203;172](https://redirect.github.com/helm/kind-action/pull/172)\n- fix: validate kind checksum downloads by\n[@&#8203;cpanato](https://redirect.github.com/cpanato) in\n[#&#8203;171](https://redirect.github.com/helm/kind-action/pull/171)\n\n#### New Contributors\n\n- [@&#8203;Jeff-Tian](https://redirect.github.com/Jeff-Tian) made their\nfirst contribution in\n[#&#8203;159](https://redirect.github.com/helm/kind-action/pull/159)\n\n**Full Changelog**:\n<https://github.com/helm/kind-action/compare/v1.15.1...v1.15.2>\n\n</details>\n\n<details>\n<summary>miracum/.github</summary>\n\n###\n[`v1.32.1`](https://redirect.github.com/miracum/.github/releases/tag/v1.32.1)\n\n[Compare\nSource](https://redirect.github.com/miracum/.github/compare/v1.32.0...v1.32.1)\n\n##### Bug Fixes\n\n- dont export if the layer isnt uploaded anyways\n([#&#8203;227](https://redirect.github.com/miracum/.github/issues/227))\n([cca0bcc](https://redirect.github.com/miracum/.github/commit/cca0bcc51093bb9292344cdefd5eeff9cf41c973))\n\n###\n[`v1.32.0`](https://redirect.github.com/miracum/.github/releases/tag/v1.32.0)\n\n[Compare\nSource](https://redirect.github.com/miracum/.github/compare/v1.31.2...v1.32.0)\n\n##### Features\n\n- chart publish and cache key\n([#&#8203;226](https://redirect.github.com/miracum/.github/issues/226))\n([0ffa751](https://redirect.github.com/miracum/.github/commit/0ffa751fc19cb815b941cc6988a4efb1653dca2c))\n\n</details>\n\n---\n\n### Configuration\n\n📅 **Schedule**: (UTC)\n\n- Branch creation\n  - On day 1 of the month, every 3 months (`* * 1 */3 *`)\n- Automerge\n  - At any time (no schedule defined)\n\n🚦 **Automerge**: Enabled.\n\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\nrebase/retry checkbox.\n\n👻 **Immortal**: This PR will be recreated if closed unmerged. Get\n[config\nhelp](https://redirect.github.com/renovatebot/renovate/discussions) if\nthat's undesired.\n\n---\n\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\nthis box\n\n---\n\nThis PR was generated by [Mend Renovate](https://mend.io/renovate/).\nView the [repository job\nlog](https://developer.mend.io/github/miracum/fhir-pseudonymizer).\n\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiI0NC4yMjAuMCIsInVwZGF0ZWRJblZlciI6IjQ0LjIyMC4wIiwidGFyZ2V0QnJhbmNoIjoibWFzdGVyIiwibGFiZWxzIjpbXX0=-->\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-11-06T09:31:15Z",
+          "tree_id": "6b42e423c0615797e6d9882055c8c79951bd6430",
+          "url": "https://github.com/miracum/fhir-pseudonymizer/commit/b073ff31ae11a919faef3e2906ddc93af25e816b"
+        },
+        "date": 1793958015632,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizationBenchmarks.AnonymizeLargeBundleWithComplexConfig",
+            "value": 86426768.9137931,
+            "unit": "ns",
+            "range": "± 2509643.4976141425"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseAnonymizationYamlFromString",
+            "value": 1394099.0147235577,
+            "unit": "ns",
+            "range": "± 11266.505598487362"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.HmacSha256",
+            "value": 1090.2111273545486,
+            "unit": "ns",
+            "range": "± 1.4348562155349165"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.AnonymizerConfigurationBenchmarks.ParseHipaaAnonymizationYamlFromString",
+            "value": 17457115.762019232,
+            "unit": "ns",
+            "range": "± 181249.2110599822"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.HashingBenchmarks.Blake3",
+            "value": 247.0405888924232,
+            "unit": "ns",
+            "range": "± 0.523753028459447"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 698551001.6666666,
+            "unit": "ns",
+            "range": "± 23120843.336953357"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-blake3\")",
+            "value": 1582694719,
+            "unit": "ns",
+            "range": "± 25824705.340307817"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 681188758,
+            "unit": "ns",
+            "range": "± 10083564.308346478"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 1697826015,
+            "unit": "ns",
+            "range": "± 8364977.639266945"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 706446427,
+            "unit": "ns",
+            "range": "± 28546799.887680564"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"bundle\", Method: \"keep\")",
+            "value": 1168381448.6666667,
+            "unit": "ns",
+            "range": "± 3214663.1630802834"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 304271918,
+            "unit": "ns",
+            "range": "± 37532402.302356504"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-blake3\")",
+            "value": 538022244.6666666,
+            "unit": "ns",
+            "range": "± 162703848.24198535"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 269822479.3333333,
+            "unit": "ns",
+            "range": "± 64498253.799199805"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"cryptoHash-hmacSha256\")",
+            "value": 550383829.6666666,
+            "unit": "ns",
+            "range": "± 265579975.0949964"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.ParseAndSerializeOnly(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 266153167.33333334,
+            "unit": "ns",
+            "range": "± 58775565.88851626"
+          },
+          {
+            "name": "FhirPseudonymizer.Benchmarks.LargeProvenanceBenchmarks.DeIdentify(ResourceCount: 50000, Shape: \"provenance\", Method: \"keep\")",
+            "value": 401799040.6666667,
+            "unit": "ns",
+            "range": "± 85923960.31868851"
           }
         ]
       }
