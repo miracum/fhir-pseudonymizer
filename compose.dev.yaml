@@ -41,7 +41,7 @@ services:
       POSTGRES_DB: vfps
 
   vfps:
-    image: ghcr.io/miracum/vfps:v1.26.0@sha256:ae94a47bb32649eef65905e3c46066f8580985532fe42c9789e287227be25862
+    image: ghcr.io/miracum/vfps:v1.27.0@sha256:0c6108dc8038bbb2aaffa6977cc1fffdaf6e0b46efe6b76c82376e0bbd072a49
     restart: unless-stopped
     deploy:
       resources:
@@ -77,7 +77,7 @@ services:
       - "127.0.0.1:8081:8081"
 
   gpas-entici-mock:
-    image: docker.io/mockserver/mockserver:9.0.0@sha256:3b9e91077598e2278af1edd5c417813b344212bd267631bb77298193a49981f5
+    image: docker.io/mockserver/mockserver:9.1.0@sha256:0ed883c9b2d0ccc90eadecea4d4167eb0b0d67d0a5830a378eb58c45074cd2a6
     ipc: none
     security_opt:
       - "no-new-privileges:true"
@@ -101,7 +101,7 @@ services:
       - ./hack/mocks:/config:ro
 
   kafka:
-    image: docker.io/apache/kafka:4.3.1@sha256:77e3df9054047a88b520d0cc46e16696d3b22022e1d580aeccd2632df6532837
+    image: docker.io/apache/kafka:4.4.0@sha256:833b867a9585a141da455dc2b57431c65cbccb27f11c91f694444cca9f777e0f
     restart: unless-stopped
     cap_drop:
       - ALL
@@ -157,7 +157,7 @@ services:
       - kafka
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.8.1@sha256:79c623a22abacf3fe6c00a5fb30f5b7843d717b234033b80995891c06116d244
+    image: quay.io/keycloak/keycloak:26.8.2@sha256:3879c623248408de29a5303178b5816c77e8dfef3890c361f8c0bbeaa979ba3b
     restart: unless-stopped
     profiles:
       - keycloak
