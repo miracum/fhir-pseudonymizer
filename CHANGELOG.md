@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.1.3](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.2...v3.1.3) (2026-11-06)
+
+
+### Miscellaneous Chores
+
+* align playground UI styling with the docs page ([#476](https://github.com/miracum/fhir-pseudonymizer/issues/476)) ([2ad6baf](https://github.com/miracum/fhir-pseudonymizer/commit/2ad6baf8e9d5e4e4aef085f49724d01e6928a8ee))
+* **deps:** lock file maintenance ([#478](https://github.com/miracum/fhir-pseudonymizer/issues/478)) ([045644b](https://github.com/miracum/fhir-pseudonymizer/commit/045644b094d292e6efd46889b57eab821083c27e))
+* **deps:** update all digest updates ([#479](https://github.com/miracum/fhir-pseudonymizer/issues/479)) ([7bf4db1](https://github.com/miracum/fhir-pseudonymizer/commit/7bf4db1c0b0b921196a1b31389265a825febbda7))
+* **deps:** update all non-major dependencies ([#480](https://github.com/miracum/fhir-pseudonymizer/issues/480)) ([44c02ed](https://github.com/miracum/fhir-pseudonymizer/commit/44c02eda2cf8a40359d13bab1cbc25cee25fb399))
+* fix semantic pull request action tag ([fe1e1de](https://github.com/miracum/fhir-pseudonymizer/commit/fe1e1de2a2bbc419246e7cc8fffdbd00fb11b68f))
+
 ## [3.1.2](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.1...v3.1.2) (2026-10-25)
 
 
