@@ -15,6 +15,15 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core
             new AnonymizerConfigurationValidator();
         private readonly byte[] _derivedEncryptKey;
 
+        // The validator and the rules compile FHIRPath expressions against the default symbol
+        // table, which only knows nodesByType()/nodesByName() once they're registered. Doing that
+        // here, rather than relying on every caller to have called it first, means a config using
+        // them validates regardless of what else ran in the process before.
+        static AnonymizerConfigurationManager()
+        {
+            AnonymizerEngine.InitializeFhirPathExtensionSymbols();
+        }
+
         public AnonymizerConfigurationManager(
             AnonymizerConfiguration configuration,
             AnonymizationConfig anonymizationConfig = null
