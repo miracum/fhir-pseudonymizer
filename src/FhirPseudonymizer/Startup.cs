@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using System.Reflection;
 using FhirPseudonymizer.Config;
 using FhirPseudonymizer.Controllers;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Microsoft.Health.Fhir.Anonymizer.Core;
 using Microsoft.OpenApi;
 
@@ -59,16 +61,38 @@ public class Startup
         services.AddDistributedMemoryCache();
         var cacheConfig = appConfig.Cache;
         services.AddSingleton(cacheConfig);
-        services.AddSingleton<IMemoryCache>(_ => new MemoryCache(
-            new MemoryCacheOptions { SizeLimit = cacheConfig.SizeLimit }
+        // TrackStatistics publishes the dotnet.cache.* metrics (requests by hit/miss, evictions,
+        // entries, estimated size), told apart by the dotnet.cache.name tag. Evictions are what
+        // reveal a SizeLimit that's too small - which otherwise just shows up as extra calls to
+        // the pseudonymization service or rebuilt anonymizer engines.
+        services.AddSingleton<IMemoryCache>(serviceProvider => new MemoryCache(
+            Options.Create(
+                new MemoryCacheOptions
+                {
+                    Name = "pseudonyms",
+                    SizeLimit = cacheConfig.SizeLimit,
+                    TrackStatistics = true,
+                }
+            ),
+            serviceProvider.GetRequiredService<ILoggerFactory>(),
+            serviceProvider.GetRequiredService<IMeterFactory>()
         ));
 
         var anonymizerEngineCacheConfig = appConfig.AnonymizerEngineCache;
         services.AddKeyedSingleton<IMemoryCache>(
             AnonymizerConfigCacheKeys.AnonymizerConfig,
-            (_, _) =>
+            (serviceProvider, _) =>
                 new MemoryCache(
-                    new MemoryCacheOptions { SizeLimit = anonymizerEngineCacheConfig.SizeLimit }
+                    Options.Create(
+                        new MemoryCacheOptions
+                        {
+                            Name = "anonymizer_engines",
+                            SizeLimit = anonymizerEngineCacheConfig.SizeLimit,
+                            TrackStatistics = true,
+                        }
+                    ),
+                    serviceProvider.GetRequiredService<ILoggerFactory>(),
+                    serviceProvider.GetRequiredService<IMeterFactory>()
                 )
         );
 

@@ -434,7 +434,7 @@ jobs:
       enable-validate-gradle-wrapper: false
       codeql-languages: '["csharp"]'
       enable-codeql: true
-      dotnet-version: "10.0.x"
+      dotnet-version: "11.0.x"
 
   docs:
     runs-on: ubuntu-26.04
@@ -475,7 +475,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: "11.0.x"
 
       - name: Install wasm-tools workload
         run: dotnet workload install wasm-tools
@@ -507,7 +507,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: "11.0.x"
 
       - name: Run microbenchmarks
         run: |
@@ -516,7 +516,7 @@ jobs:
 
       - name: Normalize BenchmarkDotNet result file name
         run: |
-          mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json \
+          mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*report-full-compressed.json \
             BenchmarkDotNet.Artifacts/results/benchmarks.json
 
       # on PRs: only compare against the stored history and comment if something regressed.
