@@ -13,6 +13,7 @@ public class VfpsPseudonymServiceClientTests
     [InlineData(StatusCode.Internal)]
     [InlineData(StatusCode.Unauthenticated)]
     [InlineData(StatusCode.PermissionDenied)]
+    [InlineData(StatusCode.DeadlineExceeded)]
     public async Task GetOrCreatePseudonymFor_WhenVfpsIsTransientlyUnavailable_ThrowsTransientPseudonymizationException(
         StatusCode statusCode
     )
@@ -95,7 +96,6 @@ public class VfpsPseudonymServiceClientTests
 
     [Theory]
     [InlineData(StatusCode.Unknown)]
-    [InlineData(StatusCode.DeadlineExceeded)]
     public async Task GetOrCreatePseudonymFor_WhenVfpsFailsOtherwise_ThrowsTheOriginalRpcException(
         StatusCode statusCode
     )
@@ -130,6 +130,69 @@ public class VfpsPseudonymServiceClientTests
         (await act.Should().ThrowExactlyAsync<RpcException>())
             .Which.StatusCode.Should()
             .Be(statusCode);
+    }
+
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WhenTheDeadlineElapses_ThrowsTransientPseudonymizationException()
+    {
+        // With ThrowOperationCanceledOnCancellation, an exceeded deadline surfaces as an
+        // OperationCanceledException although the caller's token was never cancelled.
+        var client = A.Fake<PseudonymService.PseudonymServiceClient>();
+
+        A.CallTo(() =>
+                client.CreateAsync(
+                    A<PseudonymServiceCreateRequest>._,
+                    null,
+                    null,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(() => new OperationCanceledException("deadline exceeded"));
+
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
+
+        var act = async () =>
+            await sut.GetOrCreatePseudonymFor(
+                "test",
+                "namespace",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        (
+            await act.Should().ThrowAsync<TransientPseudonymizationException>()
+        ).WithInnerException<OperationCanceledException>();
+    }
+
+    [Fact]
+    public async Task GetOrCreatePseudonymFor_WhenCancelledByTheCaller_PropagatesTheCancellation()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var client = A.Fake<PseudonymService.PseudonymServiceClient>();
+
+        A.CallTo(() =>
+                client.CreateAsync(
+                    A<PseudonymServiceCreateRequest>._,
+                    null,
+                    null,
+                    A<CancellationToken>._
+                )
+            )
+            .Throws(() => new OperationCanceledException(cts.Token));
+
+        var sut = new VfpsPseudonymServiceClient(
+            A.Fake<ILogger<VfpsPseudonymServiceClient>>(),
+            client
+        );
+
+        var act = async () =>
+            await sut.GetOrCreatePseudonymFor("test", "namespace", cancellationToken: cts.Token);
+
+        await act.Should().ThrowExactlyAsync<OperationCanceledException>();
     }
 
     [Fact]

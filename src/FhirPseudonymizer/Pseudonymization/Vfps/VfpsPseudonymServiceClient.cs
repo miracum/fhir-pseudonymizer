@@ -51,6 +51,25 @@ public class VfpsPseudonymServiceClient(
             var response = await Client.CreateAsync(request, cancellationToken: cancellationToken);
             return response.Pseudonym.PseudonymValue;
         }
+        // The call's deadline elapsing (see DefaultDeadlineInterceptor). With
+        // ThrowOperationCanceledOnCancellation set this surfaces as an OperationCanceledException
+        // while the caller's own token is not cancelled; the RpcException is handled too in case
+        // the server reports the deadline itself. Not part of TransientStatusCodes, which also
+        // configures the channel's retries: there's no time left to retry once it has elapsed.
+        catch (OperationCanceledException exc) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TransientPseudonymizationException(
+                "Vfps pseudonymization call exceeded its deadline.",
+                exc
+            );
+        }
+        catch (RpcException exc) when (exc.StatusCode == StatusCode.DeadlineExceeded)
+        {
+            throw new TransientPseudonymizationException(
+                "Vfps pseudonymization call exceeded its deadline.",
+                exc
+            );
+        }
         catch (RpcException exc) when (TransientStatusCodes.Contains(exc.StatusCode))
         {
             throw new TransientPseudonymizationException(

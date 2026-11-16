@@ -19,6 +19,14 @@ public static class VfpsExtensions
 
     internal static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(5);
 
+    // Pings an HTTP/2 connection after this long without receiving a frame on it, and drops it
+    // if the ping isn't answered in time. Without pings a connection whose peer disappeared
+    // without a FIN/RST - a replaced pod whose IP now blackholes traffic - looks healthy until
+    // the kernel gives up on it, which can take many minutes.
+    internal static readonly TimeSpan KeepAlivePingDelay = TimeSpan.FromSeconds(20);
+
+    internal static readonly TimeSpan KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
+
     public static IServiceCollection AddVfpsClient(
         this IServiceCollection services,
         VfpsConfig vfpsConfig
@@ -154,7 +162,17 @@ public static class VfpsExtensions
 
                 o.UnsafeUseInsecureChannelCallCredentials =
                     vfpsConfig.UnsafeUseInsecureChannelCallCredentials;
+
+                // A call cancelled by the caller's token - e.g. an aborted HTTP request - throws
+                // an OperationCanceledException instead of an RpcException(Cancelled), so it's
+                // handled like any other cancellation rather than as a failed call. A call whose
+                // deadline was exceeded throws one too, then with the caller's token not
+                // cancelled; VfpsPseudonymServiceClient reports that as transient.
+                o.ThrowOperationCanceledOnCancellation = true;
             })
+            .AddInterceptor(() =>
+                new DefaultDeadlineInterceptor(TimeSpan.FromSeconds(vfpsConfig.DeadlineSeconds))
+            )
             .AddCallCredentials(
                 async (_, metadata, serviceProvider) =>
                 {
@@ -188,20 +206,27 @@ public static class VfpsExtensions
                 }
             );
 
-        if (isClientSideLoadBalanced)
-        {
-            // Modifies the client factory's own SocketsHttpHandler rather than replacing it, so
-            // its gRPC defaults (multiple HTTP/2 connections, a pooled connection lifetime) stay.
-            clientBuilder.ConfigurePrimaryHttpMessageHandler(
-                (handler, _) =>
+        // Modifies the client factory's own SocketsHttpHandler rather than replacing it, so its
+        // gRPC defaults (multiple HTTP/2 connections, a pooled connection lifetime) stay.
+        clientBuilder.ConfigurePrimaryHttpMessageHandler(
+            (handler, _) =>
+            {
+                if (handler is not SocketsHttpHandler socketsHttpHandler)
                 {
-                    if (handler is SocketsHttpHandler socketsHttpHandler)
-                    {
-                        socketsHttpHandler.ConnectTimeout = ConnectTimeout;
-                    }
+                    return;
                 }
-            );
-        }
+
+                socketsHttpHandler.KeepAlivePingDelay = KeepAlivePingDelay;
+                socketsHttpHandler.KeepAlivePingTimeout = KeepAlivePingTimeout;
+                // Also pings idle connections, so a dead one is dropped before a call lands on it
+                socketsHttpHandler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+
+                if (isClientSideLoadBalanced)
+                {
+                    socketsHttpHandler.ConnectTimeout = ConnectTimeout;
+                }
+            }
+        );
 
         services.AddTransient<VfpsPseudonymServiceClient>();
         services.AddTransient<IPseudonymServiceClient>(
