@@ -189,6 +189,14 @@ public record VfpsConfig
     public bool UnsafeUseInsecureChannelCallCredentials { get; init; }
     public bool UseTls { get; init; }
     public PseudonymServiceRetryConfig Retry { get; init; } = new();
+
+    /// <summary>
+    ///     How long a single gRPC call may take, including the channel's own retries
+    ///     (<see cref="PseudonymServiceRetryConfig.Count" />), before it fails as
+    ///     <c>DeadlineExceeded</c>. Unlike the HTTP backends' <c>RequestTimeoutSeconds</c>, this is
+    ///     not per attempt: gRPC deadlines span the whole call.
+    /// </summary>
+    public int DeadlineSeconds { get; init; } = 30;
 }
 
 /// <summary>

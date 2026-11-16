@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Duende.AccessTokenManagement;
 using FhirPseudonymizer.Config;
+using FhirPseudonymizer.Pseudonymization;
 using FhirPseudonymizer.Pseudonymization.Vfps;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -380,6 +382,97 @@ public class VfpsExtensionsTests
         ConfiguredChannelOptions(provider).ServiceConfig.LoadBalancingConfigs.Should().BeEmpty();
         provider.GetServices<ResolverFactory>().Should().BeEmpty();
         PrimaryHandler(provider).ConnectTimeout.Should().Be(Timeout.InfiniteTimeSpan);
+    }
+
+    [Theory]
+    [InlineData("http://vfps:8081")]
+    [InlineData("dns:///vfps-headless.vfps.svc.cluster.local:8081")]
+    public void AddVfpsClient_WithAnyAddress_ShouldSendKeepAlivePings(string address)
+    {
+        // A connection to a pod that vanished without closing it would otherwise look healthy
+        // until the kernel gives up on it.
+        var handler = PrimaryHandler(BuildProvider(new Uri(address)));
+
+        handler.KeepAlivePingDelay.Should().Be(VfpsExtensions.KeepAlivePingDelay);
+        handler.KeepAlivePingTimeout.Should().Be(VfpsExtensions.KeepAlivePingTimeout);
+        handler.KeepAlivePingPolicy.Should().Be(HttpKeepAlivePingPolicy.Always);
+    }
+
+    [Fact]
+    public void AddVfpsClient_ShouldThrowOperationCanceledOnCancellation()
+    {
+        ConfiguredChannelOptions(BuildProvider(VfpsAddress))
+            .ThrowOperationCanceledOnCancellation.Should()
+            .BeTrue();
+    }
+
+    [Fact]
+    public async Task AddVfpsClient_WhenVfpsNeverAnswers_FailsTheCallTransientlyOnceTheDeadlineElapses()
+    {
+        var sut = BuildVfpsClient(
+            new VfpsConfig
+            {
+                Address = VfpsAddress,
+                UnsafeUseInsecureChannelCallCredentials = true,
+                DeadlineSeconds = 1,
+            },
+            new HangingHandler()
+        );
+
+        var act = async () =>
+            await sut.GetOrCreatePseudonymFor(
+                "test",
+                "namespace",
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+        await act.Should()
+            .ThrowAsync<TransientPseudonymizationException>()
+            .WithMessage("*deadline*");
+    }
+
+    [Fact]
+    public async Task AddVfpsClient_WhenTheCallerCancels_ThrowsOperationCanceled()
+    {
+        // Previously an RpcException(Cancelled), which the controller couldn't tell apart from
+        // a failed call and so logged and answered as a 500.
+        var sut = BuildVfpsClient(
+            new VfpsConfig { Address = VfpsAddress, UnsafeUseInsecureChannelCallCredentials = true },
+            new HangingHandler()
+        );
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+
+        var act = async () =>
+            await sut.GetOrCreatePseudonymFor("test", "namespace", cancellationToken: cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    private static VfpsPseudonymServiceClient BuildVfpsClient(
+        VfpsConfig config,
+        HttpMessageHandler vfpsHandler
+    )
+    {
+        var services = new ServiceCollection().AddLogging().AddVfpsClient(config);
+
+        services
+            .AddGrpcClient<PseudonymService.PseudonymServiceClient>()
+            .ConfigurePrimaryHttpMessageHandler(() => vfpsHandler);
+
+        return services.BuildServiceProvider().GetRequiredService<VfpsPseudonymServiceClient>();
+    }
+
+    private sealed class HangingHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            throw new UnreachableException();
+        }
     }
 
     private static ServiceProvider BuildProvider(Uri address) =>

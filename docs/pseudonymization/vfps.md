@@ -10,6 +10,7 @@ service, over gRPC. The rule's `domain` (or `namespace`) is the Vfps namespace.
 | `Vfps__UnsafeUseInsecureChannelCallCredentials` | If set to `true`, `CallCredentials` are applied to gRPC calls made by an insecure channel. Sending authentication headers over an insecure connection has security implications and shouldn't be done in production environments.  | `true`  |
 | `Vfps__UseTls`                                  | If set to `true`, creates client-side SSL credentials loaded from disk file pointed to by the `GRPC_DEFAULT_SSL_ROOTS_FILE_PATH` environment variable. If that fails, gets the roots certificates from a well known place on disk. | `false` |
 | `Vfps__Retry__Count`                            | The number of times a failed request is retried, with exponential backoff.                                                                                                                                                         | `3`     |
+| `Vfps__DeadlineSeconds`                         | How long a single gRPC call may take, including its retries, before it fails as `DeadlineExceeded` and is reported as transient (HTTP 503).                                                                                        | `30`    |
 
 ## Load balancing
 
@@ -27,6 +28,10 @@ across every ready pod, re-resolves the address every 15 seconds to pick up adde
 and gives up on a connection attempt after 5 seconds instead of waiting on a pod that no longer
 exists. Don't combine `dns:///` with a regular Service: it resolves to a single virtual IP, so there
 is nothing to balance.
+
+Regardless of the address, a connection to Vfps is pinged after 20 seconds without any traffic and dropped
+if a ping goes unanswered for 10 seconds, so a connection to a pod that disappeared without closing
+it is detected quickly instead of when the kernel gives up on it.
 
 ## Basic auth
 
