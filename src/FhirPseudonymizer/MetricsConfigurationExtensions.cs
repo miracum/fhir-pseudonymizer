@@ -22,6 +22,8 @@ public static class MetricsConfigurationExtensions
             .WithMetrics(metricsBuilder =>
                 metricsBuilder
                     .AddMeter(Program.Meter.Name)
+                    // dotnet.cache.* from the MemoryCaches registered in Startup
+                    .AddMeter("Microsoft.Extensions.Caching.Memory.MemoryCache")
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
