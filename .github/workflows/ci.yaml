@@ -516,7 +516,7 @@ jobs:
 
       - name: Normalize BenchmarkDotNet result file name
         run: |
-          mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*-report-full-compressed.json \
+          mv BenchmarkDotNet.Artifacts/results/BenchmarkRun-joined-*report-full-compressed.json \
             BenchmarkDotNet.Artifacts/results/benchmarks.json
 
       # on PRs: only compare against the stored history and comment if something regressed.

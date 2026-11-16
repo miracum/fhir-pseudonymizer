@@ -5,7 +5,7 @@
     <CodeAnalysisRuleSet>..\..\stylecop.ruleset.xml</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.16.0-preview.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FhirPseudonymizer\FhirPseudonymizer.csproj" />
