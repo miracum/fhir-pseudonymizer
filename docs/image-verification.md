@@ -51,7 +51,7 @@ New dependencies are chosen based on their license (must be compatible with this
 ### Obtaining dependencies
 
 - **.NET/NuGet packages** are declared as `PackageReference`s in the `.csproj` files and restored from [nuget.org](https://www.nuget.org/). Restores are deterministic: `RestorePackagesWithLockFile` is enabled, and the resulting `packages.lock.json` pins every (transitive) package to an exact version with integrity hashes, so `dotnet restore` always resolves the same dependency graph.
-- **Container base images** are pinned by digest, in addition to tag, in the [Dockerfile](https://github.com/miracum/fhir-pseudonymizer/blob/master/Dockerfile), e.g. `mcr.microsoft.com/dotnet/aspnet:10.0.10-resolute-chiseled@sha256:...`.
+- **Container base images** are pinned by digest, in addition to tag, in the [Dockerfile](https://github.com/miracum/fhir-pseudonymizer/blob/master/Dockerfile), e.g. `mcr.microsoft.com/dotnet/aspnet:11.0.0-resolute-chiseled@sha256:...`.
 - **GitHub Actions** used in CI are pinned to a specific commit SHA rather than a mutable tag or branch.
 
 ### Tracking and updating dependencies
