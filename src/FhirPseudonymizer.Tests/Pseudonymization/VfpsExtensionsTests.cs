@@ -437,7 +437,11 @@ public class VfpsExtensionsTests
         // Previously an RpcException(Cancelled), which the controller couldn't tell apart from
         // a failed call and so logged and answered as a 500.
         var sut = BuildVfpsClient(
-            new VfpsConfig { Address = VfpsAddress, UnsafeUseInsecureChannelCallCredentials = true },
+            new VfpsConfig
+            {
+                Address = VfpsAddress,
+                UnsafeUseInsecureChannelCallCredentials = true,
+            },
             new HangingHandler()
         );
 

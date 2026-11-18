@@ -4,6 +4,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors.Settings
     {
         //cryptoHash
         internal const string TruncateToMaxLength = "truncateToMaxLength";
+        internal const string OutputFormat = "outputFormat";
 
         //cryptoHash, pseudonymize
         internal const string TransformWholeUri = "transformWholeUri";

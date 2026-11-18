@@ -42,6 +42,39 @@ truncates the usually 64-character-long hash to the following:
 }
 ```
 
+## Outputting the hash as a UUID
+
+Set `outputFormat: uuid` to replace the hex digest with a UUID built from the hash. This is useful
+for elements whose consumers expect UUIDs, such as `urn:uuid:` identifiers or ids in systems that
+require a UUID format:
+
+```yaml
+fhirPathRules:
+  - path: Resource.id
+    method: cryptoHash
+    outputFormat: uuid
+```
+
+```json
+{
+  "resourceType": "Patient",
+  "id": "098fe201-710c-856e-b3df-b56cb0c610a6"
+}
+```
+
+The UUID is formed from the first 16 bytes of the hash, with the version and variant bits set
+to make it a valid [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562) version 8 (custom) UUID,
+the version RFC 9562 uses for hash-based UUIDs in its own example. This leaves 122 bits of the
+hash. Like the hex digest, the same input and key always give the same
+UUID. Works with both `hmacSha256` and `blake3`, and with `transformWholeUri`, but not with
+`truncateToMaxLength`: a config combining the two is rejected, since a truncated UUID isn't a
+valid UUID anymore. The default is `outputFormat: hex`.
+
+A `urn:uuid:` prefix is kept on `Reference.reference` elements, since only their id part is
+hashed: `urn:uuid:9d9b8bed-7b79-7fa9-cea1-f133a6b4d551` becomes `urn:uuid:<hashed uuid>`. Other
+elements, including `Identifier.value` and `Bundle.entry.fullUrl`, are hashed as a whole, so the
+result is a bare UUID without the prefix.
+
 ## Hashing references and URIs
 
 For `Reference.reference` elements and for `uri` elements whose value looks like a FHIR resource

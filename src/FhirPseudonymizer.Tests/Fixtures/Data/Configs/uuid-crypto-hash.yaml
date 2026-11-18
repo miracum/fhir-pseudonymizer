@@ -1,0 +1,21 @@
+fhirVersion: R4
+fhirPathRules:
+  - path: Resource.id
+    method: cryptoHash
+    outputFormat: uuid
+  # urn:uuid: references and fullUrls keep their prefix: only the uuid part is hashed
+  - path: nodesByType('Reference').reference
+    method: cryptoHash
+    outputFormat: uuid
+  - path: Bundle.entry.fullUrl
+    method: cryptoHash
+    outputFormat: uuid
+  - path: Bundle.entry.request.where(method = 'PUT').url
+    method: cryptoHash
+    outputFormat: uuid
+  # Identifier.value is a string, not a uri: the whole value, including any urn:uuid: prefix, is hashed
+  - path: nodesByType('Identifier').value
+    method: cryptoHash
+    outputFormat: uuid
+parameters:
+  cryptoHashKey: 30c1395bd83653260b45a499ee75e901d2e6a02f1fdd859b30b915136d8bd70b
