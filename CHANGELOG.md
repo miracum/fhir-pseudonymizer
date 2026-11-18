@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.2.0](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.3...v3.2.0) (2026-11-18)
+
+
+### Features
+
+* support for outputting crypto-hashed values as UUID v8 ([#485](https://github.com/miracum/fhir-pseudonymizer/issues/485)) ([dfdd0b6](https://github.com/miracum/fhir-pseudonymizer/commit/dfdd0b657d740eefd7a2b6581e8fbcc1622b62b9))
+
+
+### Documentation
+
+* use animated logo ([#487](https://github.com/miracum/fhir-pseudonymizer/issues/487)) ([f713e3e](https://github.com/miracum/fhir-pseudonymizer/commit/f713e3e00a90fd22ec46b1e26cd1800a08b7d51b))
+
 ## [3.1.3](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.2...v3.1.3) (2026-11-16)
 
 
