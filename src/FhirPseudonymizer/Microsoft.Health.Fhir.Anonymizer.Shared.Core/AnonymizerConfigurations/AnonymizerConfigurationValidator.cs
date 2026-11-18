@@ -109,6 +109,17 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.AnonymizerConfigurations
                 {
                     GeneralizeSetting.ValidateRuleSettings(rule);
                 }
+
+                if (
+                    string.Equals(
+                        method,
+                        AnonymizerMethod.CryptoHash.ToString(),
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
+                )
+                {
+                    CryptoHashSetting.ValidateRuleSettings(rule);
+                }
             }
         }
 

@@ -11,30 +11,40 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
     public class CryptoHashProcessor : IAnonymizerProcessor
     {
         private readonly Func<string, string> _cryptoHashFunction;
+        private readonly Func<string, string> _uuidHashFunction;
 
         public CryptoHashProcessor(
             string cryptoHashKey,
             CryptoHashAlgorithm algorithm = CryptoHashAlgorithm.HmacSha256
         )
         {
-            _cryptoHashFunction =
-                algorithm == CryptoHashAlgorithm.Blake3
-                    ? CreateBlake3HashFunction(cryptoHashKey)
-                    : CreateHmacSha256HashFunction(cryptoHashKey);
-        }
-
-        private static Func<string, string> CreateHmacSha256HashFunction(string cryptoHashKey)
-        {
-            var keyBytes = CryptoHashUtility.GetHmacSha256KeyBytes(cryptoHashKey);
-            return input => CryptoHashUtility.ComputeHmacSHA256Hash(input, keyBytes);
-        }
-
-        private static Func<string, string> CreateBlake3HashFunction(string cryptoHashKey)
-        {
-            // Derived once here and reused for every value this processor hashes, instead of
-            // re-deriving the same 32-byte key from cryptoHashKey on every single call.
-            var derivedKey = CryptoHashUtility.DeriveBlake3Key(cryptoHashKey);
-            return input => CryptoHashUtility.ComputeKeyedBlake3Hash(input, derivedKey);
+            if (algorithm == CryptoHashAlgorithm.Blake3)
+            {
+                // Derived once here and reused for every value this processor hashes, instead of
+                // re-deriving the same 32-byte key from cryptoHashKey on every single call.
+                var derivedKey = CryptoHashUtility.DeriveBlake3Key(cryptoHashKey);
+                _cryptoHashFunction = input =>
+                    CryptoHashUtility.ComputeKeyedBlake3Hash(input, derivedKey);
+                _uuidHashFunction = input =>
+                {
+                    Span<byte> hash = stackalloc byte[Blake3.Hash.Size];
+                    CryptoHashUtility.ComputeKeyedBlake3Hash(input, derivedKey, hash);
+                    return CryptoHashUtility.ToUuid(hash);
+                };
+            }
+            else
+            {
+                var keyBytes = CryptoHashUtility.GetHmacSha256KeyBytes(cryptoHashKey);
+                _cryptoHashFunction = input =>
+                    CryptoHashUtility.ComputeHmacSHA256Hash(input, keyBytes);
+                _uuidHashFunction = input =>
+                {
+                    Span<byte> hash =
+                        stackalloc byte[System.Security.Cryptography.HMACSHA256.HashSizeInBytes];
+                    CryptoHashUtility.ComputeHmacSHA256Hash(input, keyBytes, hash);
+                    return CryptoHashUtility.ToUuid(hash);
+                };
+            }
         }
 
         public Task<ProcessResult> ProcessAsync(
@@ -49,7 +59,10 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
                 return Task.FromResult(processResult);
             }
 
-            var cryptoHashFunction = _cryptoHashFunction;
+            var cryptoHashFunction =
+                CryptoHashSetting.GetOutputFormat(settings) == CryptoHashOutputFormat.Uuid
+                    ? _uuidHashFunction
+                    : _cryptoHashFunction;
 
             if (
                 settings?.TryGetValue(
@@ -59,7 +72,7 @@ namespace Microsoft.Health.Fhir.Anonymizer.Core.Processors
             )
             {
                 var truncateToMaxLength = Convert.ToInt32(truncateToMaxLengthObject);
-                var baseHashFunction = _cryptoHashFunction;
+                var baseHashFunction = cryptoHashFunction;
                 cryptoHashFunction = (input) =>
                 {
                     var fullHash = baseHashFunction(input);
