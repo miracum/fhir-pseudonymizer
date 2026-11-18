@@ -9,7 +9,7 @@ hide:
 <div class="fp-hero" markdown>
 
 <div class="fp-brand">
-  <img src="img/logo.svg" alt="" />
+  <img src="img/logo-animated.svg" alt="" />
   <h1 class="fp-title"><span class="fp-title-accent">FHIR</span> <span>Pseudonymizer</span></h1>
 </div>
 
