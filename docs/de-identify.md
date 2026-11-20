@@ -120,6 +120,14 @@ restrict access to tokens with that scope or role. A valid token without it is r
 `403 Forbidden`. See the
 [configuration reference](configuration.md) for all settings.
 
+!!! danger "Disabling authentication"
+
+    Setting `Auth__ReIdentify__RequireAuthentication=false` opts out of authentication for
+    `$re-identify`: requests are accepted with or without a token, and any token sent along is no
+    longer checked. Anyone who can reach the service can then revert de-identification, so only do
+    this if access is already restricted otherwise, e.g. by a network policy or an authenticating
+    reverse proxy. A warning is logged at startup while it's disabled.
+
 For example, to accept tokens issued by Keycloak to clients with the `re-identifier` realm role:
 
 ```sh
