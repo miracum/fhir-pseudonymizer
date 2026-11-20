@@ -10,7 +10,8 @@ public static class AuthExtensions
     /// <summary>
     ///     Guards the operations that revert de-identification: <c>$re-identify</c> and its
     ///     deprecated <c>$de-pseudonymize</c> alias. Requires a JWT that passes
-    ///     <see cref="JwtAuthConfig" />'s checks.
+    ///     <see cref="JwtAuthConfig" />'s checks, unless
+    ///     <see cref="ReIdentifyAuthConfig.RequireAuthentication" /> is disabled.
     /// </summary>
     public const string ReIdentifyPolicy = "ReIdentify";
 
@@ -53,6 +54,16 @@ public static class AuthExtensions
                 options.MapInboundClaims = false;
             });
 
+        if (!authConfig.ReIdentify.RequireAuthentication)
+        {
+            // A policy needs at least one requirement, so allow everyone explicitly. Any token
+            // sent along is still validated, but an invalid or missing one is no longer rejected.
+            services
+                .AddAuthorizationBuilder()
+                .AddPolicy(ReIdentifyPolicy, policy => policy.RequireAssertion(_ => true));
+            return services;
+        }
+
         services
             .AddAuthorizationBuilder()
             .AddPolicy(
@@ -77,7 +88,14 @@ public static class AuthExtensions
 
     public static void LogInformationIfReIdentifyIsDisabled(AuthConfig authConfig, ILogger logger)
     {
-        if (!authConfig.Jwt.IsEnabled)
+        if (!authConfig.ReIdentify.RequireAuthentication)
+        {
+            logger.LogWarning(
+                "Auth:ReIdentify:RequireAuthentication is false, so $re-identify accepts requests "
+                    + "without authentication."
+            );
+        }
+        else if (!authConfig.Jwt.IsEnabled)
         {
             logger.LogInformation(
                 "Auth:Jwt:Authority is not set, so $re-identify rejects every request."

@@ -26,6 +26,18 @@ public record AppConfig
 public record AuthConfig
 {
     public JwtAuthConfig Jwt { get; init; } = new();
+    public ReIdentifyAuthConfig ReIdentify { get; init; } = new();
+}
+
+public record ReIdentifyAuthConfig
+{
+    /// <summary>
+    ///     Whether <c>$re-identify</c> (and its deprecated <c>$de-pseudonymize</c> alias) requires
+    ///     a valid JWT. Setting this to <c>false</c> lets anyone who can reach the service revert
+    ///     de-identification, so only do so if access is already restricted otherwise, e.g. by a
+    ///     network policy or an authenticating reverse proxy.
+    /// </summary>
+    public bool RequireAuthentication { get; init; } = true;
 }
 
 /// <summary>

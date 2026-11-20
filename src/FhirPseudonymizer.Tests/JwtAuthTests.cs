@@ -200,6 +200,56 @@ public class JwtAuthTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Theory]
+    [InlineData("/fhir/$re-identify")]
+    [InlineData("/fhir/$de-pseudonymize")]
+    public async Task PostReIdentify_WithAuthenticationNotRequired_ShouldSucceedWithoutToken(
+        string url
+    )
+    {
+        using var factory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["Auth:Jwt:Authority"] = "",
+                ["Auth:Jwt:Audience"] = "",
+                ["Auth:ReIdentify:RequireAuthentication"] = "false",
+            },
+            TrustTestTokenIssuer = false,
+        };
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsync(
+            url,
+            CreatePatientContent(),
+            TestContext.Current.CancellationToken
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task PostReIdentify_WithAuthenticationNotRequiredButJwtConfigured_ShouldIgnoreInvalidToken()
+    {
+        using var factory = new CustomWebApplicationFactory<Startup>
+        {
+            CustomInMemorySettings = new Dictionary<string, string>
+            {
+                ["Auth:Jwt:RequiredRole"] = Role,
+                ["Auth:ReIdentify:RequireAuthentication"] = "false",
+            },
+        };
+        using var client = factory.CreateClient();
+
+        var response = await PostPatientAsync(
+            client,
+            "/fhir/$re-identify",
+            TestTokens.Create(audience: "some-other-client")
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     [Fact]
     public async Task PostReIdentify_WithoutToken_ShouldReturnUnauthorized()
     {
