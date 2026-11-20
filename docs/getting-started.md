@@ -20,7 +20,7 @@ fhirPathRules:
 parameters:
   cryptoHashKey: "a-secret-key-with-at-least-32-characters"
 ' \
-  ghcr.io/miracum/fhir-pseudonymizer:v3.2.0
+  ghcr.io/miracum/fhir-pseudonymizer:v3.3.0
 ```
 
 <!-- x-release-please-end-version -->
