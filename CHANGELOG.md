@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/miracum/fhir-pseudonymizer/compare/v3.2.0...v3.3.0) (2026-11-20)
+
+
+### Features
+
+* added option to disable required auth for re-identify ([#488](https://github.com/miracum/fhir-pseudonymizer/issues/488)) ([3b20e59](https://github.com/miracum/fhir-pseudonymizer/commit/3b20e59bd4f5d880a309cc36ed86cf92822c0bb1))
+
 ## [3.2.0](https://github.com/miracum/fhir-pseudonymizer/compare/v3.1.3...v3.2.0) (2026-11-18)
 
 
